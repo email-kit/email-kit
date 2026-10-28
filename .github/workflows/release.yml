@@ -1,0 +1,52 @@
+name: Release
+
+# Publishes with npm trusted publishing (OIDC): no npm token is stored anywhere.
+# Each package must have this repository + workflow + environment configured as a
+# trusted publisher on npmjs.com first. See docs/setup/reserve-names.md.
+
+# Paused while the implementation is incomplete: manual runs only.
+# To re-enable, restore the trigger below and remove workflow_dispatch.
+on:
+  workflow_dispatch:
+  # push:
+  #   branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Version or publish
+    runs-on: ubuntu-latest
+    # Protected environment: configure required reviewers in the repository settings.
+    environment: npm-publish
+    permissions:
+      contents: write # version commits and tags
+      pull-requests: write # the "Version packages" PR
+      id-token: write # npm trusted publishing (OIDC) and provenance
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          cache: pnpm
+          registry-url: https://registry.npmjs.org
+      # Trusted publishing needs npm >= 11.5.1.
+      - run: npm install -g npm@latest
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - run: pnpm test
+      - run: pnpm check:packages
+      - uses: changesets/action@ae32849d5ba541f9ae29e40e22a623bc13562f51 # v2.1.2
+        with:
+          publish: pnpm exec changeset publish
+          title: "Version packages"
+          commit: "Version packages"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_CONFIG_PROVENANCE: "true"

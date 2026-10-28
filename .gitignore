@@ -1,0 +1,19 @@
+# dependencies
+node_modules/
+
+# build output and caches
+dist/
+.turbo/
+coverage/
+*.tsbuildinfo
+
+# logs and OS files
+*.log
+.DS_Store
+
+# local env
+.env
+.env.*
+
+# reference material kept out of the repo
+docs/reference-docs

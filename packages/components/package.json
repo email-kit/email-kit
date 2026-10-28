@@ -1,0 +1,50 @@
+{
+  "name": "@email-kit/components",
+  "version": "0.0.0",
+  "description": "email-kit components: shadcn-style, email-safe components (Button, Layout, OtpCode, Receipt…) for email-kit templates.",
+  "keywords": [
+    "email",
+    "email-templates",
+    "components",
+    "shadcn",
+    "jsx"
+  ],
+  "homepage": "https://github.com/email-kit/email-kit#readme",
+  "bugs": "https://github.com/email-kit/email-kit/issues",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/email-kit/email-kit.git",
+    "directory": "packages/components"
+  },
+  "license": "MIT",
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=22.12"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsdown",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "check:package": "publint --strict && attw --pack . --profile esm-only"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "tsdown": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

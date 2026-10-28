@@ -1,0 +1,49 @@
+{
+  "name": "@email-kit/cli",
+  "version": "0.0.0",
+  "description": "email-kit CLI: init, compile, check and preview type-safe email templates.",
+  "keywords": [
+    "email",
+    "email-templates",
+    "cli",
+    "compiler",
+    "typescript"
+  ],
+  "homepage": "https://github.com/email-kit/email-kit#readme",
+  "bugs": "https://github.com/email-kit/email-kit/issues",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/email-kit/email-kit.git",
+    "directory": "packages/cli"
+  },
+  "license": "MIT",
+  "type": "module",
+  "sideEffects": false,
+  "bin": {
+    "email-kit": "./dist/cli.js"
+  },
+  "exports": {
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=22.12"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsdown",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "check:package": "publint --strict"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "tsdown": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

@@ -1,0 +1,49 @@
+{
+  "name": "create-email-kit",
+  "version": "0.0.0",
+  "description": "Set up email-kit in your backend project: npm create email-kit",
+  "keywords": [
+    "email",
+    "email-templates",
+    "email-kit",
+    "create",
+    "scaffold"
+  ],
+  "homepage": "https://github.com/email-kit/email-kit#readme",
+  "bugs": "https://github.com/email-kit/email-kit/issues",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/email-kit/email-kit.git",
+    "directory": "packages/create-email-kit"
+  },
+  "license": "MIT",
+  "type": "module",
+  "sideEffects": false,
+  "bin": {
+    "create-email-kit": "./dist/index.js"
+  },
+  "exports": {
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=22.12"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsdown",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "check:package": "publint --strict"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "tsdown": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}
