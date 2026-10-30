@@ -9,7 +9,10 @@
       "type": "string"
     },
     "orderUrl": {
-      "type": "string"
+      "type": "string",
+      "x-email-kit": {
+        "url": true
+      }
     },
     "items": {
       "type": "array",

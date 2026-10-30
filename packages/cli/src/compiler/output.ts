@@ -48,6 +48,7 @@ export function buildOutput(
     readonly configFile: string
     readonly module: "ts" | "mjs"
     readonly perTemplateEntries: boolean
+    readonly validate: boolean
     readonly platform: PlatformValues
   },
 ): OutputFile[] {
@@ -83,6 +84,7 @@ export function buildOutput(
     locales: options.locales,
     configFile: options.configFile,
     context: options.platform.runtime,
+    validate: options.validate,
   }
   // One module for every template, and optionally one per template (OUT-06): the same
   // generator on a single template, so every entry has the same API and is self-contained.

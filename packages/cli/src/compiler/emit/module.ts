@@ -7,7 +7,7 @@ import type { Purpose } from "@email-kit/core"
 import { source as runtimeSource } from "@email-kit/dialect/source"
 
 import type { CompiledTemplate } from "../project.ts"
-import { dataInterface, shapeOf } from "./types.ts"
+import { dataInterface, modelOf } from "./types.ts"
 
 const PURPOSES = [
   "transactional",
@@ -21,6 +21,8 @@ export interface ModuleOptions {
   readonly locales: readonly string[]
   /** Platform keys the backend passes to createEmails() (RUN-04) */
   readonly context: readonly string[]
+  /** render() validates data against the schema first (OUT-08) */
+  readonly validate: boolean
   /** The config file, relative to the output folder's project, for the header */
   readonly configFile: string
 }
@@ -68,10 +70,11 @@ export function generateModule(
       `    ${t.identifiers.property}: createTemplate(\n` +
       `      ${JSON.stringify(t.id)},\n` +
       `      ${JSON.stringify(t.purpose)},\n` +
-      `      ${JSON.stringify(shapeOf(t.model))},\n` +
+      `      ${JSON.stringify(modelOf(t.model))},\n` +
       "      locales,\n" +
       `      TEMPLATES.${t.identifiers.property},\n` +
       "      values,\n" +
+      `      ${options.validate},\n` +
       `    ) as EmailTemplate<${JSON.stringify(t.id)}, ${t.identifiers.typeName}>,`,
   )
 
@@ -129,8 +132,12 @@ export interface EmailTemplate<Id extends TemplateId, Data> {
   readonly meta: { readonly id: Id; readonly purpose: Purpose; readonly locales: readonly Locale[] }
   /** The raw templates per locale, for backends that render with their own engine. */
   readonly templates: Readonly<Record<Locale, EmailParts>>
-  /** Fills the templates for one locale. Values are HTML-escaped in \`html\` only. */
+  /**
+   * Fills the templates for one locale. Values are HTML-escaped in \`html\` only.${options.validate ? "\n   * The data is validated first: invalid data throws an EmailRenderError (`invalid-data`)." : ""}
+   */
   render(data: Data, options?: RenderOptions): RenderedEmail<Id>
+  /** Checks data against the template's schema without rendering, for data from a queue or webhook. */
+  validate(data: unknown): readonly DataIssue[]
 }
 
 ${contextType}
@@ -140,7 +147,7 @@ export interface Emails {
 ${emailsType}
 }
 
-export { DIALECT, EmailRenderError, MustacheCoreError }
+export { type DataIssue, DIALECT, EmailRenderError, MustacheCoreError }
 
 // The mustache-core renderer and module runtime, inlined so this module has no dependencies.
 // Spec: https://github.com/email-kit/email-kit/blob/main/docs/spec/mustache-core.md

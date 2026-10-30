@@ -1,5 +1,5 @@
 /** @jsxImportSource @email-kit/core */
-import { defineEmail, Each, If, Unless } from "@email-kit/core"
+import { defineEmail, Each, If, Unless, url } from "@email-kit/core"
 import { z } from "zod"
 
 import { Card } from "../components/Card"
@@ -10,7 +10,7 @@ export default defineEmail({
   schema: z.object({
     customerName: z.string(),
     orderNumber: z.string(),
-    orderUrl: z.string(),
+    orderUrl: z.string().meta(url),
     items: z.array(z.object({ name: z.string(), qty: z.number() })),
     discount: z.string().optional(),
   }),

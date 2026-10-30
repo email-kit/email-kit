@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest"
 
-import { createTemplate, project, readContext, resolveLocale, type Shape } from "../src/module.ts"
+import {
+  createTemplate,
+  type Model,
+  project,
+  readContext,
+  resolveLocale,
+  validate,
+} from "../src/module.ts"
 
 describe("resolveLocale", () => {
   const locales = ["en", "de", "pt-BR", "pt"]
@@ -19,19 +26,27 @@ describe("resolveLocale", () => {
   })
 })
 
-describe("project", () => {
-  const shape: Shape = {
-    fields: {
-      name: "scalar",
-      discount: "scalar",
-      items: { list: { fields: { label: "scalar", note: "scalar" }, optional: ["note"] } },
+const order: Model = {
+  type: "object",
+  properties: {
+    name: { type: "string" },
+    discount: { type: "string" },
+    items: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: { label: { type: "string" }, note: { type: "string" } },
+        required: ["label"],
+      },
     },
-    optional: ["discount"],
-  }
+  },
+  required: ["name", "items"],
+}
 
+describe("project", () => {
   it("drops unknown keys and fills missing optional keys with null", () => {
     expect(
-      project(shape, {
+      project(order, {
         name: "Ada",
         extra: "dropped",
         items: [
@@ -50,7 +65,7 @@ describe("project", () => {
   })
 
   it("treats undefined like a missing key", () => {
-    expect(project(shape, { name: "Ada", discount: undefined, items: [] })).toEqual({
+    expect(project(order, { name: "Ada", discount: undefined, items: [] })).toEqual({
       name: "Ada",
       discount: null,
       items: [],
@@ -58,12 +73,12 @@ describe("project", () => {
   })
 
   it("leaves a missing required key missing, so the renderer reports it", () => {
-    expect(project(shape, { items: [] })).toEqual({ discount: null, items: [] })
+    expect(project(order, { items: [] })).toEqual({ discount: null, items: [] })
   })
 
-  it("passes values of the wrong kind through for the renderer or validator to reject", () => {
-    expect(project(shape, null)).toBeNull()
-    expect(project(shape, { name: "Ada", items: "nope" })).toEqual({
+  it("passes values of the wrong kind through for the validator or renderer to reject", () => {
+    expect(project(order, null)).toBeNull()
+    expect(project(order, { name: "Ada", items: "nope" })).toEqual({
       name: "Ada",
       discount: null,
       items: "nope",
@@ -71,42 +86,129 @@ describe("project", () => {
   })
 })
 
+describe("validate (OUT-08)", () => {
+  const model: Model = {
+    type: "object",
+    properties: {
+      code: { type: "string", constraints: { minLength: 6, maxLength: 6, pattern: "^[0-9]+$" } },
+      plan: { type: "string", enum: ["free", "pro"] },
+      qty: { type: "integer", constraints: { minimum: 1, maximum: 10 } },
+      price: { type: "number", constraints: { exclusiveMinimum: 0, multipleOf: 0.01 } },
+      active: { type: "boolean" },
+      link: { type: "string", url: true },
+      note: { type: "string", nullable: true },
+      tags: { type: "array", items: { type: "string" }, constraints: { maxItems: 2 } },
+      lines: {
+        type: "array",
+        items: { type: "object", properties: { qty: { type: "number" } }, required: ["qty"] },
+      },
+    },
+    required: ["code", "plan", "qty", "price", "active", "link", "note", "tags", "lines"],
+  }
+  const valid = {
+    code: "123456",
+    plan: "pro",
+    qty: 3,
+    price: 9.99,
+    active: true,
+    link: "https://shop.example/a?b=c",
+    note: null,
+    tags: ["a"],
+    lines: [{ qty: 1 }],
+  }
+
+  it("accepts valid data, including null for a nullable field and unknown keys", () => {
+    expect(validate(model, { ...valid, extra: "ignored" })).toEqual([])
+  })
+
+  it("reports each problem with its path", () => {
+    expect(
+      validate(model, {
+        code: "12a",
+        plan: "gold",
+        qty: 2.5,
+        price: 0,
+        active: "yes",
+        link: "javascript:alert(1)",
+        tags: ["a", "b", 3],
+        lines: [{ qty: 1 }, {}, { qty: "2" }],
+      }),
+    ).toEqual([
+      { path: "code", message: "must be at least 6 characters" },
+      { path: "code", message: "must match ^[0-9]+$" },
+      { path: "plan", message: 'expected one of "free", "pro", got "gold"' },
+      { path: "qty", message: "expected an integer, got 2.5" },
+      { path: "price", message: "must be more than 0, got 0" },
+      { path: "active", message: 'expected true or false, got "yes"' },
+      { path: "link", message: 'must be an https URL, got "javascript:alert(1)"' },
+      { path: "note", message: "is required" },
+      { path: "tags", message: "must have at most 2 items" },
+      { path: "tags[2]", message: "expected a string, got number 3" },
+      { path: "lines[1].qty", message: "is required" },
+      { path: "lines[2].qty", message: 'expected a number, got "2"' },
+    ])
+  })
+
+  it("rejects the wrong root and non-finite numbers", () => {
+    expect(validate(model, null)).toEqual([{ path: "data", message: "can't be null" }])
+    expect(validate(model, [])).toEqual([
+      { path: "data", message: "expected an object, got a list" },
+    ])
+    expect(validate({ type: "number" }, Number.NaN)).toEqual([
+      { path: "data", message: "expected a number, got number NaN" },
+    ])
+  })
+
+  it("counts characters, not UTF-16 units", () => {
+    expect(validate({ type: "string", constraints: { maxLength: 2 } }, "👩🏽")).toEqual([])
+  })
+})
+
 describe("createTemplate", () => {
-  const template = createTemplate(
-    "order",
-    "transactional",
-    {
-      fields: {
-        name: "scalar",
-        discount: "scalar",
-        currency: "scalar",
+  const model: Model = {
+    type: "object",
+    properties: {
+      name: { type: "string" },
+      discount: { type: "string" },
+      currency: { type: "string" },
+      items: {
+        type: "array",
         items: {
-          list: { fields: { label: "scalar", currency: "scalar" }, optional: ["currency"] },
+          type: "object",
+          properties: { label: { type: "string" }, currency: { type: "string" } },
+          required: ["label"],
         },
       },
-      optional: ["discount"],
     },
-    ["en", "de"],
-    {
-      en: {
-        subject: "Order for {{name}}",
-        preheader: "Thanks",
-        // An optional field renders inside its own section, as the compiler emits it.
-        html: "<p>{{name}}</p>{{#items}}<i>{{label}} {{#currency}}{{currency}}{{/currency}}</i>{{/items}}{{^discount}}<b>none</b>{{/discount}}",
-        text: "{{name}} & co",
+    required: ["name", "currency", "items"],
+  }
+  const template = (checkData: boolean) =>
+    createTemplate(
+      "order",
+      "transactional",
+      model,
+      ["en", "de"],
+      {
+        en: {
+          subject: "Order for {{name}}",
+          preheader: "Thanks",
+          // An optional field renders inside its own section, as the compiler emits it.
+          html: "<p>{{name}}</p>{{#items}}<i>{{label}} {{#currency}}{{currency}}{{/currency}}</i>{{/items}}{{^discount}}<b>none</b>{{/discount}}",
+          text: "{{name}} & co",
+        },
+        de: {
+          subject: "Bestellung für {{name}}",
+          preheader: "Danke",
+          html: "<p>{{name}}</p>",
+          text: "{{name}}",
+        },
       },
-      de: {
-        subject: "Bestellung für {{name}}",
-        preheader: "Danke",
-        html: "<p>{{name}}</p>",
-        text: "{{name}}",
-      },
-    },
-    {},
-  )
+      {},
+      checkData,
+    )
 
   it("renders every part with the right profile and falls back by locale", () => {
-    const email = template.render(
+    const email = template(true).render(
       { name: "A & B", currency: "EUR", items: [{ label: "x" }] },
       { locale: "en-GB" },
     )
@@ -119,22 +221,48 @@ describe("createTemplate", () => {
       meta: { id: "order", locale: "en", purpose: "transactional" },
     })
     expect(
-      template.render({ name: "A", currency: "EUR", items: [] }, { locale: "de-AT" }).subject,
+      template(true).render({ name: "A", currency: "EUR", items: [] }, { locale: "de-AT" }).subject,
     ).toBe("Bestellung für A")
   })
 
   it("lets an item's own optional key win over an outer value of the same name", () => {
-    const html = template.render({
+    const html = template(true).render({
       name: "A",
       currency: "EUR",
       items: [{ label: "x", currency: "USD" }, { label: "y" }],
     }).html
-    // Without projection, "y" would show the outer EUR.
     expect(html).toContain("<i>x USD</i><i>y </i>")
   })
 
+  it("rejects invalid data before rendering, with every issue", () => {
+    const run = () => template(true).render({ name: 1, items: [{}] })
+    expect(run).toThrow(
+      expect.objectContaining({
+        code: "invalid-data",
+        message:
+          'The data for "order" doesn\'t match its schema:\n  name: expected a string, got number 1\n  currency: is required\n  items[0].label: is required',
+        issues: [
+          { path: "name", message: "expected a string, got number 1" },
+          { path: "currency", message: "is required" },
+          { path: "items[0].label", message: "is required" },
+        ],
+      }),
+    )
+  })
+
+  it("skips validation when turned off, and still offers validate()", () => {
+    // Without validation the renderer is the only guard: it reports the first missing value.
+    expect(() => template(false).render({ items: [] })).toThrow(
+      expect.objectContaining({ code: "missing-value" }),
+    )
+    expect(template(false).validate({ items: [] })).toEqual([
+      { path: "name", message: "is required" },
+      { path: "currency", message: "is required" },
+    ])
+  })
+
   it("rejects a line break in the subject", () => {
-    expect(() => template.render({ name: "A\r\nBcc: x", currency: "", items: [] })).toThrow(
+    expect(() => template(true).render({ name: "A\r\nBcc: x", currency: "", items: [] })).toThrow(
       expect.objectContaining({ code: "subject-line-break" }),
     )
   })
@@ -145,8 +273,15 @@ describe("runtime context (RUN-04)", () => {
     "welcome",
     "transactional",
     {
-      fields: { name: "scalar", links: { list: { fields: { label: "scalar" }, optional: [] } } },
-      optional: [],
+      type: "object",
+      properties: {
+        name: { type: "string" },
+        links: {
+          type: "array",
+          items: { type: "object", properties: { label: { type: "string" } }, required: ["label"] },
+        },
+      },
+      required: ["name", "links"],
     },
     ["en"],
     {
@@ -158,6 +293,7 @@ describe("runtime context (RUN-04)", () => {
       },
     },
     readContext(["siteUrl"], { siteUrl: "https://shop.example", ignored: "x" }),
+    true,
   )
 
   it("fills context placeholders", () => {

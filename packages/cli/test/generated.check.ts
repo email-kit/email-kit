@@ -3,6 +3,7 @@
 
 import {
   createEmails,
+  type DataIssue,
   type Locale,
   locales,
   type OrderConfirmationData,
@@ -26,6 +27,7 @@ const id: TemplateId = email.meta.id
 const locale: Locale = email.meta.locale
 const raw: string = emails.orderConfirmation.templates.de.html
 const withUndefined = emails.orderConfirmation.render({ ...data, discount: undefined })
+const issues: readonly DataIssue[] = emails.orderConfirmation.validate(JSON.parse("{}"))
 
 // @ts-expect-error: a required field is missing
 const missing = emails.orderConfirmation.render({ customerName: "Ada" })
@@ -48,6 +50,7 @@ export const checks: readonly unknown[] = [
   locale,
   raw,
   withUndefined,
+  issues,
   locales,
   missing,
   wrongType,

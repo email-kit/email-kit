@@ -43,9 +43,12 @@ when** (acceptance).
   written into the output, `{ runtime: true }` keys passed to `createEmails()`; data can't override
   or shadow them), P1-075 (`perTemplateEntries: true` writes a self-contained module per template;
   a Worker bundle that imports one has only that template), P1-089 (`--help`, `--version`,
-  `NO_COLOR`, `--quiet`, `--verbose`).
+  `NO_COLOR`, `--quiet`, `--verbose`), P1-077 (runtime validator generated from the schema model,
+  on by default with `validate: false` to turn it off; `validate(data)` always available) and the
+  `https` part of P1-054. PRD Q5 (validator on by default?) is answered "on" pending the
+  maintainer's confirmation.
   **M1.1 remaining:** P1-063 (layout shell, waits for ADR 0001 / P0-04) and the rest of the
-  milestone's SHOULDs (P1-077 validator, P1-091 incremental compile).
+  milestone's SHOULDs (P1-091 incremental compile).
   Fixture project with committed output in `packages/cli/test/fixtures/project/`.
 - **Phase 0 remaining:** P0-04 (needs real email clients), accepting ADRs 0002 and 0006, and
   P0-02 (publishing needs the maintainer's accounts).

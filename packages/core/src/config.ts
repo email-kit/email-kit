@@ -27,6 +27,12 @@ export interface EmailKitConfig {
    */
   readonly perTemplateEntries?: boolean
   /**
+   * render() validates data against the template's schema before rendering (OUT-08), so data
+   * from a queue or webhook fails with field paths. `validate()` is there either way.
+   * Default: `true`.
+   */
+  readonly validate?: boolean
+  /**
    * Platform values (CFG-07). A string is a compile-time constant, written into the output.
    * `{ runtime: true }` means the backend passes it at send time: `createEmails({ siteUrl })`.
    */

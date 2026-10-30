@@ -51,6 +51,7 @@ interface GeneratedModule {
         meta: { id: string; locale: string; purpose: string }
       }
       templates: Record<string, { html: string }>
+      validate(data: unknown): readonly { path: string; message: string }[]
     }
   }
   locales: readonly string[]
@@ -175,6 +176,46 @@ describe("email-kit compile", () => {
     expect(emails.orderConfirmation.render(order).html).toContain(
       '<a href="https://shop.example">Visit our shop</a>',
     )
+  })
+
+  it("validates data before rendering, with field paths (OUT-08, RUN-05)", async () => {
+    const dir = copyProject()
+    await compile({ cwd: dir })
+    const { createEmails } = (await import(
+      pathToFileURL(join(compiledDir(dir), "index.ts")).href
+    )) as GeneratedModule
+    const emails = createEmails({ siteUrl: "https://shop.example" })
+    const bad = {
+      ...order,
+      orderUrl: "javascript:alert(1)",
+      items: [{ name: "Tea", qty: "2" }, { qty: 1 }],
+    }
+    expect(emails.orderConfirmation.validate(bad)).toEqual([
+      { path: "orderUrl", message: 'must be an https URL, got "javascript:alert(1)"' },
+      { path: "items[0].qty", message: 'expected a number, got "2"' },
+      { path: "items[1].name", message: "is required" },
+    ])
+    expect(() => emails.orderConfirmation.render(bad)).toThrow(
+      expect.objectContaining({ code: "invalid-data", issues: expect.any(Array) }),
+    )
+    expect(emails.orderConfirmation.validate(order)).toEqual([])
+  })
+
+  it("leaves validation to validate() when the config turns it off", async () => {
+    const dir = copyProject()
+    const config = join(dir, "email-kit.config.ts")
+    writeFileSync(
+      config,
+      readFileSync(config, "utf8").replace("locales:", "validate: false,\n  locales:"),
+    )
+    await compile({ cwd: dir })
+    const { createEmails } = (await import(
+      pathToFileURL(join(compiledDir(dir), "index.ts")).href
+    )) as GeneratedModule
+    const emails = createEmails({ siteUrl: "https://shop.example" })
+    const bad = { ...order, items: [{ name: "Tea", qty: "2" }] }
+    expect(emails.orderConfirmation.render(bad).html).toContain("<li>Tea × 2</li>")
+    expect(emails.orderConfirmation.validate(bad)).toHaveLength(1)
   })
 
   it("is deterministic: a second compile changes nothing", async () => {
@@ -312,7 +353,7 @@ describe("config validation", () => {
     ).toThrow(
       [
         "has 6 problems:",
-        "  • templets: unknown option (known: root, templates, messages, out, module, perTemplateEntries, platform, locales)",
+        "  • templets: unknown option (known: root, templates, messages, out, module, perTemplateEntries, validate, platform, locales)",
         "  • out: must not overlap the templates folder (src/email-kit/templates)",
         '  • locales.list[0]: "en_US" isn\'t a BCP 47 locale tag, such as "en" or "pt-BR"',
         '  • locales.list[1]: write "pt-br" as "pt-BR"',

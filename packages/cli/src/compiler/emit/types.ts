@@ -48,19 +48,31 @@ function typeOf(field: Field, indent: string): string {
   return field.nullable ? `${type} | null` : type
 }
 
-/** The runtime shape: which keys exist and which are optional (the module runtime's `Shape`). */
-export type Shape =
-  | "scalar"
-  | { readonly list: Shape }
-  | { readonly fields: Readonly<Record<string, Shape>>; readonly optional: readonly string[] }
+/** The runtime model (the module runtime's `Model`): types, required keys and constraints. */
+export interface Model {
+  readonly type: Field["type"]
+  readonly nullable?: true
+  readonly enum?: readonly string[]
+  readonly constraints?: Readonly<Record<string, number | string>>
+  readonly url?: true
+  readonly items?: Model
+  readonly properties?: Readonly<Record<string, Model>>
+  readonly required?: readonly string[]
+}
 
-export function shapeOf(field: Field): Shape {
-  if (field.type === "array") return { list: shapeOf(field.items as Field) }
-  if (field.type !== "object") return "scalar"
-  const properties = field.properties ?? []
+export function modelOf(field: Field): Model {
+  const required = (field.properties ?? []).filter((p) => p.required).map((p) => p.name)
   return {
-    fields: Object.fromEntries(properties.map((p) => [p.name, shapeOf(p.field)])),
-    optional: properties.filter((p) => !p.required).map((p) => p.name),
+    type: field.type,
+    ...(field.nullable && { nullable: true }),
+    ...(field.enum && { enum: field.enum }),
+    ...(field.constraints && { constraints: field.constraints }),
+    ...(field.url && { url: true }),
+    ...(field.items && { items: modelOf(field.items) }),
+    ...(field.properties && {
+      properties: Object.fromEntries(field.properties.map((p) => [p.name, modelOf(p.field)])),
+    }),
+    ...(required.length > 0 && { required }),
   }
 }
 

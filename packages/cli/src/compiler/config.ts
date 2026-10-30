@@ -28,6 +28,8 @@ export interface ResolvedConfig {
   readonly module: "ts" | "mjs"
   /** Also write `<out>/<id>/index.*` per template */
   readonly perTemplateEntries: boolean
+  /** render() validates data first */
+  readonly validate: boolean
   /** Platform values: compile-time constants and the keys passed at send time */
   readonly platform: PlatformValues
   /** Where loaded modules are bundled to, inside the project so packages resolve */
@@ -42,8 +44,8 @@ export const CONFIG_FILES: readonly string[] = [
 ]
 
 const KEYS = new Set([
-  ...["root", "templates", "messages", "out", "module", "perTemplateEntries", "platform"],
-  "locales",
+  ...["root", "templates", "messages", "out", "module", "perTemplateEntries", "validate"],
+  ...["platform", "locales"],
 ])
 
 export async function loadConfig(options: {
@@ -122,6 +124,8 @@ export function resolveConfig(
   if (typeof perTemplateEntries !== "boolean") {
     problems.push("perTemplateEntries: must be true or false")
   }
+  const validate = config.validate ?? true
+  if (typeof validate !== "boolean") problems.push("validate: must be true or false")
   const platform = readPlatform(config.platform, problems)
   const locales = readLocales(config.locales, problems)
   if (problems.length > 0) {
@@ -141,6 +145,7 @@ export function resolveConfig(
     locales,
     module: module === "mjs" ? "mjs" : "ts",
     perTemplateEntries: perTemplateEntries === true,
+    validate: validate !== false,
     platform,
     cacheDir,
   }

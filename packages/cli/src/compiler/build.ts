@@ -31,6 +31,7 @@ export async function compileWithConfig(config: ResolvedConfig): Promise<Compile
     configFile: basename(config.file),
     module: config.module,
     perTemplateEntries: config.perTemplateEntries,
+    validate: config.validate,
     platform: config.platform,
   })
   return { config, templates, files: writeOutput(config.out, output) }
