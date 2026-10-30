@@ -4,6 +4,7 @@
 import {
   Callout,
   DataTable,
+  Footer,
   Image,
   KeyValue,
   LineItems,
@@ -149,6 +150,45 @@ describe("Callout", () => {
     expect(email.body).toMatch(
       /<p style="margin:0;font-family[^"]*" class="ek-c--status-info-ink">Scheduled/,
     )
+  })
+})
+
+describe("Footer", () => {
+  const footer = () =>
+    compile(() => (
+      <Footer
+        reason="You received this email because you have an account with Shop."
+        sender="Shop Example GmbH"
+        address="Hauptstraße 1, 10115 Berlin"
+        links={[
+          { href: "https://shop.example/help", label: "Help" },
+          { href: "https://shop.example/privacy", label: "Privacy" },
+        ]}
+      />
+    ))
+
+  it("puts the reason, sender, address and links in muted footer type under a hairline", () => {
+    const email = footer()
+    expect(email.body).toMatch(
+      /border-top-color:#[0-9a-f]{6}" class="ek-border-top-color--hairline"/,
+    )
+    expect(email.count('class="ek-c--mutedInk"')).toBe(3)
+    expect(email.body).toContain("font-size:14px;line-height:20px")
+    expect(email.body).toContain("Shop Example GmbH<br>Hauptstraße 1, 10115 Berlin")
+    expect(email.body).toMatch(/>Help<\/a> · <a href="https:\/\/shop.example\/privacy"/)
+  })
+
+  it("writes each part on its own lines in the text part, with the link URLs", () => {
+    expect(footer().text).toContain(
+      "You received this email because you have an account with Shop.\n\nShop Example GmbH\nHauptstraße 1, 10115 Berlin\n\nHelp",
+    )
+    expect(footer().text).toContain("https://shop.example/privacy")
+  })
+
+  it("leaves the address and links out when they aren't given", () => {
+    const email = compile(() => <Footer reason="Why you got this." sender="Shop" />)
+    expect(email.body).not.toContain("<br>")
+    expect(email.body).not.toContain("<a ")
   })
 })
 

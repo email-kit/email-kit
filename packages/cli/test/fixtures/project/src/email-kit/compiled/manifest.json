@@ -34,8 +34,8 @@
           "preheader": "Thanks for your order",
           "html": {
             "file": "order-confirmation/en.html",
-            "bytes": 7877,
-            "sha256": "2b8f28a465d5a817f2e651df27761dbbab08564b8df39ba48d1f657d9b7b74b8"
+            "bytes": 8169,
+            "sha256": "1dd607d4e2c7425a43cc82b4fc09c20ace0dc54444298585f38cfd735b9a4e85"
           },
           "text": {
             "file": "order-confirmation/en.txt",
@@ -48,8 +48,8 @@
           "preheader": "Danke für Ihre Bestellung",
           "html": {
             "file": "order-confirmation/de.html",
-            "bytes": 7913,
-            "sha256": "39e1fa99487792fed9c14b00d2332aaa445b16d38a90fe4fbe2da215bca2160e"
+            "bytes": 8205,
+            "sha256": "b93a3c0918604edea752e20c7aba49abbcd5fe6963adc01d71aa27a8bad7371f"
           },
           "text": {
             "file": "order-confirmation/de.txt",

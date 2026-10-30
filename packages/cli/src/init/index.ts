@@ -5,11 +5,12 @@
 
 import { spawnSync } from "node:child_process"
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs"
-import { dirname, join, relative } from "node:path"
+import { dirname, join, posix, relative } from "node:path"
 
 import { compileWithConfig, summarize } from "../compiler/build.ts"
 import { loadConfig } from "../compiler/config.ts"
 import { formatError } from "../compiler/problems.ts"
+import { toPosix } from "../paths.ts"
 import { VERSION } from "../version.ts"
 import { detectProject, findProject, type Project } from "./detect.ts"
 import { insertProperty } from "./jsonc.ts"
@@ -34,7 +35,7 @@ export interface InitOptions {
   readonly dir?: string
   /** The config file, instead of email-kit.config.ts */
   readonly config?: string
-  /** Overwrite our own files */
+  /** Replace an existing config file of that name; a folder that is already set up still stops init */
   readonly force?: boolean
   /** Install the dependencies. Default: true */
   readonly install?: boolean
@@ -84,7 +85,7 @@ export async function init(options: InitOptions, io: InitIo): Promise<number> {
   const base = project.codeRoot
   let folder: string | undefined
   for (const name of FOLDERS) {
-    const candidate = join(base, name)
+    const candidate = posix.join(base, name)
     if (!existsSync(join(dir, candidate))) {
       folder = candidate
       break
@@ -99,11 +100,13 @@ export async function init(options: InitOptions, io: InitIo): Promise<number> {
   if (!folder) {
     if (options.yes) {
       io.err(
-        `✗ ${FOLDERS.map((n) => join(base, n)).join(", ")} are all taken. Choose a folder with --dir.`,
+        `✗ ${FOLDERS.map((n) => posix.join(base, n)).join(", ")} are all taken. Choose a folder with --dir.`,
       )
       return 1
     }
-    folder = await io.prompter.text("Where should email-kit's folder go?", join(base, "mail"))
+    folder = toPosix(
+      await io.prompter.text("Where should email-kit's folder go?", posix.join(base, "mail")),
+    )
     if (existsSync(join(dir, folder))) {
       io.err(`✗ ${folder} exists. email-kit never writes into a folder that isn't its own.`)
       return 1
@@ -135,9 +138,9 @@ export async function init(options: InitOptions, io: InitIo): Promise<number> {
         theme,
       }),
     },
-    { path: join(folder, "index.ts"), content: indexFile(strategy) },
-    { path: join(folder, "templates/welcome.tsx"), content: WELCOME_TEMPLATE },
-    { path: join(folder, "messages/en/welcome.json"), content: WELCOME_MESSAGES },
+    { path: posix.join(folder, "index.ts"), content: indexFile(strategy) },
+    { path: posix.join(folder, "templates/welcome.tsx"), content: WELCOME_TEMPLATE },
+    { path: posix.join(folder, "messages/en/welcome.json"), content: WELCOME_MESSAGES },
   ]
   const { changes, scriptPrefix } = plannedChanges(project, folder, strategy)
 
@@ -176,7 +179,16 @@ export async function init(options: InitOptions, io: InitIo): Promise<number> {
   const has = (id: Change["id"]) => applied.some((c) => c.id === id)
   if (has("dependencies") && options.install !== false) {
     io.out(`Installing with ${project.packageManager}…`)
-    const result = spawnSync(project.packageManager, ["install"], { cwd: dir, stdio: "inherit" })
+    // init changes package.json, so the lockfile must change too: pnpm and Yarn freeze it in CI.
+    const args =
+      project.packageManager === "pnpm" ? ["install", "--no-frozen-lockfile"] : ["install"]
+    const result = spawnSync(project.packageManager, args, {
+      cwd: dir,
+      stdio: "inherit",
+      env: { ...process.env, YARN_ENABLE_IMMUTABLE_INSTALLS: "false" },
+      // Package managers are .cmd shims on Windows, which only a shell runs.
+      shell: process.platform === "win32",
+    })
     if (result.status !== 0)
       io.err(`! ${project.packageManager} install failed; run it, then \`email-kit compile\`.`)
   }
@@ -234,7 +246,7 @@ function importStrategy(project: Project, folder: string): ImportStrategy {
       target.replace(/^\.\/?/, "").replace(/\/?\*$/, "") === project.codeRoot
     // `@/*` already reaches the folder: use it; otherwise add one exact path (INIT-04).
     const name = folder.split("/").at(-1) as string
-    return covers && folder === join(project.codeRoot, name)
+    return covers && folder === posix.join(project.codeRoot, name)
       ? { kind: "alias", path: `@/${name}`, addPath: false }
       : { kind: "alias", path: "@/email-kit", addPath: true }
   }

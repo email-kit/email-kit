@@ -49,7 +49,13 @@ pnpm release
 
 ## Before any release: the smoke test
 
-Pack the four packages (`pnpm pack` in each), create a fresh `create-next-app`, point the
-package names at the tarballs with `overrides` in its `pnpm-workspace.yaml`, run
-`pnpm exec create-email-kit --yes`, then `next build` and a request to a route that renders an
-email. `examples/nextjs/README.md` has the route.
+```sh
+pnpm build
+pnpm smoke            # a Node project that runs TypeScript directly
+pnpm smoke --next     # a fresh create-next-app, built and served
+```
+
+`scripts/smoke-test.mjs` packs the four packages as npm would publish them, points the package
+names at the tarballs with `overrides`, runs `create-email-kit --yes`, renders the welcome email
+from server code, then runs `check`, `new` and `compile`. `--keep` leaves the temporary folder.
+CI runs it on Linux and Windows, and the release workflow runs it before publishing.

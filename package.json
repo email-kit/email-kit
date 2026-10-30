@@ -20,6 +20,7 @@
     "test": "turbo run test",
     "typecheck": "turbo run typecheck",
     "check:packages": "turbo run check:package",
+    "smoke": "node scripts/smoke-test.mjs",
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
     "format": "biome format --write .",

@@ -114,7 +114,7 @@ A test checks that every id the code can raise is listed here.
 ## Fixtures
 
 ### invalid-fixture
-**Why:** a fixture in `defineEmail({ fixtures })` doesn't match the template's schema. The studio previews fixtures and `email-kit check` renders them, so they must be data the backend could send.
+**Why:** a fixture in `defineEmail({ fixtures })` doesn't match the template's schema. `email-kit check` renders them, so they must be data the backend could send.
 **Fix:** correct the fixture at the path in the message, or the schema if the fixture shows real data it doesn't allow yet.
 
 ## Checks
@@ -156,8 +156,8 @@ A test checks that every id the code can raise is listed here.
 **Fix:** use it in the message, or stop passing it.
 
 ### unsupported-message
-**Why:** the message uses ICU syntax beyond simple `{name}` arguments (plural, select), which isn't supported yet.
-**Fix:** use simple arguments for now. Runtime plurals follow ADR 0003.
+**Why:** the message uses ICU syntax email-kit doesn't support: a `number`, `date` or `time` argument (or another type besides `plural` and `select`), or a plural `offset:`.
+**Fix:** format numbers, dates and times in your backend and pass the text, marked with `formatted()` in the schema (see [the formatting recipe](recipes/formatting.md)); write plurals without an offset.
 
 ### invalid-message
 **Why:** a message has an unbalanced `{` or `}`.

@@ -4,7 +4,6 @@
 // theme's tokens.* findings join as they are.
 
 import { spawnSync } from "node:child_process"
-import { relative } from "node:path"
 
 import type { CheckSetting } from "@email-kit/core"
 import { isEmailKitError } from "@email-kit/core/internal"
@@ -17,6 +16,7 @@ import { fixturesWithVariants } from "../compiler/fixtures.ts"
 import { CompileError } from "../compiler/problems.ts"
 import { pluralRules } from "../i18n/plurals.ts"
 import { isPseudo } from "../i18n/pseudo.ts"
+import { relativePath } from "../paths.ts"
 import { CATALOGUE } from "./catalogue/index.ts"
 import { parseEmail } from "./parse.ts"
 import { type SourceFile, sourceFile } from "./source.ts"
@@ -37,7 +37,7 @@ function contextValue(key: string): string {
 export async function contextOf(project: BuiltProject): Promise<CheckContext> {
   const { config } = project
   const fileOf = (id: string, locale: string) =>
-    relative(config.dir, `${config.out}/${id}/${locale}.html`)
+    relativePath(config.dir, `${config.out}/${id}/${locale}.html`)
   const checked = (id: string, email: CompiledEmail): CheckedEmail => ({
     template: id,
     locale: email.locale,
@@ -117,13 +117,13 @@ export async function contextOf(project: BuiltProject): Promise<CheckContext> {
       return t.localeMessages.map((m) => ({
         template: t.id,
         locale: m.locale,
-        file: relative(config.dir, m.file),
+        file: relativePath(config.dir, m.file),
         messages: m.messages,
         used,
       }))
     }),
     output: {
-      dir: relative(config.dir, config.out),
+      dir: relativePath(config.dir, config.out),
       absolute: config.out,
       expected: outputFiles(project),
       gitignored:
@@ -132,7 +132,7 @@ export async function contextOf(project: BuiltProject): Promise<CheckContext> {
     templates: project.templates.map((t) => ({
       id: t.id,
       model: t.model,
-      file: relative(config.dir, t.file),
+      file: relativePath(config.dir, t.file),
       fixtures: Object.keys(t.fixtures),
     })),
     sources,

@@ -1,6 +1,7 @@
 import type { Element } from "domhandler"
 import type { Declaration, Root } from "postcss"
 
+import type { Field } from "../../compiler/schema.ts"
 import type { Located } from "../parse.ts"
 import type { CheckContext, CheckedEmail, Problem } from "../types.ts"
 
@@ -121,4 +122,52 @@ export function withoutTags(text: string): string {
     .replace(/\{\{[^}]*\}\}\}?/g, "")
     .replace(/\s+/g, " ")
     .trim()
+}
+
+export interface PlaceholderUse {
+  /** The path as written: `orderUrl`, `item.name`, `.` or `_ek.context.siteUrl` */
+  readonly name: string
+  /** The offset of `{{` in the HTML */
+  readonly offset: number
+  /** `#` or `^` opens a section, `/` closes one, `` for a value */
+  readonly sigil: "" | "#" | "^" | "/"
+  /**
+   * The schema field it names: `undefined` for values render() adds (`_ek.*`) and for `.` in an
+   * untyped scope, `"none"` when it names no field.
+   */
+  readonly field: Field | undefined | "none"
+}
+
+/** The placeholders in compiled HTML with the fields they name, resolving sections as mustache-core does. */
+export function placeholders(html: string, model: Field): PlaceholderUse[] {
+  const scopes: (Field | undefined)[] = [model]
+  const out: PlaceholderUse[] = []
+  const resolve = (name: string): Field | undefined | "none" => {
+    if (name === ".") return scopes.at(-1)
+    if (name === "_ek" || name.startsWith("_ek.")) return undefined
+    const segments = name.split(".")
+    for (let i = scopes.length - 1; i >= 0; i--) {
+      let field = scopes[i]?.properties?.find((p) => p.name === segments[0])?.field
+      if (!field) continue
+      for (const segment of segments.slice(1))
+        field = field?.properties?.find((p) => p.name === segment)?.field
+      return field ?? "none"
+    }
+    return "none"
+  }
+  for (const match of html.matchAll(/\{\{\{?\s*([#^/]?)\s*([^}]+?)\s*\}?\}\}/g)) {
+    const [, sigil, name] = match as unknown as [string, PlaceholderUse["sigil"], string]
+    if (sigil === "/") {
+      scopes.pop()
+      out.push({ name, offset: match.index, sigil, field: undefined })
+      continue
+    }
+    const field = resolve(name)
+    out.push({ name, offset: match.index, sigil, field })
+    if (sigil === "#" || sigil === "^") {
+      const f = field === "none" ? undefined : field
+      scopes.push(f?.type === "array" ? f.items : f?.type === "object" ? f : undefined)
+    }
+  }
+  return out
 }

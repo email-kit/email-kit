@@ -168,6 +168,17 @@ describe("each check, with one rule broken", () => {
     ["css.units", inBody('<div style="padding:1rem"></div>')],
     ["css.hide-mso", inBody('<div style="display:none"></div>'), ["html.hidden-text"]],
     ["css.line-height-px", inBody("<p>Plain</p>")],
+    ["layout.ghost-table", once('align="center" width="600"', 'align="center" width="640"')],
+    ["a11y.one-h1", inBody(`<h1 style="${CELL}">Another heading</h1>`)],
+    ["a11y.link-text", inBody('<a href="https://x.test/"></a>'), ["text.links-match"]],
+    ["a11y.font-size", inBody(`<p style="${CELL};font-size:10px">Tiny</p>`)],
+    ["a11y.viewport", once('initial-scale=1"', 'initial-scale=1, user-scalable=no"')],
+    [
+      "link.dangerous-schemes",
+      inBody('<a href="javascript:alert(1)">Track the parcel</a>'),
+      ["text.links-match", "text.urls-full"],
+    ],
+    ["link.url-fields", inBody('<a href="{{customerName}}">Track the parcel</a>')],
   ]
   // The same, for checks of the text part, the subject and the preheader.
   const parts: [string, (email: Parts) => Partial<Parts>, string[]?][] = [
@@ -183,9 +194,10 @@ describe("each check, with one rule broken", () => {
     [
       "text.urls-full",
       (e) => ({
-        html: inBody(`<a href="/relative">Go</a>`)(e.html),
-        text: `${e.text}Go: /relative\n`,
+        html: inBody(`<a href="/relative">Track the parcel</a>`)(e.html),
+        text: `${e.text}Track the parcel: /relative\n`,
       }),
+      ["link.url-fields"],
     ],
     ["text.links-match", (e) => ({ text: `${e.text}https://unlinked.test/page\n` })],
     [
@@ -224,6 +236,38 @@ describe("each check, with one rule broken", () => {
     if (!template || !model) throw new Error("no template")
     const edited = { ...mutated((h) => `${h} `), templates: [{ ...template, model }] }
     expect(ids(runChecks(edited))).toEqual(["subject.no-secret"])
+  })
+
+  it.each([
+    ["no <h1>", (html: string) => html.replace(/<(\/?)h1\b/g, "<$1h2")],
+    ["generic link text", inBody('<a href="{{orderUrl}}">Click here</a>')],
+    ["13px text", inBody(`<p style="${CELL};font-size:13px">Small</p>`)],
+  ])("warns, not errs, on %s", (_, edit) => {
+    const findings = runChecks(mutated(edit))
+    expect(findings.map((f) => [f.id, f.level])).toEqual([
+      [expect.stringMatching(/^a11y\./), "warn"],
+    ])
+  })
+
+  it("link.url-fields: a literal URL that isn't https, and a url field passes", () => {
+    const literal = mutated(inBody('<a href="http://x.test/">Track the parcel</a>'))
+    expect(ids(runChecks(literal))).toEqual(["link.url-fields", "text.links-match"])
+    expect(runChecks(mutated(inBody('<a href="{{orderUrl}}">Track the parcel</a>')))).toEqual([])
+  })
+
+  it("text.preheader-first: a long preheader that wraps in the text part still counts", () => {
+    const long = `${"Your order has shipped and is on its way ".repeat(2).trim()}.`
+    const edited = changed((e) => ({
+      preheader: long,
+      html: e.html.replace(e.preheader, long),
+      text: e.text.replace(e.preheader, long.replace("its way Your", "its way\nYour")),
+    }))
+    expect(ids(runChecks(edited))).not.toContain("text.preheader-first")
+  })
+
+  it("link.dangerous-schemes: sees through whitespace and case", () => {
+    const edit = inBody('<a href=" Java&#9;Script:alert(1)">Track the parcel</a>')
+    expect(ids(runChecks(mutated(edit)))).toContain("link.dangerous-schemes")
   })
 
   it("covers every check of the compiled output", () => {

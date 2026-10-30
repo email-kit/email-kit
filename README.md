@@ -23,15 +23,17 @@ Works today:
 - TSX templates with typed data (Zod, Valibot or ArkType schemas) and typed `t()` messages; ICU
   plurals and selects; locale fallback over CLDR; pseudo-locales.
 - Themes from shadcn CSS or DTCG tokens (resolvers too), with contrast checks and authored dark mode.
-- Fourteen components, including `Button`, `OtpCode`, `DataTable` and `LineItems`.
+- Every email centred in a fluid container (600px by default) with a ghost table for classic
+  Outlook, and fifteen components, including `Button`, `OtpCode`, `DataTable`, `LineItems` and a
+  transactional `Footer`.
 - A dependency-free generated module with a runtime data validator; `.ts`, or `.mjs` with types.
-- `email-kit check`: 100 of the 175 planned checks, over the output, renders of every fixture,
+- `email-kit check`: 107 of the 175 planned checks, over the output, renders of every fixture,
   the sources and the theme; human, JSON and GitHub reporters; team checks.
 
 Not yet:
 
-- A page layout (centred, fixed-width container) and footers, so no marketing email. This waits on
-  testing in real email clients, classic Outlook especially, which hasn't happened yet.
+- Marketing email: unsubscribe links, legal footer slots and multi-column layouts.
+- Testing in real email clients, classic Outlook especially.
 - The preview studio (`email-kit dev`).
 - The rest of the check catalogue.
 
@@ -39,13 +41,16 @@ Not yet:
 
 | Package | What it is |
 |---|---|
-| [`@email-kit/cli`](packages/cli) | The `email-kit` command: `init`, `new`, `compile`, `check`, `dev` |
+| [`@email-kit/cli`](packages/cli) | The `email-kit` command: `init`, `new`, `compile`, `check`, `tokens` |
 | [`@email-kit/core`](packages/core) | `defineEmail`, the JSX runtime and types |
 | [`@email-kit/components`](packages/components) | shadcn-style, email-safe components |
 | [`create-email-kit`](packages/create-email-kit) | `npm create email-kit` |
 
 ## Docs
 
+- [User guide](docs/guide/README.md): getting started, templates, components, configuration and
+  sending
+- [The checks](docs/checks.md) and [error codes](docs/errors.md)
 - [PRD](docs/prd.md) and [backlog](docs/backlog.md)
 - [Phase 1 scope](docs/phase-1-scope.md) and [architecture direction](docs/architecture-direction.md)
 - [Research](docs/research/README.md): email-client rendering, dark mode and accessibility, law,

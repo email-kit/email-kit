@@ -186,7 +186,9 @@ export const TEXT: readonly Check[] = [
       eachEmail(
         context,
         (email, problem) => {
-          if (email.preheader && !email.text.startsWith(email.preheader))
+          // A preheader longer than 78 columns wraps in the text part: compare the words.
+          const words = (text: string) => text.replace(/\s+/g, " ").trim()
+          if (email.preheader && !words(email.text).startsWith(words(email.preheader)))
             problem("The text part doesn't start with the preheader")
         },
         report,

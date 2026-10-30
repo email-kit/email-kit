@@ -1,10 +1,10 @@
-// A.7 Accessibility (`a11y.*`): tables (research 02 A5, A6, A23).
+// A.7 Accessibility (`a11y.*`): headings, links, type size, zoom and tables (research 02).
 
 import type { Element } from "domhandler"
 
 import { attr } from "../parse.ts"
 import type { Check } from "../types.ts"
-import { eachEmail } from "./util.ts"
+import { declarations, eachEmail, inlineStyles, text } from "./util.ts"
 
 /** Elements of this table itself: not inside a nested table. */
 function own(table: Element): Element[] {
@@ -19,6 +19,32 @@ function own(table: Element): Element[] {
   }
   walk(table)
   return out
+}
+
+// Link text that says nothing out of context (WCAG 2.4.4), per language. Compared whole, after
+// trimming punctuation and case.
+const GENERIC_LINK_TEXT: Readonly<Record<string, readonly string[]>> = {
+  en: ["click here", "here", "click", "more", "read more", "learn more", "link", "this link", "go"],
+  de: ["hier", "hier klicken", "klicken", "mehr", "weiterlesen", "mehr erfahren", "link"],
+  fr: ["ici", "cliquez ici", "plus", "en savoir plus", "lire la suite", "lien"],
+  es: ["aquí", "haga clic aquí", "haz clic aquí", "más", "leer más", "más información", "enlace"],
+}
+
+/** What a screen reader announces for a link: aria-label, else its text and image alts. */
+function linkName(link: Element): string {
+  const label = attr(link, "aria-label")
+  if (label !== undefined) return label.trim()
+  const alts: string[] = []
+  const walk = (node: Element) => {
+    for (const child of node.children) {
+      if (child.type !== "tag") continue
+      const element = child as Element
+      if (element.name === "img") alts.push(attr(element, "alt") ?? "")
+      walk(element)
+    }
+  }
+  walk(link)
+  return `${text(link)} ${alts.join(" ")}`.replace(/\s+/g, " ").trim()
 }
 
 const isPresentation = (table: Element) =>
@@ -98,6 +124,100 @@ export const A11Y: readonly Check[] = [
                 offset,
               )
             }
+          }
+        },
+        report,
+      ),
+  },
+  {
+    id: "a11y.one-h1",
+    level: "error",
+    rule: "Exactly one `h1` (a warning when there is none).",
+    fix: "Start the email with one Heading (level 1): screen reader users jump to it, and a second one splits the email in two.",
+    run: (context, report) => {
+      for (const email of context.emails) {
+        const h1s = email.parsed.elements.filter((e) => !e.mso && e.node.name === "h1")
+        if (h1s.length === 0)
+          report({ email, level: "warn", message: "No <h1>: the email has no main heading" })
+        for (const extra of h1s.slice(1))
+          report({ email, at: extra.offset, message: `${h1s.length} <h1> elements; keep one` })
+      }
+    },
+  },
+  {
+    id: "a11y.link-text",
+    level: "error",
+    rule: 'No empty links (error) and no generic link text such as "click here" (warning).',
+    fix: 'Say where the link goes ("View your order"): screen reader users list links out of context.',
+    run: (context, report) => {
+      for (const email of context.emails) {
+        const generic = new Set(GENERIC_LINK_TEXT[email.locale.split("-")[0] as string] ?? [])
+        for (const { node, offset, mso } of email.parsed.elements) {
+          if (mso || node.name !== "a" || attr(node, "href") === undefined) continue
+          const name = linkName(node)
+          if (!name) {
+            report({ email, at: offset, message: "A link with no text, alt or aria-label" })
+            continue
+          }
+          const words = name.toLowerCase().replace(/[\s.!?:…»›→>]+$/u, "")
+          if (generic.has(words))
+            report({ email, at: offset, level: "warn", message: `Generic link text "${name}"` })
+        }
+      }
+    },
+  },
+  {
+    id: "a11y.font-size",
+    level: "error",
+    rule: "Text is at least 12 px (error), and 14 px or more (warning below).",
+    fix: "Use a type step from the theme: body is 16 px and the smallest step 14 px.",
+    run: (context, report) => {
+      // 0 and 1 px are the spacer-cell technique, not text.
+      const check = (
+        email: (typeof context.emails)[number],
+        value: string,
+        at: number,
+        where: string,
+      ) => {
+        const px = /^(\d+(?:\.\d+)?)px$/.exec(value.replace(/\s*!important$/, ""))?.[1]
+        const size = px === undefined ? undefined : Number(px)
+        if (size === undefined || size <= 1 || size >= 14) return
+        report({
+          email,
+          at,
+          ...(size >= 12 && { level: "warn" as const }),
+          message: `${where} font-size: ${size}px`,
+        })
+      }
+      for (const email of context.emails) {
+        for (const { element, offset, mso, props } of inlineStyles(email.parsed.elements)) {
+          const size = props.get("font-size")
+          if (!mso && size) check(email, size, offset, `<${element.name}>`)
+        }
+        for (const { decl, offset, mso } of declarations(email.parsed.styles)) {
+          if (!mso && decl.prop === "font-size")
+            check(email, decl.value, offset, "A <style> rule's")
+        }
+      }
+    },
+  },
+  {
+    id: "a11y.viewport",
+    level: "error",
+    rule: "The viewport meta doesn't block zoom (`user-scalable=no` or `maximum-scale` below 2).",
+    fix: "Use `width=device-width, initial-scale=1` only: people with low vision zoom to read.",
+    run: (context, report) =>
+      eachEmail(
+        context,
+        (email, problem) => {
+          for (const { node, offset } of email.parsed.elements) {
+            if (node.name !== "meta" || attr(node, "name")?.toLowerCase() !== "viewport") continue
+            const content = (attr(node, "content") ?? "").toLowerCase()
+            const scale = /maximum-scale\s*=\s*([\d.]+)/.exec(content)?.[1]
+            if (/user-scalable\s*=\s*(no|0)\b/.test(content))
+              problem("The viewport sets user-scalable=no", offset)
+            else if (scale !== undefined && Number(scale) < 2)
+              problem(`The viewport sets maximum-scale=${scale}`, offset)
           }
         },
         report,

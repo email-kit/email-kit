@@ -2,10 +2,9 @@
 
 import type { Element } from "domhandler"
 import { isRtl } from "../../compiler/compile.ts"
-import type { Field } from "../../compiler/schema.ts"
 import { ancestors, attr } from "../parse.ts"
 import type { Check } from "../types.ts"
-import { declarations, eachEmail, inlineStyles, text } from "./util.ts"
+import { declarations, eachEmail, inlineStyles, placeholders, text } from "./util.ts"
 
 const EMBEDS = new Set(["form", "input", "script", "iframe", "object", "embed", "video", "svg"])
 
@@ -364,8 +363,12 @@ export const HTML: readonly Check[] = [
           if (marker >= 0) problem("[object Object] in the output", marker)
           const model = context.templates.find((t) => t.id === email.template)?.model
           if (!model) return
-          for (const name of unresolved(email.html, model))
-            problem(`{{${name}}} names no field of the schema`)
+          const missing = new Set(
+            placeholders(email.html, model)
+              .filter((p) => p.field === "none")
+              .map((p) => p.name),
+          )
+          for (const name of missing) problem(`{{${name}}} names no field of the schema`)
         },
         report,
       ),
@@ -399,36 +402,3 @@ export const HTML: readonly Check[] = [
       ),
   },
 ]
-
-// Placeholders that resolve to no schema field, following sections the way mustache-core does.
-function unresolved(html: string, model: Field): string[] {
-  const scopes: (Field | undefined)[] = [model]
-  const missing: string[] = []
-  const resolve = (name: string): Field | undefined | "none" => {
-    if (name === "." || name.startsWith("_ek.") || name === "_ek") return undefined
-    const segments = name.split(".")
-    for (let i = scopes.length - 1; i >= 0; i--) {
-      const scope = scopes[i]
-      let field = scope?.properties?.find((p) => p.name === segments[0])?.field
-      if (!field) continue
-      for (const segment of segments.slice(1))
-        field = field?.properties?.find((p) => p.name === segment)?.field
-      return field ?? "none"
-    }
-    return "none"
-  }
-  for (const match of html.matchAll(/\{\{\{?\s*([#^/]?)\s*([^}]+?)\s*\}?\}\}/g)) {
-    const [, sigil, name] = match as unknown as [string, string, string]
-    if (sigil === "/") {
-      scopes.pop()
-      continue
-    }
-    const field = resolve(name)
-    if (field === "none") missing.push(name)
-    if (sigil === "#" || sigil === "^") {
-      const f = field === "none" ? undefined : field
-      scopes.push(f?.type === "array" ? f.items : f?.type === "object" ? f : undefined)
-    }
-  }
-  return [...new Set(missing)]
-}

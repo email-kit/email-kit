@@ -4,9 +4,9 @@ What templates are written with in [email-kit](https://github.com/email-kit/emai
 `defineEmail`, the JSX runtime, `If`/`Each`/`Unless`, field markers (`url`, `secret`,
 `formatted`), `defineConfig` and `defineCheck`.
 
-> **Preview (0.1).** Usable for transactional email, and changing. Not yet: a page layout with a
-> centred fixed-width container and footers (so no marketing email), testing in real email
-> clients (classic Outlook especially), and the preview studio. See [what's in the
+> **Preview (0.1).** Usable for transactional email, and changing. Not yet: marketing email
+> (unsubscribe links, multi-column layouts), testing in real email clients (classic Outlook
+> especially), and the preview studio. See [what's in the
 > preview](https://github.com/email-kit/email-kit#status).
 
 ```tsx

@@ -3,10 +3,12 @@
 // decides the import strategy, ADR 0004), the schema library and a shadcn theme.
 
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs"
-import { dirname, join, relative, resolve } from "node:path"
+import { dirname, join, resolve } from "node:path"
 
 import { EmailKitError } from "@email-kit/core/internal"
 import { parse as parseJsonc } from "jsonc-parser"
+
+import { relativePath, toPosix } from "../paths.ts"
 
 export type PackageManager = "pnpm" | "npm" | "yarn" | "bun"
 
@@ -187,14 +189,16 @@ function findShadcnCss(dir: string): string | undefined {
   for (const candidate of candidates) {
     const file = join(dir, candidate)
     if (existsSync(file) && /:root\s*\{[^}]*--primary\s*:/s.test(readFileSync(file, "utf8"))) {
-      return relative(dir, file)
+      return relativePath(dir, file)
     }
   }
   return undefined
 }
 
 function normalise(path: string): string {
-  return path.replace(/^\.\/?/, "").replace(/\/+$/, "")
+  return toPosix(path)
+    .replace(/^\.\/?/, "")
+    .replace(/\/+$/, "")
 }
 
 function isDirectory(path: string): boolean {

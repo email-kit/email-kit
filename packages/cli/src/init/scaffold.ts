@@ -49,7 +49,7 @@ export function indexFile(strategy: ImportStrategy): string {
 }
 
 export const WELCOME_TEMPLATE = `/** @jsxImportSource @email-kit/core */
-import { Button, Heading, Text } from "@email-kit/components"
+import { Button, Footer, Heading, Text } from "@email-kit/components"
 import { defineEmail, url } from "@email-kit/core"
 import { z } from "zod"
 
@@ -70,6 +70,10 @@ export default defineEmail({
       <Heading>{t("heading", { name: data.name })}</Heading>
       <Text>{t("body", { product: platform.productName })}</Text>
       <Button href={data.startUrl}>{t("cta")}</Button>
+      <Footer
+        reason={t("footer", { product: platform.productName })}
+        sender={platform.productName}
+      />
     </>
   ),
 })
@@ -82,6 +86,7 @@ export const WELCOME_MESSAGES = `${JSON.stringify(
     heading: "Welcome, {name}!",
     body: "Your {product} account is ready. Everything is set up.",
     cta: "Get started",
+    footer: "You're receiving this email because you signed up for {product}.",
   },
   null,
   2,

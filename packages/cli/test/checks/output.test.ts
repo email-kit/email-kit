@@ -41,6 +41,26 @@ describe("output.*", () => {
     expect(await outputFindings(await compiledProject())).toEqual([])
   })
 
+  it("output.module-matches: reads the escapes of an .mjs module (\\xA0)", async () => {
+    mkdirSync(TMP, { recursive: true })
+    const dir = mkdtempSync(join(TMP, "project-"))
+    cpSync(FIXTURE, dir, { recursive: true, filter: (path) => !path.includes(`${sep}compiled`) })
+    const config = join(dir, "email-kit.config.ts")
+    writeFileSync(
+      config,
+      readFileSync(config, "utf8").replace("defineConfig({", 'defineConfig({\n  module: "mjs",'),
+    )
+    // A non-breaking space, which oxc prints as \xA0 (JSON has no \x escapes).
+    const messages = join(dir, "src/email-kit/messages/en/order-confirmation.json")
+    writeFileSync(
+      messages,
+      readFileSync(messages, "utf8").replace('"Thanks, {name}!"', '"Thanks,\\u00a0{name}!"'),
+    )
+    await compile({ cwd: dir })
+    expect(readFileSync(join(dir, OUT, "index.mjs"), "utf8")).toContain("\\xA0")
+    expect(await outputFindings(dir)).toEqual([])
+  })
+
   it("output.drift: a template changed since the compile", async () => {
     const dir = await compiledProject()
     const messages = join(dir, "src/email-kit/messages/en/order-confirmation.json")

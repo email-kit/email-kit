@@ -1,6 +1,6 @@
 import {
   Button,
-  Divider,
+  Footer,
   Heading,
   Image,
   KeyValue,
@@ -44,7 +44,7 @@ export default defineEmail({
   subject: (data, t) => t("subject", { order: data.orderNumber }),
   preheader: (data, t) => t("preheader", { total: data.total }),
   fixtures,
-  component: ({ data, t }) => (
+  component: ({ data, t, platform }) => (
     <>
       <Image
         kind="decorative"
@@ -82,10 +82,18 @@ export default defineEmail({
         total={{ label: t("total"), amount: data.total }}
       />
       <Button href={data.receiptUrl}>{t("view")}</Button>
-      <Divider />
       <Text size="caption" tone="muted">
         {t("help")} <Link href="https://help.playground.example">{t("helpLink")}</Link>
       </Text>
+      <Footer
+        reason={t("footer", { product: platform.productName })}
+        sender={platform.legalName}
+        address={platform.postalAddress}
+        links={[
+          { href: platform.helpUrl, label: t("helpCentre") },
+          { href: platform.privacyUrl, label: t("privacy") },
+        ]}
+      />
     </>
   ),
 })

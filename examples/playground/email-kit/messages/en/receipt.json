@@ -17,5 +17,8 @@
   "total": "Total paid",
   "view": "View receipt",
   "help": "Questions about your order?",
-  "helpLink": "Visit the help centre"
+  "helpLink": "Visit the help centre",
+  "footer": "You're receiving this receipt because you ordered from {product}.",
+  "helpCentre": "Help centre",
+  "privacy": "Privacy policy"
 }

@@ -10,5 +10,8 @@
   "review": "Aktivität prüfen",
   "recentCaption": "Letzte Anmeldungen",
   "help": "Hilfe beim Schutz Ihres Kontos?",
-  "helpLink": "Zum Sicherheitsleitfaden"
+  "helpLink": "Zum Sicherheitsleitfaden",
+  "footer": "Sie erhalten diesen Sicherheitshinweis, weil Sie ein Konto bei {product} haben.",
+  "helpCentre": "Hilfe-Center",
+  "privacy": "Datenschutz"
 }

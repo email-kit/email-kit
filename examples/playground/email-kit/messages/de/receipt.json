@@ -17,5 +17,8 @@
   "total": "Gezahlt",
   "view": "Beleg ansehen",
   "help": "Fragen zu Ihrer Bestellung?",
-  "helpLink": "Zum Hilfe-Center"
+  "helpLink": "Zum Hilfe-Center",
+  "footer": "Sie erhalten diese Quittung, weil Sie bei {product} bestellt haben.",
+  "helpCentre": "Hilfe-Center",
+  "privacy": "Datenschutz"
 }

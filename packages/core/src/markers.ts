@@ -8,7 +8,7 @@ export const secret: { readonly "x-email-kit": { readonly secret: true } } = {
   "x-email-kit": { secret: true },
 }
 
-/** A URL: HTTPS and allow-listed hosts only; the only fields allowed in `href`/`src`. */
+/** A URL: render() accepts only https URLs; the only fields allowed to start an `href`/`src`. */
 export const url: { readonly "x-email-kit": { readonly url: true } } = {
   "x-email-kit": { url: true },
 }

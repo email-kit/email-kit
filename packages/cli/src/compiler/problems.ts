@@ -13,6 +13,7 @@ import { fileURLToPath } from "node:url"
 import { styleText } from "node:util"
 
 import { EmailKitError, isEmailKitError } from "@email-kit/core/internal"
+import { relativePath } from "../paths.ts"
 
 export const DOCS_URL = "https://github.com/email-kit/email-kit/blob/main/docs/errors.md"
 
@@ -67,12 +68,12 @@ export function toProblem(error: unknown, file: string, projectDir: string): Pro
     : error instanceof Error
       ? error.message.split("\n").slice(0, 6).join("\n")
       : String(error)
-  if (!location) return { code, message, file: relative(projectDir, file) }
+  if (!location) return { code, message, file: relativePath(projectDir, file) }
   const frame = codeFrame(location)
   return {
     code,
     message,
-    file: relative(projectDir, location.file),
+    file: relativePath(projectDir, location.file),
     line: location.line,
     column: location.column,
     ...(frame && { frame }),
@@ -168,7 +169,7 @@ export function formatError(error: unknown, options: FormatOptions = {}): string
   }
   if (error instanceof SourceError && error.location) {
     const { line, column } = error.location
-    const file = relative(options.cwd ?? process.cwd(), error.location.file)
+    const file = relativePath(options.cwd ?? process.cwd(), error.location.file)
     const frame = codeFrame(error.location)
     return formatProblem(
       { code: error.code, message: error.message, file, line, column, ...(frame && { frame }) },

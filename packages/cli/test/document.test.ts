@@ -65,6 +65,18 @@ describe("document skeleton (research 01 §2)", () => {
     )
   })
 
+  it("centres the content in a hybrid container inside a same-width ghost table (01 §10)", () => {
+    // Fluid below 600 px without media queries; Word ignores max-width, so the MSO table sizes it.
+    expect(body()).toContain(
+      '<!--[if mso]><table role="presentation" align="center" width="600" cellpadding="0" cellspacing="0" border="0"><tr><td style="padding:32px 16px"><![endif]-->\n<div style="max-width:600px;margin:0 auto;padding:32px 16px;box-sizing:border-box">',
+    )
+    expect(body()).toMatch(
+      /<\/div>\n<!--\[if mso\]><\/td><\/tr><\/table><!\[endif\]-->\n<\/div>\n$/,
+    )
+    // The preheader stays the wrapper's first child, ahead of the container.
+    expect(body().indexOf("aria-hidden")).toBeLessThan(body().indexOf("max-width:600px"))
+  })
+
   it("labels the wrapper and titles the document with the subject", () => {
     // Quotes need escaping in the attribute only, not in <title> text.
     expect(html).toContain('<title>Order "{{orderNumber}}" confirmed</title>')
@@ -187,8 +199,22 @@ describe("renderDocument options", () => {
     )
   })
 
+  it("takes the container width from the options", () => {
+    const doc = renderDocument({
+      ...base,
+      container: { width: 640, paddingBlock: 24, paddingInline: 12 },
+    })
+    expect(doc).toContain('width="640"')
+    expect(doc).toContain("max-width:640px;margin:0 auto;padding:24px 12px")
+  })
+
   it("drops the Word-only parts when classic Outlook isn't a target", () => {
-    const doc = renderDocument({ ...base, outlookClassic: false })
+    const doc = renderDocument({
+      ...base,
+      outlookClassic: false,
+      container: { width: 600, paddingBlock: 32, paddingInline: 16 },
+    })
+    expect(doc).toContain("max-width:600px")
     expect(doc).not.toMatch(/\[if mso\]|xmlns:o/)
     expect(doc).toContain('<html lang="ar" dir="rtl">')
   })

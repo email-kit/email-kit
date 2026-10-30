@@ -2,7 +2,7 @@ import {
   Button,
   Callout,
   DataTable,
-  Divider,
+  Footer,
   Heading,
   KeyValue,
   Link,
@@ -28,7 +28,7 @@ export default defineEmail({
   subject: (_data, t, platform) => t("subject", { product: platform.productName }),
   preheader: (data, t) => t("preheader", { device: data.device }),
   fixtures,
-  component: ({ data, t }) => (
+  component: ({ data, t, platform }) => (
     <>
       <Heading>{t("heading")}</Heading>
       <Callout tone="warning" title={t("calloutTitle")}>
@@ -54,10 +54,18 @@ export default defineEmail({
           { header: t("device"), cell: (row) => row.device },
         ]}
       />
-      <Divider />
       <Text size="caption" tone="muted">
         {t("help")} <Link href="https://help.playground.example/security">{t("helpLink")}</Link>
       </Text>
+      <Footer
+        reason={t("footer", { product: platform.productName })}
+        sender={platform.legalName}
+        address={platform.postalAddress}
+        links={[
+          { href: platform.helpUrl, label: t("helpCentre") },
+          { href: platform.privacyUrl, label: t("privacy") },
+        ]}
+      />
     </>
   ),
 })

@@ -209,7 +209,7 @@ variant instead of the compiled templates (each render then has `fixture`), or `
 
 **Rule:** Every template has at least one fixture.
 
-**Fix:** Add sample data under `fixtures` in defineEmail(): the studio previews it and the checks render it.
+**Fix:** Add sample data under `fixtures` in defineEmail(): the checks render it, and so will the preview studio.
 
 ## Document
 
@@ -331,6 +331,15 @@ variant instead of the compiled templates (each render then has `fixture`), or `
 **Rule:** Hidden styling is used only on the preheader.
 
 **Fix:** Hidden text in the body looks like spam to filters and confuses screen readers: remove it or show it.
+
+## Layout
+
+### layout.ghost-table
+**Default:** error
+
+**Rule:** Each `max-width` container sits inside an MSO ghost table of the same px width. Runs when classic Outlook is a target.
+
+**Fix:** Classic Outlook ignores max-width and stretches the content across the reading pane: wrap the container in `<!--[if mso]><table width="N">…<![endif]-->`, as email-kit's page shell does.
 
 ## CSS
 
@@ -521,6 +530,50 @@ variant instead of the compiled templates (each render then has `fixture`), or `
 **Rule:** Data tables have `th scope`, a caption or a heading before them, at least 2 × 2 cells, and no presentation role.
 
 **Fix:** Use DataTable, which writes all of these.
+
+### a11y.one-h1
+**Default:** error
+
+**Rule:** Exactly one `h1` (a warning when there is none).
+
+**Fix:** Start the email with one Heading (level 1): screen reader users jump to it, and a second one splits the email in two.
+
+### a11y.link-text
+**Default:** error
+
+**Rule:** No empty links (error) and no generic link text such as "click here" (warning).
+
+**Fix:** Say where the link goes ("View your order"): screen reader users list links out of context.
+
+### a11y.font-size
+**Default:** error
+
+**Rule:** Text is at least 12 px (error), and 14 px or more (warning below).
+
+**Fix:** Use a type step from the theme: body is 16 px and the smallest step 14 px.
+
+### a11y.viewport
+**Default:** error
+
+**Rule:** The viewport meta doesn't block zoom (`user-scalable=no` or `maximum-scale` below 2).
+
+**Fix:** Use `width=device-width, initial-scale=1` only: people with low vision zoom to read.
+
+## Links
+
+### link.dangerous-schemes
+**Default:** error
+
+**Rule:** No `javascript:`, `vbscript:`, `data:` or `file:` URLs.
+
+**Fix:** Link to an https:// page instead: clients strip these URLs or flag the email as phishing.
+
+### link.url-fields
+**Default:** error
+
+**Rule:** An `href` or `src` starts with a literal https:// (or mailto:/tel:) URL or a `url` field.
+
+**Fix:** Mark the field with `url` in the schema (`z.string().meta(url)`): render() then accepts only https URLs.
 
 ## Internationalisation
 

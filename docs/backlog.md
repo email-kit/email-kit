@@ -571,6 +571,12 @@ core is `^`; `docs/releasing.md`. Smoke-tested from packed tarballs in a fresh N
 needs the npm org and the public repository URLs. What else blocks a first version:
 [release-readiness.md](release-readiness.md).
 
+**Release readiness, code items (2026-10-30):** the hybrid page container in the document shell
+(P1-063's shell, BLD-04; Row/Column still wait for ADR 0001), `Footer`, Windows-safe paths,
+`layout.ghost-table`, `link.dangerous-schemes`, `link.url-fields`, `a11y.one-h1`, `a11y.link-text`,
+`a11y.font-size`, `a11y.viewport` (107 of 175 phase-1 ids), `pnpm smoke` in CI and the release
+workflow, `init` installing with an unfrozen lockfile in CI, and the user guide in `docs/guide/`.
+
 | ID | Task | Reqs | Pri | Dep | Done when |
 |---|---|---|---|---|---|
 | P1-240 | Prove zero runtime dependencies (the generated module imports nothing; email-kit installed as a devDependency only) | PKG-02 | MUST | P1-074 | CI test builds a production bundle with devDependencies pruned |

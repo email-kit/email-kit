@@ -44,8 +44,8 @@ export interface LineItemsProps<Item> {
 
 /**
  * Itemised totals for receipts and invoices (UI-18): a `DataTable` with the items, then the
- * subtotal, discounts, shipping, taxes and the total, in that order (research 05 §9). Whether the
- * amounts reconcile is checked on the fixtures by the check engine (`copy.receipt.reconciles`).
+ * subtotal, discounts, shipping, taxes and the total, in that order (research 05 §9). The amounts
+ * are data: email-kit doesn't add them up, so the caller makes sure they reconcile.
  */
 export function LineItems<Item>(props: LineItemsProps<Item>): IrNode {
   const theme = useTheme()

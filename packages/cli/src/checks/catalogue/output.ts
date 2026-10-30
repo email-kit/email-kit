@@ -21,10 +21,25 @@ function literals(module: string): Set<string> {
   const out = new Set<string>()
   for (const match of module.matchAll(/"(?:[^"\\\n]|\\.)*"/g)) {
     try {
-      out.add(JSON.parse(match[0]) as string)
+      out.add(JSON.parse(asJson(match[0])) as string)
     } catch {}
   }
   return out
+}
+
+/** A JavaScript string literal as JSON: oxc writes `\\xA0`, `\\'`, `\\v` and `\\0`, which JSON lacks. */
+function asJson(literal: string): string {
+  return literal.replace(/\\(x[0-9a-fA-F]{2}|['v]|0(?![0-9])|[\s\S])/g, (sequence, code: string) =>
+    code[0] === "x"
+      ? `\\u00${code.slice(1)}`
+      : code === "'"
+        ? "'"
+        : code === "v"
+          ? "\\u000b"
+          : code === "0"
+            ? "\\u0000"
+            : sequence,
+  )
 }
 
 export const OUTPUT: readonly Check[] = [

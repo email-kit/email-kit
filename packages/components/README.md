@@ -2,11 +2,12 @@
 
 Email-safe components for [email-kit](https://github.com/email-kit/email-kit) templates, themed from
 your design tokens (shadcn CSS or DTCG): `Text`, `Heading`, `Link`, `Button`, `Image`, `Divider`,
-`Spacer`, `Section`, `List`, `KeyValue`, `Callout`, `OtpCode`, `DataTable` and `LineItems`.
+`Spacer`, `Section`, `List`, `KeyValue`, `Callout`, `OtpCode`, `DataTable`, `LineItems` and
+`Footer`. The compiler centres every email in a fluid container of the theme's width.
 
-> **Preview (0.1).** Usable for transactional email, and changing. Not yet: a page layout with a
-> centred fixed-width container and footers (so no marketing email), testing in real email
-> clients (classic Outlook especially), and the preview studio. See [what's in the
+> **Preview (0.1).** Usable for transactional email, and changing. Not yet: marketing email
+> (unsubscribe links, multi-column layouts), testing in real email clients (classic Outlook
+> especially), and the preview studio. See [what's in the
 > preview](https://github.com/email-kit/email-kit#status).
 
 They follow the email-client research in the repository (tables for layout, cell padding instead of

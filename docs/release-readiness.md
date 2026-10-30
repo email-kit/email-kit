@@ -8,6 +8,46 @@ what blocks a release. Steps for publishing are in [releasing.md](releasing.md).
 Owner: **maintainer** means a decision or an account only the maintainer can make; **code** means
 work in this repository.
 
+## Status (2026-10-30)
+
+The code items are done; what remains needs the maintainer.
+
+| # | Item | Status |
+|---|---|---|
+| 1 | Public repository, CI | **Maintainer.** CI is switched back on for pushes and pull requests and gains a smoke-test job (Linux and Windows); the package URLs wait for the repository's address |
+| 2 | Windows paths | **Done.** Paths in findings, reporters, the config and imports always use `/` (`src/paths.ts`); `init` joins project paths with `posix.join`; installs run through a shell on Windows. Unverified until CI runs on Windows |
+| 3 | Page container | **Done in code.** Every email is centred in a `max-width` div of the theme's `layout.container` width inside a same-width MSO ghost table; `layout.ghost-table` checks it. ADR 0001 is still the maintainer's to accept |
+| 4 | Real email clients | **Maintainer** |
+| 5 | User guide | **Done:** [guide/](guide/README.md) |
+| 6 | `Footer` | **Done.** Reason, sender, address and links in muted type under a hairline; used by the welcome template `init` writes and the playground |
+| 7 | Link checks | **Done:** `link.dangerous-schemes`, `link.url-fields` |
+| 8 | Accessibility checks | **Done:** `a11y.one-h1`, `a11y.link-text`, `a11y.font-size`, `a11y.viewport` |
+| 9 | Decisions (Q5, ADRs 0002, 0006) | **Maintainer** |
+| 10 | Smoke test | **Done.** `pnpm smoke` (Node) and `pnpm smoke --next`; in CI and in the release workflow |
+
+The smoke test found one more bug, now fixed: in CI (`CI=1`), pnpm and Yarn freeze the lockfile,
+so `create-email-kit --yes` couldn't install what it had just added. `init` now installs with
+`--no-frozen-lockfile` (pnpm) and `YARN_ENABLE_IMMUTABLE_INSTALLS=false` (Yarn).
+
+Writing and testing the guide found more, also fixed:
+- `output.module-matches` failed on any `.mjs` module with a non-breaking space (from `Spacer`
+  or `Divider`): oxc writes `\xA0`, which JSON can't parse.
+- A template from `email-kit new` failed `check` (too little copy, no preheader), and
+  `text.preheader-first` warned on preheaders long enough to wrap in the text part.
+- Docs and READMEs promising what doesn't exist: allow-listed hosts for `url` fields, a
+  `copy.receipt.reconciles` check, the studio, a `dev` command, edge runtimes; and the install
+  commands now carry the `@preview` tag. `font()` is exported, as three check fixes recommend.
+
+Still open, for after the preview:
+- `init` detects Valibot and ArkType but always adds Zod and writes a Zod template.
+- ArkType's `.configure(secret)` doesn't type-check without a declaration (the guide shows it);
+  core could export that declaration.
+- Runtime platform values are only checked to be non-empty: a runtime `siteUrl` isn't held to
+  https.
+- `purpose` is recorded but no check reads it yet.
+
+The review as written, before the work:
+
 ## Blockers: must be fixed before publishing
 
 | # | Issue | Evidence | Owner |
@@ -31,7 +71,7 @@ work in this repository.
 ## Can wait until after the first version
 
 - The preview studio (`email-kit dev`). The READMEs already say it isn't there yet.
-- The remaining checks: 100 of the 175 phase-1 checks are done.
+- The remaining checks: 107 of the 175 phase-1 checks are done.
 - Marketing email: unsubscribe links and the legal slots.
 - Workspace `exports`, ADR 0004's option B, Valibot and ArkType welcome templates, CJK font stacks.
 

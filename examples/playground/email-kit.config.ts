@@ -23,6 +23,11 @@ export default defineConfig({
   module: "mjs",
   platform: {
     productName: "Playground Shop",
+    // The footer: who sends the email, where from, and where to get help (research 05 §13)
+    legalName: "Playground Shop GmbH",
+    postalAddress: "Musterstraße 1, 10115 Berlin, Germany",
+    helpUrl: "https://help.playground.example",
+    privacyUrl: "https://playground.example/privacy",
     // Differs per environment, so the backend passes it: createEmails({ siteUrl })
     siteUrl: { runtime: true },
   },

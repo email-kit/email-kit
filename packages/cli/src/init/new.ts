@@ -2,7 +2,7 @@
 // fixture. The id follows the grammar, and an id that exists is refused, never overwritten.
 
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs"
-import { join, relative } from "node:path"
+import { basename, dirname, join, relative } from "node:path"
 
 import { EmailKitError } from "@email-kit/core/internal"
 
@@ -51,7 +51,7 @@ export async function newTemplate(
     writeFileSync(file, MESSAGES)
   }
   const property = identifiersFor(id).property
-  const from = config.importPath ?? `./${rel(join(config.templates, "..")).split("/").at(-1)}`
+  const from = config.importPath ?? `./${basename(dirname(config.templates))}`
   return [
     `Created ${rel(templateFile)}`,
     ...messageFiles.map((file, i) => `   and ${rel(file)}${i > 0 ? " (translate it)" : ""}`),
@@ -67,8 +67,9 @@ export async function newTemplate(
 const MESSAGES = `${JSON.stringify(
   {
     subject: "A message for {name}",
+    preheader: "Replace with the line the inbox shows after the subject",
     heading: "Hello, {name}",
-    body: "Write this email's copy here.",
+    body: "Replace this with the email's copy: what happened, what the reader needs to do next, and by when.",
   },
   null,
   2,
@@ -87,6 +88,7 @@ export default defineEmail({
     name: z.string().min(1),
   }),
   subject: (data, t) => t("subject", { name: data.name }),
+  preheader: (_data, t) => t("preheader"),
   fixtures: {
     default: { name: "Ada" },
   },

@@ -201,7 +201,7 @@ export const SOURCE: readonly Check[] = [
     id: "source.fixture-exists",
     level: "error",
     rule: "Every template has at least one fixture.",
-    fix: "Add sample data under `fixtures` in defineEmail(): the studio previews it and the checks render it.",
+    fix: "Add sample data under `fixtures` in defineEmail(): the checks render it, and so will the preview studio.",
     run: (context, report) => {
       for (const template of context.templates) {
         if (template.fixtures.length === 0) {

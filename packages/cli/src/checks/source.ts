@@ -2,9 +2,9 @@
 // rolldown's oxc parser (ESTree, UTF-16 offsets).
 
 import { readFileSync } from "node:fs"
-import { relative } from "node:path"
 
 import { parseAst } from "rolldown/parseAst"
+import { relativePath } from "../paths.ts"
 
 /** An ESTree node, loosely: checks read the fields they need. */
 export interface Node {
@@ -30,7 +30,7 @@ export function sourceFile(path: string, dir: string, templates: readonly string
   const lines = [0]
   for (let i = 0; i < text.length; i++) if (text[i] === "\n") lines.push(i + 1)
   return {
-    file: relative(dir, path),
+    file: relativePath(dir, path),
     text,
     templates,
     program() {

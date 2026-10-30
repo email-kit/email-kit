@@ -92,6 +92,11 @@ export function compileEmail<T>(
     outlookClassic: true,
     dark: theme.dark === "authored" ? theme.roles.dark : undefined,
     ground: { canvas: theme.roles.light.canvas, ink: theme.roles.light.ink },
+    container: {
+      width: theme.layout.container,
+      paddingBlock: theme.space.section,
+      paddingInline: theme.space.gutterMobile,
+    },
   })
   const text = renderTextPart(ir.body, preheader)
 

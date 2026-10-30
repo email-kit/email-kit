@@ -6,8 +6,8 @@ shadcn-style theme, and one team check. Nothing here is published.
 | Template | Shows |
 |---|---|
 | `sign-in-code` | `OtpCode`, `Callout`, an optional field with `If` |
-| `receipt` | `Image`, `KeyValue`, `LineItems` with an optional discount, `Button`, `Divider`, `Link` |
-| `security-alert` | `Callout`, stacked `KeyValue`, a destructive `Button`, `DataTable` |
+| `receipt` | `Image`, `KeyValue`, `LineItems` with an optional discount, `Button`, `Link`, `Footer` |
+| `security-alert` | `Callout`, stacked `KeyValue`, a destructive `Button`, `DataTable`, `Footer` |
 
 ## Setup
 

@@ -10,5 +10,8 @@
   "review": "Review activity",
   "recentCaption": "Recent sign-ins",
   "help": "Need help securing your account?",
-  "helpLink": "Read the security guide"
+  "helpLink": "Read the security guide",
+  "footer": "You're receiving this security alert because you have a {product} account.",
+  "helpCentre": "Help centre",
+  "privacy": "Privacy policy"
 }

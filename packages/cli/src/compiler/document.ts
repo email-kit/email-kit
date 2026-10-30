@@ -11,7 +11,10 @@
 // - one <style> in <head>, for enhancement rules only, written with spaces between braces and
 //   lowercase ` !important`;
 // - a bare <body> (margin and padding zero, nothing else);
-// - the preheader first in the wrapper, hidden, padded with filler.
+// - the preheader first in the wrapper, hidden, padded with filler;
+// - the hybrid container (BLD-04, research 01 §10): a centred `max-width` div, fluid below the
+//   container width without media queries, inside an MSO ghost table of the same width, because
+//   Word ignores `max-width`, `margin: auto` and div padding.
 
 import { type IrNode, parseRoleClass, roleClass } from "@email-kit/core/internal"
 
@@ -40,6 +43,10 @@ export interface DocumentOptions {
    * a root that the dark CSS restyles (research 02 D1, D3).
    */
   readonly ground?: { readonly canvas: string; readonly ink: string } | undefined
+  /** The page container (THM-06): its width and the padding inside it, in px. */
+  readonly container?:
+    | { readonly width: number; readonly paddingBlock: number; readonly paddingInline: number }
+    | undefined
 }
 
 /**
@@ -135,12 +142,29 @@ export function renderDocument(doc: DocumentOptions): string {
     `<body xml:lang="${doc.lang}" style="margin:0;padding:0">`,
     wrapper,
     ...(doc.preheader ? [preheader(doc.preheader)] : []),
-    body,
+    ...(doc.container ? container(doc.container, body, doc.outlookClassic) : [body]),
     "</div>",
     "</body>",
     "</html>",
     "",
   ].join("\n")
+}
+
+function container(
+  { width, paddingBlock, paddingInline }: NonNullable<DocumentOptions["container"]>,
+  body: string,
+  outlookClassic: boolean,
+): string[] {
+  const padding = `${paddingBlock}px ${paddingInline}px`
+  const div = `<div style="max-width:${width}px;margin:0 auto;padding:${padding};box-sizing:border-box">`
+  if (!outlookClassic) return [div, body, "</div>"]
+  return [
+    `<!--[if mso]><table role="presentation" align="center" width="${width}" cellpadding="0" cellspacing="0" border="0"><tr><td style="padding:${padding}"><![endif]-->`,
+    div,
+    body,
+    "</div>",
+    "<!--[if mso]></td></tr></table><![endif]-->",
+  ]
 }
 
 function preheader(node: IrNode): string {
