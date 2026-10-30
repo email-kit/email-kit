@@ -1,0 +1,2 @@
+Bestellung {{orderNumber}} bestätigt
+Danke für Ihre Bestellung

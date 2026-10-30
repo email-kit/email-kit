@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Order {{orderNumber}} confirmed</title>
+</head>
+<body>
+<div style="display:none;max-height:0;overflow:hidden;mso-hide:all">Thanks for your order</div>
+<table role="presentation" width="100%"><tbody><tr><td style="padding:24px"><h1>Thanks, {{customerName}}!</h1>
+<p>Your order {{orderNumber}} is confirmed.</p>
+<ul>{{#items}}<li>{{name}} × {{qty}}</li>
+{{/items}}</ul>
+{{#discount}}<p>You saved {{discount}}.</p>
+{{/discount}}{{^discount}}<p>No discount this time.</p>
+{{/discount}}<p><a href="{{orderUrl}}" title="Order {{orderNumber}}">View your order</a></p>
+</td>
+</tr>
+</tbody>
+</table>
+</body>
+</html>

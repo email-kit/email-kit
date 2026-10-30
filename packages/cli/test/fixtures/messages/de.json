@@ -1,0 +1,10 @@
+{
+  "subject": "Bestellung {order} bestätigt",
+  "preheader": "Danke für Ihre Bestellung",
+  "heading": "Danke, {name}!",
+  "orderLine": "Ihre Bestellung {order} ist bestätigt.",
+  "discount": "Sie haben {discount} gespart.",
+  "noDiscount": "Diesmal kein Rabatt.",
+  "viewTitle": "Bestellung {order}",
+  "view": "Bestellung ansehen"
+}

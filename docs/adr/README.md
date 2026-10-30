@@ -13,7 +13,7 @@ supersedes an old one.
 | 0003 | Runtime plurals strategy | P0-06 (SPK-04) |
 | 0004 | Import alias strategy for `tsc`-built and Node type-stripping projects | P0-08 (SPK-06) |
 | 0005 | CSS inliner | P0-09 (SPK-07) |
-| 0006 | Package split (`@email-kit/cli` vs `@email-kit/core`) and JSX transform | P0-11, P0-12 |
+| 0006 | Package split (`@email-kit/cli` vs `@email-kit/core`) and JSX transform | P0-11 ([findings](../spikes/p0-11-jsx-transform.md)), P0-12 |
 
 ## Accepted
 

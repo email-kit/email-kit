@@ -1,0 +1,13 @@
+Danke für Ihre Bestellung
+
+Danke, Ada!
+====================
+
+Ihre Bestellung A-1042 ist bestätigt.
+
+- Tea × 2
+- Cake × 1
+
+Sie haben 10% gespart.
+
+Bestellung ansehen: https://shop.example/orders/A-1042?ref=email&lang=en
