@@ -4,7 +4,7 @@
 import { existsSync, statSync } from "node:fs"
 import { dirname, isAbsolute, join, relative, resolve } from "node:path"
 
-import type { CheckSetting, ThemeConfig } from "@email-kit/core"
+import type { CheckSetting, CustomCheck, ThemeConfig } from "@email-kit/core"
 import {
   EmailKitError,
   PLATFORM_KEYS,
@@ -41,6 +41,8 @@ export interface ResolvedConfig {
   readonly theme: ThemeConfig | undefined
   /** Per-check levels, each with its reason */
   readonly checks: Readonly<Record<string, CheckSetting>>
+  /** Team checks from defineCheck() */
+  readonly customChecks: readonly CustomCheck[]
   /** Where loaded modules are bundled to, inside the project so packages resolve */
   readonly cacheDir: string
 }
@@ -54,7 +56,7 @@ export const CONFIG_FILES: readonly string[] = [
 
 const KEYS = new Set([
   ...["root", "templates", "messages", "out", "module", "perTemplateEntries", "validate"],
-  ...["platform", "theme", "locales", "checks"],
+  ...["platform", "theme", "locales", "checks", "customChecks"],
 ])
 
 export async function loadConfig(options: {
@@ -137,7 +139,12 @@ export function resolveConfig(
   if (typeof validate !== "boolean") problems.push("validate: must be true or false")
   const platform = readPlatform(config.platform, problems)
   checkTheme(config.theme, problems)
-  const checks = readChecks(config.checks, problems)
+  const customChecks = readCustomChecks(config.customChecks, problems)
+  const checks = readChecks(
+    config.checks,
+    customChecks.map((check) => check.id),
+    problems,
+  )
   const locales = readLocales(config.locales, problems)
   if (problems.length > 0) {
     throw new EmailKitError(
@@ -160,6 +167,7 @@ export function resolveConfig(
     platform,
     theme: config.theme as ThemeConfig | undefined,
     checks,
+    customChecks,
     cacheDir,
   }
 }
@@ -250,7 +258,11 @@ function checkTheme(value: unknown, problems: string[]): void {
 const LEVELS = ["off", "info", "warn", "error"]
 
 // CFG-06: a known id, a level, and a reason that isn't empty.
-function readChecks(value: unknown, problems: string[]): Record<string, CheckSetting> {
+function readChecks(
+  value: unknown,
+  custom: readonly string[],
+  problems: string[],
+): Record<string, CheckSetting> {
   if (value === undefined) return {}
   if (typeof value !== "object" || value === null || Array.isArray(value)) {
     problems.push(
@@ -258,7 +270,7 @@ function readChecks(value: unknown, problems: string[]): Record<string, CheckSet
     )
     return {}
   }
-  const known: string[] = [...CATALOGUE, ...TOKEN_CHECKS].map((check) => check.id)
+  const known: string[] = [...[...CATALOGUE, ...TOKEN_CHECKS].map((check) => check.id), ...custom]
   const out: Record<string, CheckSetting> = {}
   for (const [id, setting] of Object.entries(value)) {
     if (!known.includes(id)) {
@@ -281,6 +293,55 @@ function readChecks(value: unknown, problems: string[]): Record<string, CheckSet
       out[id] = { level: level as CheckSetting["level"], reason }
     }
   }
+  return out
+}
+
+const ON = ["template", "render", "both"]
+
+// P1-166: an id in a family of the team's own, unique; the fields the reporters show; run().
+function readCustomChecks(value: unknown, problems: string[]): CustomCheck[] {
+  if (value === undefined) return []
+  if (!Array.isArray(value)) {
+    problems.push("customChecks: must be an array of defineCheck({ … })")
+    return []
+  }
+  const builtIn = new Set([...CATALOGUE, ...TOKEN_CHECKS].map((check) => check.id.split(".")[0]))
+  const seen = new Set<string>()
+  const out: CustomCheck[] = []
+  value.forEach((check: unknown, i) => {
+    const where = `customChecks[${i}]`
+    if (typeof check !== "object" || check === null) {
+      problems.push(`${where}: must be a defineCheck({ id, level, rule, fix, run })`)
+      return
+    }
+    const c = check as Record<string, unknown>
+    const before = problems.length
+    if (typeof c.id !== "string" || !/^[a-z][a-z0-9-]*\.[a-z0-9][a-z0-9-]*$/.test(c.id)) {
+      problems.push(`${where}.id: must be "family.name" in lowercase, such as "acme.help-link"`)
+    } else if (builtIn.has(c.id.split(".")[0] as string)) {
+      problems.push(
+        `${where}.id: "${c.id.split(".")[0]}." is email-kit's; use your own family, such as "acme.${c.id.split(".")[1]}"`,
+      )
+    } else if (seen.has(c.id)) {
+      problems.push(`${where}.id: "${c.id}" is defined twice`)
+    }
+    if (typeof c.level !== "string" || !["error", "warn", "info"].includes(c.level)) {
+      problems.push(`${where}.level: must be "error", "warn" or "info"`)
+    }
+    for (const key of ["rule", "fix"]) {
+      if (typeof c[key] !== "string" || !(c[key] as string).trim())
+        problems.push(`${where}.${key}: must be a sentence`)
+    }
+    if (c.on !== undefined && !ON.includes(c.on as string)) {
+      problems.push(`${where}.on: must be "template", "render" or "both"`)
+    }
+    if (typeof c.run !== "function")
+      problems.push(`${where}.run: must be a function (context, report) => void`)
+    if (problems.length === before) {
+      seen.add(c.id as string)
+      out.push(check as CustomCheck)
+    }
+  })
   return out
 }
 

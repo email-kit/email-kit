@@ -54,6 +54,8 @@ export function formatTokens(theme: Theme, findings: readonly TokenFinding[]): s
     lines.push(`  ${mark[finding.level]} ${finding.id}${where(finding)}: ${finding.message}`)
   }
   const count = (level: TokenFinding["level"]) => findings.filter((f) => f.level === level).length
-  lines.push("", `${count("error")} errors, ${count("warning")} warnings, ${count("info")} notes`)
+  const n = (level: TokenFinding["level"], word: string) =>
+    `${count(level)} ${word}${count(level) === 1 ? "" : "s"}`
+  lines.push("", `${n("error", "error")}, ${n("warning", "warning")}, ${n("info", "note")}`)
   return lines.join("\n")
 }

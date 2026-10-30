@@ -1,0 +1,14 @@
+{
+  "subject": "New sign-in to your {product} account",
+  "preheader": "A new sign-in from {device}",
+  "heading": "New sign-in",
+  "calloutTitle": "Was this you?",
+  "callout": "If it was, you don't need to do anything.",
+  "time": "Time",
+  "location": "Location",
+  "device": "Device",
+  "review": "Review activity",
+  "recentCaption": "Recent sign-ins",
+  "help": "Need help securing your account?",
+  "helpLink": "Read the security guide"
+}

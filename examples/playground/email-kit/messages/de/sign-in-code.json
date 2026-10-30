@@ -1,0 +1,10 @@
+{
+  "subject": "Ihr Anmeldecode für {product}",
+  "preheader": "Bitte in den nächsten Minuten verwenden",
+  "heading": "Anmelden",
+  "label": "Ihr Code für die Anmeldung bei {product}:",
+  "expiry": "Er läuft in {minutes} Minuten ab und gilt nur einmal.",
+  "device": "Angefordert von {device}.",
+  "notYouTitle": "Keinen Code angefordert?",
+  "notYou": "Dann können Sie diese E-Mail ignorieren. Ohne den Code kann sich niemand anmelden."
+}

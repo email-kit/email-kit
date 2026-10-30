@@ -1,6 +1,7 @@
 // The typed project config in email-kit.config.ts (CFG-01). Paths are relative to the config
 // file. Targets and checks arrive with their milestones.
 
+import type { CustomCheck } from "./checks.ts"
 import type { PlatformKey } from "./platform.ts"
 import type { ThemeConfig } from "./theme.ts"
 
@@ -44,6 +45,8 @@ export interface EmailKitConfig {
    * `{ "img.fluid-width": { level: "off", reason: "Hero images are fixed width by design" } }`
    */
   readonly checks?: Readonly<Record<string, CheckSetting>>
+  /** Team checks (CHK-08), made with defineCheck() */
+  readonly customChecks?: readonly CustomCheck[]
   readonly locales?: {
     /** The locale render() falls back to. Default: `"en"`. */
     readonly default: string

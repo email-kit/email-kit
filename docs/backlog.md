@@ -301,6 +301,12 @@ data-dependent `img.alt`, `img.https`, `img.format` and `html.no-forms-embeds` a
 The fixture project's schema now requires non-empty `customerName` and `orderNumber`: the sweep
 found "Thanks, !" in its empty variant.
 
+**Fourth slice:** **P1-166** team checks: `defineCheck({ id, level, rule, fix, docs?, on?, run })`
+in `customChecks`, over a plain-data context (`CheckEmail` with `elements(name?)`), validated
+(own family, unique, required fields), configurable through `checks`, shown in every reporter, and
+`check-failed` when one throws. `examples/playground` (three templates, en/de, a shadcn theme,
+a team check and a browser preview) is the project for trying everything by hand.
+
 | ID | Task | Reqs | Pri | Dep | Done when |
 |---|---|---|---|---|---|
 | P1-140 | Check engine core (context over output, sources, theme, messages and fixtures), shared by the CLI, the studio and CI | CHK-01 | MUST | P1-074 | The API runs registered checks |

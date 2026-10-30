@@ -1,0 +1,45 @@
+{
+  "default": {
+    "customerName": "Ada",
+    "orderNumber": "A-1042",
+    "date": "30 October 2026",
+    "payment": "Visa ending 4242",
+    "receiptUrl": "https://playground.example/orders/A-1042/receipt",
+    "items": [
+      {
+        "name": "Green tea",
+        "qty": "2",
+        "total": "€9.00"
+      },
+      {
+        "name": "Teapot",
+        "variant": "Blue, 1 l",
+        "qty": "1",
+        "total": "€34.00"
+      }
+    ],
+    "subtotal": "€43.00",
+    "discount": "−€4.30",
+    "shipping": "€4.90",
+    "vat": "€8.51",
+    "total": "€43.60"
+  },
+  "no-discount": {
+    "customerName": "Grace",
+    "orderNumber": "A-1043",
+    "date": "31 October 2026",
+    "payment": "PayPal",
+    "receiptUrl": "https://playground.example/orders/A-1043/receipt",
+    "items": [
+      {
+        "name": "Oolong tea",
+        "qty": "1",
+        "total": "€6.50"
+      }
+    ],
+    "subtotal": "€6.50",
+    "shipping": "€4.90",
+    "vat": "€1.82",
+    "total": "€11.40"
+  }
+}

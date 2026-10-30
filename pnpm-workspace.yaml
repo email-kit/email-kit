@@ -1,6 +1,7 @@
 packages:
   - packages/*
   - spikes/*
+  - examples/*
 
 # Shared versions for tools used by several packages. Reference them with "catalog:".
 catalog:

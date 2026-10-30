@@ -1,6 +1,13 @@
 // @email-kit/core: defineEmail, control flow and the types for writing templates.
 // Prototype (P0-03): the API shape is not final.
 
+export {
+  type CheckElement,
+  type CheckEmail,
+  type CheckProblem,
+  type CustomCheck,
+  defineCheck,
+} from "./checks.ts"
 export { type CheckSetting, defineConfig, type EmailKitConfig } from "./config.ts"
 export { Conditional, Each, If, Unless } from "./control.ts"
 export {

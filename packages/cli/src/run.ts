@@ -3,6 +3,8 @@
 
 import { cac } from "cac"
 
+import { CATALOGUE } from "./checks/catalogue/index.ts"
+import { fromCustom } from "./checks/custom.ts"
 import { contextOf, runChecks } from "./checks/engine.ts"
 import { formatGithub, formatHuman, formatJson } from "./checks/report.ts"
 import { buildProject, compile, describeResult, summarize } from "./compiler/build.ts"
@@ -104,7 +106,8 @@ async function checkCommand(options: CheckFlags, io: Io): Promise<number> {
   try {
     const config = await loadConfig({ cwd: io.cwd, config: options.config })
     const project = await buildProject(config)
-    const findings = runChecks(await contextOf(project), config.checks)
+    const checks = [...CATALOGUE, ...config.customChecks.map(fromCustom)]
+    const findings = runChecks(await contextOf(project), config.checks, checks)
     const output = REPORTERS[name as keyof typeof REPORTERS](findings)
     if (output) io.out(output)
     return findings.some((finding) => finding.level === "error") ? 1 : 0

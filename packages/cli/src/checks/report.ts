@@ -43,7 +43,7 @@ export function formatHuman(findings: readonly Finding[]): string {
       lines.push(`  ${MARK[finding.level]} ${finding.id}${location ? `  ${location}` : ""}`)
       lines.push(`    ${finding.message}`)
       lines.push(`    Fix: ${finding.fix}`)
-      lines.push(`    Docs: ${finding.docs}`)
+      if (finding.docs) lines.push(`    Docs: ${finding.docs}`)
     }
     lines.push("")
   }
@@ -81,7 +81,7 @@ export function formatGithub(findings: readonly Finding[]): string {
       ]
       const fixture =
         finding.subject.fixture === undefined ? "" : ` (rendered with ${finding.subject.fixture})`
-      return `::${command[finding.level]} ${props.join(",")}::${data(`${finding.message}${fixture}\nFix: ${finding.fix}\nDocs: ${finding.docs}`)}`
+      return `::${command[finding.level]} ${props.join(",")}::${data(`${finding.message}${fixture}\nFix: ${finding.fix}${finding.docs ? `\nDocs: ${finding.docs}` : ""}`)}`
     })
     .join("\n")
 }

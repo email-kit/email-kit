@@ -1,0 +1,14 @@
+{
+  "subject": "Neue Anmeldung bei Ihrem {product}-Konto",
+  "preheader": "Eine neue Anmeldung von {device}",
+  "heading": "Neue Anmeldung",
+  "calloutTitle": "Waren Sie das?",
+  "callout": "Wenn ja, müssen Sie nichts tun.",
+  "time": "Zeit",
+  "location": "Ort",
+  "device": "Gerät",
+  "review": "Aktivität prüfen",
+  "recentCaption": "Letzte Anmeldungen",
+  "help": "Hilfe beim Schutz Ihres Kontos?",
+  "helpLink": "Zum Sicherheitsleitfaden"
+}

@@ -46,6 +46,38 @@ export function checksMarkdown(): string {
     'checks: { "img.fluid-width": { level: "off", reason: "Hero images are fixed width by design" } }',
     "```",
   ]
+  lines.push(
+    "",
+    "## Team checks",
+    "",
+    "Add your own rules with `defineCheck()` in `customChecks`. They run with the catalogue, take",
+    "levels from `checks`, and show in every reporter. Use a family of your own for the id.",
+    "",
+    "```ts",
+    'import { defineCheck, defineConfig } from "@email-kit/core"',
+    "",
+    "const helpLink = defineCheck({",
+    '  id: "acme.help-link",',
+    '  level: "warn",',
+    '  rule: "Every email links to the help centre.",',
+    '  fix: "Add the footer\'s help link.",',
+    "  run({ emails }, report) {",
+    "    for (const email of emails) {",
+    '      const hrefs = email.elements("a").map((a) => a.attributes.href ?? "")',
+    '      if (!hrefs.some((href) => href.startsWith("https://help.acme.com"))) {',
+    '        report({ email, message: "No link to the help centre" })',
+    "      }",
+    "    }",
+    "  },",
+    "})",
+    "",
+    "export default defineConfig({ customChecks: [helpLink] })",
+    "```",
+    "",
+    "Each email has `template`, `locale`, `subject`, `preheader`, `html`, `text` and",
+    '`elements(name?)`. Set `on: "render"` to check the renders of every fixture and generated',
+    "variant instead of the compiled templates (each render then has `fixture`), or `both`.",
+  )
   for (const [family, title] of FAMILIES) {
     lines.push("", `## ${title}`)
     for (const entry of entries.filter((e) => e.id.startsWith(`${family}.`))) {

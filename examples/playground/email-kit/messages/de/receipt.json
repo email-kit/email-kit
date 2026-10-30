@@ -1,0 +1,21 @@
+{
+  "subject": "Beleg für Bestellung {order}",
+  "preheader": "Gezahlt: {total}",
+  "heading": "Danke, {name}!",
+  "intro": "Hier ist Ihr Beleg.",
+  "orderNumber": "Bestellnummer",
+  "date": "Datum",
+  "payment": "Bezahlt mit",
+  "caption": "Bestellung {order}",
+  "item": "Artikel",
+  "qty": "Menge",
+  "lineTotal": "Summe",
+  "subtotal": "Zwischensumme",
+  "discount": "Rabatt",
+  "shipping": "Versand",
+  "vat": "MwSt. 19 % (enthalten)",
+  "total": "Gezahlt",
+  "view": "Beleg ansehen",
+  "help": "Fragen zu Ihrer Bestellung?",
+  "helpLink": "Zum Hilfe-Center"
+}

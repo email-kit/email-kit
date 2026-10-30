@@ -1,0 +1,21 @@
+{
+  "subject": "Receipt for order {order}",
+  "preheader": "Total paid: {total}",
+  "heading": "Thanks, {name}!",
+  "intro": "Here is your receipt.",
+  "orderNumber": "Order number",
+  "date": "Date",
+  "payment": "Paid with",
+  "caption": "Order {order}",
+  "item": "Item",
+  "qty": "Qty",
+  "lineTotal": "Total",
+  "subtotal": "Subtotal",
+  "discount": "Discount",
+  "shipping": "Shipping",
+  "vat": "VAT 19% (included)",
+  "total": "Total paid",
+  "view": "View receipt",
+  "help": "Questions about your order?",
+  "helpLink": "Visit the help centre"
+}

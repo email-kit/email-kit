@@ -103,6 +103,12 @@ A test checks that every id the code can raise is listed here.
 **Why:** a fixture in `defineEmail({ fixtures })` doesn't match the template's schema. The studio previews fixtures and `email-kit check` renders them, so they must be data the backend could send.
 **Fix:** correct the fixture at the path in the message, or the schema if the fixture shows real data it doesn't allow yet.
 
+## Checks
+
+### check-failed
+**Why:** a team check in `customChecks` threw while `email-kit check` ran it. The message names the check and repeats its error.
+**Fix:** fix the check's `run()`. It gets plain data: guard for elements or attributes that may be missing.
+
 ## Data and placeholders
 
 ### placeholder-misuse

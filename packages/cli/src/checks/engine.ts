@@ -133,7 +133,7 @@ export function runChecks(
           subject: subjectOf(problem),
           message: problem.message,
           fix: problem.fix ?? check.fix,
-          docs: docsUrl(check.id),
+          docs: check.docs ?? docsUrl(check.id),
         })
       })
     }
