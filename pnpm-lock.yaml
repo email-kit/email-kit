@@ -340,6 +340,31 @@ importers:
         specifier: npm:typescript@5.9.3
         version: typescript@5.9.3
 
+  spikes/jsx-pragma:
+    dependencies:
+      '@email-kit/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+    devDependencies:
+      '@types/react':
+        specifier: ^19.3.0
+        version: 19.3.0
+      hono:
+        specifier: ^4.13.14
+        version: 4.13.14
+      react:
+        specifier: ^19.3.1
+        version: 19.3.1
+      typescript:
+        specifier: 'catalog:'
+        version: 7.0.2
+      typescript5:
+        specifier: npm:typescript@5.9.3
+        version: typescript@5.9.3
+      zod:
+        specifier: 'catalog:'
+        version: 4.6.7
+
   spikes/jsx-transform:
     dependencies:
       '@email-kit/core':
@@ -1188,6 +1213,9 @@ packages:
   '@types/node@22.20.5':
     resolution: {integrity: sha512-U2+DNr+wSjpsTS/wZGYHq7GcwfuSmKiKvoPvK22zwTlRhU91yOniN4qRR5KhIjvif7ysw/dz/hKmfDH0Ris4aA==}
 
+  '@types/react@19.3.0':
+    resolution: {integrity: sha512-N0rFCuH9YoxG9/m61l9MfpJKfmLOVU0em7ipIz6TRgSSkvReLB9vL85GB+yr8Bs5leqpvg96JSwF4ZS1s4viQg==}
+
   '@typescript/typescript-aix-ppc64@7.0.2':
     resolution: {integrity: sha512-MTKKkWB7p/0E9xi1d1tHtZ5PiLkGEMIq88pK2CubZjOsLtYTLqhgIgi6zepFa+9GHZ6h05NMCkQxGKiPXMxXtQ==}
     engines: {node: '>=16.20.0'}
@@ -1525,6 +1553,9 @@ packages:
     engines: {node: '>=4'}
     hasBin: true
 
+  csstype@3.2.3:
+    resolution: {integrity: sha512-z1HGKcYy2xA8AGQfwrn0PAy+PB7X/GSj3UVJW9qKyn43xWa+gl5nXmU4qqLMRzWVLFC8KusUX8T/0kCiOYpAIQ==}
+
   dataloader@2.2.3:
     resolution: {integrity: sha512-y2krtASINtPFS1rSDjacrFgn1dcUuoREVabwlOGOe4SdxenREqwjwjElAdwvbGM7kgZz9a3KVicWR7vcz8rnzA==}
 
@@ -1679,6 +1710,10 @@ packages:
 
   highlight.js@10.7.3:
     resolution: {integrity: sha512-tzcUFauisWKNHaRkN4Wjl/ZA07gENAjFl3J/c480dprkGTg5EQstgaNFqBfUqCq54kZRIEcreTsAgF/m2quD7A==}
+
+  hono@4.13.14:
+    resolution: {integrity: sha512-yhRLQ21U6qa9Hsu2N7Qcbh8tE+WKEcoErjIo56LeSGiGXGp9sA7UpE86Ui9uexb61KakiGwuHMn2QdV7w6i6kQ==}
+    engines: {node: '>=16.9.0'}
 
   hookable@6.1.2:
     resolution: {integrity: sha512-+abwxtiEA52GCVIsQqut3S/uKTbUwYIp4Pe/vv+6py5XiXBCqMZHg6pA6Y5qhgLSEys0/cYuPbO0z1QFj5ZCmg==}
@@ -1960,6 +1995,10 @@ packages:
 
   queue-microtask@1.2.3:
     resolution: {integrity: sha512-NuaNSa6flKT5JaSYQzJok04JzTL1CA6aGhv5rfLW3PgqA+M2ChpZQnAC8h8i4ZFkBS8X5RqkDBHA7r4hej3K9A==}
+
+  react@19.3.1:
+    resolution: {integrity: sha512-QNhWdt7nrgVWWQG58QuGsAR3jv3Hbe4mb4vz7w2csnHavciZJgda1CPNaldF6eVxv90ud3jUXpKlHL69gO38yw==}
+    engines: {node: '>=0.10.0'}
 
   readdirp@3.6.0:
     resolution: {integrity: sha512-hOS089on8RduqdbhvQ5Z37A0ESjsqz6qnRcffsMU3495FuTdqSm+7bhJ29JvIOsBDEEnan5DPu9t3To9VRlMzA==}
@@ -2908,6 +2947,10 @@ snapshots:
     dependencies:
       undici-types: 6.21.0
 
+  '@types/react@19.3.0':
+    dependencies:
+      csstype: 3.2.3
+
   '@typescript/typescript-aix-ppc64@7.0.2':
     optional: true
 
@@ -3159,6 +3202,8 @@ snapshots:
 
   cssesc@3.0.0: {}
 
+  csstype@3.2.3: {}
+
   dataloader@2.2.3: {}
 
   defu@6.1.7: {}
@@ -3312,6 +3357,8 @@ snapshots:
   has-flag@4.0.0: {}
 
   highlight.js@10.7.3: {}
+
+  hono@4.13.14: {}
 
   hookable@6.1.2: {}
 
@@ -3572,6 +3619,8 @@ snapshots:
   queue-lit@1.5.2: {}
 
   queue-microtask@1.2.3: {}
+
+  react@19.3.1: {}
 
   readdirp@3.6.0:
     dependencies:

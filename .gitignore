@@ -17,3 +17,6 @@ coverage/
 
 # reference material kept out of the repo
 docs/reference-docs
+
+# leftovers of spike runs that stopped early
+spikes/*/.work-*

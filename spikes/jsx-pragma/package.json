@@ -1,0 +1,21 @@
+{
+  "name": "@email-kit/spike-jsx-pragma",
+  "version": "0.0.0",
+  "private": true,
+  "description": "P0-05 spike: does the per-file @jsxImportSource pragma type-check templates under each host tsconfig?",
+  "type": "module",
+  "scripts": {
+    "run": "node run.ts"
+  },
+  "dependencies": {
+    "@email-kit/core": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/react": "^19.3.0",
+    "hono": "^4.13.14",
+    "react": "^19.3.1",
+    "typescript": "catalog:",
+    "typescript5": "npm:typescript@5.9.3",
+    "zod": "catalog:"
+  }
+}

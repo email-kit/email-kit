@@ -38,6 +38,20 @@
     },
     "./package.json": "./package.json"
   },
+  "types": "./dist/index.d.ts",
+  "typesVersions": {
+    "*": {
+      "jsx-runtime": [
+        "./dist/jsx-runtime.d.ts"
+      ],
+      "jsx-dev-runtime": [
+        "./dist/jsx-dev-runtime.d.ts"
+      ],
+      "internal": [
+        "./dist/internal.d.ts"
+      ]
+    }
+  },
   "files": [
     "dist"
   ],
