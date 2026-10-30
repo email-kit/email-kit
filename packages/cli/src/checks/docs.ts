@@ -7,6 +7,7 @@ import { CATALOGUE } from "./catalogue/index.ts"
 const LEVEL = { error: "error", warn: "warning", info: "note" } as const
 const FAMILIES: readonly [string, string][] = [
   ["tokens", "Theme and tokens"],
+  ["source", "Sources"],
   ["html", "Document"],
   ["css", "CSS"],
   ["img", "Images"],

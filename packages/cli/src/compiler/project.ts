@@ -29,6 +29,8 @@ export interface CompiledTemplate {
   readonly emails: readonly CompiledEmail[]
   /** Every source file bundled into the template */
   readonly sources: readonly string[]
+  /** The fixture names from defineEmail() */
+  readonly fixtures: readonly string[]
 }
 
 export async function compileProject(
@@ -121,6 +123,7 @@ async function compileTemplate(
     jsonSchema: schema.jsonSchema,
     emails,
     sources: files,
+    fixtures: Object.keys(definition.fixtures ?? {}),
   }
 }
 

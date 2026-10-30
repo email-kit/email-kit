@@ -277,8 +277,16 @@ MSO checks run only for a classic Outlook target (part of P1-163). Implemented s
 `img.https`, `img.format`, `img.fluid-width`, `dark.scheme-declared`, `dark.ogsc-twin`,
 `dark.light-only-css-twin`, `dark.no-blend-hack`, `a11y.layout-table-role`, `a11y.data-table`.
 Each passes on the fixture's real output and fires alone when its rule is broken. Not yet: the
-fixture sweep (P1-164; data-driven values are skipped), custom checks (P1-166), source checks
-(`source.*`, including the literal-colour lint for P1-120), the rest of the catalogue.
+fixture sweep (P1-164; data-driven values are skipped), custom checks (P1-166), the rest of the
+catalogue.
+
+**Second slice:** source checks over the project's own files that templates bundle (templates and
+user components; packages aren't scanned), parsed with rolldown's oxc parser (`rolldown/parseAst`,
+no new dependency): `source.no-literal-colour` (hex, colour functions and CSS named colours in
+style objects and colour attributes), `source.no-font-family`, `source.no-font-size` (0 and 1px
+allowed for spacer cells) and `source.fixture-exists`. Style objects are found through JSX
+`style`, spreads, conditionals and same-file constants, so data such as a fixture's colour name
+isn't flagged. email-kit's own components pass them, which closes **P1-120**'s lint.
 
 | ID | Task | Reqs | Pri | Dep | Done when |
 |---|---|---|---|---|---|

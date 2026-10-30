@@ -130,6 +130,36 @@ checks: { "img.fluid-width": { level: "off", reason: "Hero images are fixed widt
 
 **Fix:** Adjust the colour or the role in the theme; `email-kit tokens` lists every pair.
 
+## Sources
+
+### source.no-literal-colour
+**Default:** error
+
+**Rule:** No literal colours in the styles and colour attributes of templates and user components.
+
+**Fix:** Use a theme role: `style={{ color: role("mutedInk") }}`. Roles get their dark-mode rules and contrast checks; literals get neither.
+
+### source.no-font-family
+**Default:** error
+
+**Rule:** No `font-family` in templates or user components.
+
+**Fix:** Font stacks come from the theme (`theme.typography.stacks`), with the fallback classic Outlook needs; use Text, Heading or the font() helper.
+
+### source.no-font-size
+**Default:** error
+
+**Rule:** No literal `font-size` in templates or user components, except 0 or 1px on spacer and divider cells.
+
+**Fix:** Sizes come from the type scale: use Text or Heading with a size, or the font() helper.
+
+### source.fixture-exists
+**Default:** error
+
+**Rule:** Every template has at least one fixture.
+
+**Fix:** Add sample data under `fixtures` in defineEmail(): the studio previews it and the checks render it.
+
 ## Document
 
 ### html.doctype

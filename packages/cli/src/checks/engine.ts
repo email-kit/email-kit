@@ -9,6 +9,7 @@ import type { CheckSetting } from "@email-kit/core"
 import type { BuiltProject } from "../compiler/build.ts"
 import { CATALOGUE } from "./catalogue/index.ts"
 import { parseEmail } from "./parse.ts"
+import { type SourceFile, sourceFile } from "./source.ts"
 import type { Check, CheckContext, CheckedEmail, Finding, Level, Problem } from "./types.ts"
 
 export const CHECKS_DOCS_URL = "https://github.com/email-kit/email-kit/blob/main/docs/checks.md"
@@ -32,9 +33,21 @@ export function contextOf(project: BuiltProject): CheckContext {
       parsed: parseEmail(email.html),
     })),
   )
+  // Each project file once, with the templates that bundle it.
+  const users = new Map<string, string[]>()
+  for (const template of project.templates) {
+    for (const file of template.sources) users.set(file, [...(users.get(file) ?? []), template.id])
+  }
+  const sources: SourceFile[] = [...users].map(([file, ids]) => sourceFile(file, config.dir, ids))
   const source = config.theme?.source
   return {
     emails,
+    templates: project.templates.map((t) => ({
+      id: t.id,
+      file: relative(config.dir, t.file),
+      fixtures: t.fixtures,
+    })),
+    sources,
     theme: project.theme,
     themeFindings: project.themeFindings,
     // Classic Outlook stays a target until the targets config (CFG-05).
@@ -84,6 +97,15 @@ export function runChecks(
 
 function subjectOf(problem: Problem): Finding["subject"] {
   if (problem.subject) return problem.subject
+  if (problem.source) {
+    const { file, templates } = problem.source
+    const position = problem.at === undefined ? undefined : problem.source.position(problem.at)
+    return {
+      ...(templates.length === 1 && { template: templates[0] }),
+      file,
+      ...(position && { line: position.line, column: position.column }),
+    }
+  }
   const email = problem.email
   if (!email) return {}
   const position = problem.at === undefined ? undefined : email.parsed.position(problem.at)

@@ -5,6 +5,7 @@
 import type { Theme } from "../theme/theme.ts"
 import type { TokenFinding } from "../theme/validate.ts"
 import type { ParsedEmail } from "./parse.ts"
+import type { SourceFile } from "./source.ts"
 
 export type Level = "error" | "warn" | "info"
 
@@ -39,8 +40,19 @@ export interface CheckedEmail {
   readonly parsed: ParsedEmail
 }
 
+/** A template as the source checks see it. */
+export interface CheckedTemplate {
+  readonly id: string
+  /** Relative to the project folder */
+  readonly file: string
+  readonly fixtures: readonly string[]
+}
+
 export interface CheckContext {
   readonly emails: readonly CheckedEmail[]
+  readonly templates: readonly CheckedTemplate[]
+  /** The project's own source files the templates bundle (templates and user components) */
+  readonly sources: readonly SourceFile[]
   readonly theme: Theme
   readonly themeFindings: readonly TokenFinding[]
   /** Classic Outlook (Word) is a target: enables the MSO checks (CHK-05) */
@@ -55,7 +67,9 @@ export interface Problem {
   readonly fix?: string
   /** The email it was found in; omitted for project-wide findings */
   readonly email?: CheckedEmail
-  /** An offset into the email's HTML */
+  /** The source file it was found in */
+  readonly source?: SourceFile
+  /** An offset into the email's HTML, or into the source file's text */
   readonly at?: number
   /** For findings outside the compiled HTML, such as the theme */
   readonly subject?: Subject

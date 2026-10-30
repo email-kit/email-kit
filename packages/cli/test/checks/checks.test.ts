@@ -3,16 +3,18 @@
 // Every check has a positive case (the fixture's real output passes) and a negative one (the
 // same email with exactly one rule broken reports exactly that check).
 
-import { readFileSync } from "node:fs"
+import { mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs"
+import { join } from "node:path"
 import { fileURLToPath } from "node:url"
 
-import { beforeAll, describe, expect, it } from "vitest"
+import { afterAll, beforeAll, describe, expect, it } from "vitest"
 
 import { CATALOGUE } from "../../src/checks/catalogue/index.ts"
 import { checksMarkdown } from "../../src/checks/docs.ts"
 import { contextOf, docsUrl, runChecks } from "../../src/checks/engine.ts"
 import { parseEmail } from "../../src/checks/parse.ts"
 import { formatGithub, formatHuman, formatJson } from "../../src/checks/report.ts"
+import { sourceFile } from "../../src/checks/source.ts"
 import type { CheckContext, Finding } from "../../src/checks/types.ts"
 import { type BuiltProject, buildProject } from "../../src/compiler/build.ts"
 import { loadConfig, resolveConfig } from "../../src/compiler/config.ts"
@@ -21,6 +23,8 @@ import { TOKEN_CHECKS } from "../../src/theme/validate.ts"
 
 const FIXTURE = fileURLToPath(new URL("../fixtures/project/", import.meta.url))
 const REPO = fileURLToPath(new URL("../../../../", import.meta.url))
+const TMP = fileURLToPath(new URL("../.tmp/checks-test/", import.meta.url))
+afterAll(() => rmSync(TMP, { recursive: true, force: true }))
 
 let project: BuiltProject
 let context: CheckContext
@@ -106,8 +110,9 @@ describe("each check, with one rule broken", () => {
     ["a11y.data-table", inBody("<table><tr><th>Item</th></tr></table>")],
   ]
 
-  it("covers the whole catalogue", () => {
-    expect(cases.map(([id]) => id).sort()).toEqual(CATALOGUE.map((c) => c.id).sort())
+  it("covers every output check", () => {
+    const output = CATALOGUE.filter((c) => !c.id.startsWith("source."))
+    expect(cases.map(([id]) => id).sort()).toEqual(output.map((c) => c.id).sort())
   })
 
   it.each(cases)("%s", (id, edit) => {
@@ -147,6 +152,123 @@ describe("each check, with one rule broken", () => {
     expect(
       ids(runChecks(mutated(inBody('<img src="{{heroUrl}}" alt="" width="1" height="1">')))),
     ).toEqual([])
+  })
+})
+
+describe("source checks (UI-01)", () => {
+  let n = 0
+  /** A context whose only source is this TSX, and no emails. */
+  const sources = (tsx: string) => {
+    mkdirSync(TMP, { recursive: true })
+    const path = join(TMP, `t${n++}.tsx`)
+    writeFileSync(path, tsx)
+    return {
+      ...context,
+      emails: [],
+      themeFindings: [],
+      sources: [sourceFile(path, TMP, ["welcome"])],
+    }
+  }
+  const found = (tsx: string) => runChecks(sources(tsx)).map((f) => `${f.id}: ${f.message}`)
+
+  it("scans the fixture's template and its user component", () => {
+    expect(context.sources.map((s) => s.file).sort()).toEqual([
+      "src/email-kit/components/Card.tsx",
+      "src/email-kit/templates/order-confirmation.tsx",
+    ])
+    expect(context.sources.find((s) => s.file.endsWith("Card.tsx"))?.templates).toEqual([
+      "order-confirmation",
+    ])
+  })
+
+  it.each([
+    [
+      '<p style={{ color: "#333333" }} />',
+      "source.no-literal-colour: `color` uses the literal colour #333333",
+    ],
+    [
+      '<p style={{ border: "1px solid red" }} />',
+      "source.no-literal-colour: `border` uses the literal colour red",
+    ],
+    [
+      "<p style={{ color: `#fff` }} />",
+      "source.no-literal-colour: `color` uses the literal colour #fff",
+    ],
+    [
+      '<td bgcolor="#ffffff" />',
+      'source.no-literal-colour: `bgcolor="#ffffff"` is a literal colour',
+    ],
+    [
+      'const S = { backgroundColor: "rgb(0, 0, 0)" }\nconst x = <td style={S} />',
+      "source.no-literal-colour: `backgroundColor` uses the literal colour rgb()",
+    ],
+    [
+      '<p style={{ margin: 0, ...(dark ? { color: "navy" } : {}) }} />',
+      "source.no-literal-colour: `color` uses the literal colour navy",
+    ],
+    [
+      '<p style={{ "background-color": "oklch(0.5 0.1 200)" }} />',
+      "source.no-literal-colour: `background-color` uses the literal colour oklch()",
+    ],
+    [
+      '<p style={{ fontFamily: "Georgia, serif" }} />',
+      "source.no-font-family: `fontFamily` is set directly",
+    ],
+    ['<font face="Arial">x</font>', "source.no-font-family: `face` sets a font directly"],
+    ["<p style={{ fontSize: 12 }} />", "source.no-font-size: `fontSize` is a literal size"],
+    ['<p style={{ fontSize: "12px" }} />', "source.no-font-size: `fontSize` is a literal size"],
+  ])("flags %s", (tsx, finding) => {
+    expect(found(tsx)).toEqual([finding])
+  })
+
+  it("leaves roles, data, anchors and computed values alone", () => {
+    const tsx = [
+      'const fixtures = { shirt: { color: "Red", items: [{ background: "#000000" }] } }',
+      'const a = <a href="#top" title="Red shirt" style={{ color: role("link"), textDecoration: "underline" }} />',
+      'const b = <td style={{ backgroundColor: "transparent", border: "0", fontSize: size, ...font("body") }} />',
+      'const c = <p style={{ color: "currentColor" }}>Navy blue</p>',
+    ].join("\n")
+    expect(found(tsx)).toEqual([])
+  })
+
+  it("points at the property's line and column", () => {
+    const line = 'const y = <p style={{ margin: 0, color: "#333333" }} />'
+    const context = sources(`const x = 1\n${line}`)
+    const [finding] = runChecks(context)
+    expect(finding?.subject).toEqual({
+      template: "welcome",
+      file: context.sources[0]?.file,
+      line: 2,
+      column: line.indexOf("color") + 1,
+    })
+  })
+
+  it("allows 0 or 1px font sizes, the spacer-cell technique", () => {
+    expect(found('<td style={{ fontSize: "1px", lineHeight: "24px" }} />')).toEqual([])
+  })
+
+  it("passes on email-kit's own components (P1-120)", () => {
+    const dir = `${REPO}packages/components/src/`
+    const files = readdirSync(dir).filter((name) => name.endsWith(".tsx"))
+    expect(files.length).toBeGreaterThan(10)
+    const all = files.map((name) => sourceFile(`${dir}${name}`, REPO, ["components"]))
+    expect(runChecks({ ...context, emails: [], themeFindings: [], sources: all })).toEqual([])
+  })
+
+  it("requires a fixture per template", () => {
+    const findings = runChecks({
+      ...context,
+      emails: [],
+      sources: [],
+      themeFindings: [],
+      templates: [{ id: "welcome", file: "src/email-kit/templates/welcome.tsx", fixtures: [] }],
+    })
+    expect(findings.map((f) => [f.id, f.subject])).toEqual([
+      [
+        "source.fixture-exists",
+        { template: "welcome", file: "src/email-kit/templates/welcome.tsx" },
+      ],
+    ])
   })
 })
 
