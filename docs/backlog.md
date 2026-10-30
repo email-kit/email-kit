@@ -27,7 +27,9 @@ when** (acceptance).
   tsc 5.9 / 7.0, tsx and Node runs in `spikes/import-alias/`.
 - **P0-05 done.** Init rules confirmed across `jsx` unset, Hono, Next.js `preserve`/`react-jsx`,
   classic and node10; core gained `typesVersions` for node10. `docs/spikes/p0-05-jsx-pragma.md`.
-- **Phase 0 remaining:** P0-04 (needs real email clients), P0-06 (plurals decision), P0-12 (ADRs),
+- **P0-12 drafted.** ADRs 0002–0006 proposed in `docs/adr/`; 0003 (plurals, P0-06) needs the
+  maintainer's choice; 0001 waits for P0-04.
+- **Phase 0 remaining:** P0-04 (needs real email clients), the P0-06 decision, accepting the ADRs,
   and P0-02 (publishing needs the maintainer's accounts).
 - **P0-02 prepared.** The placeholder packages and the release workflow are ready. Publishing and
   creating the repos need the maintainer's accounts: see `docs/setup/reserve-names.md`.
