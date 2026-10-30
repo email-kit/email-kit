@@ -15,7 +15,14 @@ import type {
 } from "@email-kit/core"
 import { EmailKitError } from "@email-kit/core/internal"
 
-import { readDtcg } from "./dtcg.ts"
+import { readDtcg, readDtcgDocument } from "./dtcg.ts"
+import {
+  type Modifier,
+  permutations,
+  type Resolver,
+  readResolver,
+  resolveTokens,
+} from "./resolver.ts"
 import { type ColourTokens, type ResolvedRoles, type RoleOverride, resolveRoles } from "./roles.ts"
 import { readShadcnCss } from "./shadcn.ts"
 
@@ -31,6 +38,8 @@ export interface Theme {
   readonly source: string
   /** The theme files that were read, for --watch */
   readonly files: readonly string[]
+  /** A resolver's other inputs (brands and the like), each checked as well (THM-10) */
+  readonly permutations: readonly Readonly<Record<string, string>>[]
   readonly roles: ResolvedRoles
   readonly typography: {
     readonly stacks: Readonly<Record<FontStackName, FontStack>>
@@ -184,7 +193,7 @@ const SCALE: Readonly<Record<TypeStep, TypeStyle>> = {
 
 /** Loads and resolves the theme. Paths in the config are relative to `dir` (the config's folder). */
 export function loadTheme(config: ThemeConfig | undefined, dir: string): Theme {
-  const { tokens, radiusPx, source, files } = readSource(config?.source, dir)
+  const { tokens, radiusPx, source, files, others } = readSource(config, dir)
   const overrides = {
     ...(config?.source === undefined ? DEFAULT_ROLES : {}),
     ...config?.roles,
@@ -211,6 +220,7 @@ export function loadTheme(config: ThemeConfig | undefined, dir: string): Theme {
   return {
     source,
     files,
+    permutations: others,
     roles,
     typography: { stacks, scale },
     space: {
@@ -249,7 +259,79 @@ export function loadTheme(config: ThemeConfig | undefined, dir: string): Theme {
   }
 }
 
-function readSource(
+interface Source {
+  tokens: ColourTokens
+  radiusPx: number | undefined
+  source: string
+  files: string[]
+  others: Record<string, string>[]
+}
+
+function readSource(config: ThemeConfig | undefined, dir: string): Source {
+  const source = config?.source
+  if (
+    config?.input !== undefined &&
+    !(typeof source === "string" && source.endsWith(".resolver.json"))
+  ) {
+    throw new EmailKitError("invalid-theme", "theme.input only applies to a .resolver.json source")
+  }
+  if (typeof source === "string" && source.endsWith(".resolver.json")) {
+    return fromResolver(readResolver(resolve(dir, source), source), config?.input ?? {})
+  }
+  return { ...readFiles(source, dir), others: [] }
+}
+
+/** The modifier whose contexts include `light` and `dark`; `theme` or `mode` if several do. */
+function modeModifier(resolver: Resolver): Modifier | undefined {
+  const modes = resolver.modifiers.filter(
+    (m) => m.contexts.includes("light") && m.contexts.includes("dark"),
+  )
+  if (modes.length <= 1) return modes[0]
+  const named = modes.filter((m) => m.name === "theme" || m.name === "mode")
+  if (named.length === 1) return named[0]
+  throw new EmailKitError(
+    "invalid-theme",
+    `${resolver.label}: several modifiers have light and dark contexts (${modes.map((m) => m.name).join(", ")}); name the colour-scheme one "theme"`,
+  )
+}
+
+function fromResolver(resolver: Resolver, input: Readonly<Record<string, string>>): Source {
+  const mode = modeModifier(resolver)
+  if (mode && Object.keys(input).some((key) => key.toLowerCase() === mode.name.toLowerCase())) {
+    throw new EmailKitError(
+      "invalid-theme",
+      `theme.input.${mode.name}: email-kit resolves both light and dark; leave it out`,
+    )
+  }
+  const files = new Set<string>()
+  const read = (context: "light" | "dark") => {
+    const result = resolveTokens(resolver, mode ? { ...input, [mode.name]: context } : input)
+    for (const file of result.files) files.add(file)
+    return readDtcgDocument(result.document, `${resolver.label} (${context})`)
+  }
+  const light = read("light")
+  const dark = mode ? read("dark") : undefined
+  const chosen = Object.entries(input)
+  const label = (values: [string, string][]) => values.map(([k, v]) => `${k}=${v}`).join(", ")
+  // The selected permutation, with defaults filled in, to leave out of the others.
+  const selected = label(
+    resolver.modifiers
+      .filter((m) => m !== mode)
+      .map((m) => [
+        m.name,
+        chosen.find(([k]) => k.toLowerCase() === m.name.toLowerCase())?.[1] ?? m.default ?? "",
+      ]),
+  )
+  return {
+    tokens: { light: light.colours, dark: dark?.colours },
+    radiusPx: light.radiusPx,
+    source: chosen.length > 0 ? `${resolver.label} (${label(chosen)})` : resolver.label,
+    files: [...files],
+    others: permutations(resolver, mode?.name).filter((p) => label(Object.entries(p)) !== selected),
+  }
+}
+
+function readFiles(
   source: ThemeConfig["source"],
   dir: string,
 ): { tokens: ColourTokens; radiusPx: number | undefined; source: string; files: string[] } {

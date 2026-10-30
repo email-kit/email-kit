@@ -23,6 +23,11 @@ function surfaceOf(role: Role): Role | undefined {
   return "canvas"
 }
 
+function where(finding: TokenFinding): string {
+  const parts = [finding.permutation, finding.mode].filter(Boolean)
+  return parts.length > 0 ? ` (${parts.join(", ")})` : ""
+}
+
 export function formatTokens(theme: Theme, findings: readonly TokenFinding[]): string {
   const { light, dark } = theme.roles
   const lines = [`Theme: ${theme.source} (dark: ${theme.dark})`, ""]
@@ -46,9 +51,7 @@ export function formatTokens(theme: Theme, findings: readonly TokenFinding[]): s
   if (findings.length === 0) lines.push("  none")
   const mark = { error: "✗", warning: "!", info: "i" } as const
   for (const finding of findings) {
-    lines.push(
-      `  ${mark[finding.level]} ${finding.id}${finding.mode ? ` (${finding.mode})` : ""}: ${finding.message}`,
-    )
+    lines.push(`  ${mark[finding.level]} ${finding.id}${where(finding)}: ${finding.message}`)
   }
   const count = (level: TokenFinding["level"]) => findings.filter((f) => f.level === level).length
   lines.push("", `${count("error")} errors, ${count("warning")} warnings, ${count("info")} notes`)

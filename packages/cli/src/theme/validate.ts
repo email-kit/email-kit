@@ -12,6 +12,8 @@ export interface TokenFinding {
   readonly level: Level
   /** For colour findings */
   readonly mode?: Mode
+  /** A resolver permutation other than the selected one, such as `brand=b` */
+  readonly permutation?: string
   readonly message: string
 }
 

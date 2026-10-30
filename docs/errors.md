@@ -168,8 +168,8 @@ A test checks that every id the code can raise is listed here.
 ## Themes
 
 ### invalid-theme
-**Why:** the theme file isn't valid CSS, has no `:root { --… }` variables, or its `var()` references form a cycle.
-**Fix:** correct the file named in the error. A shadcn theme is the CSS that `shadcn init` writes (`app/globals.css` or similar).
+**Why:** the theme source can't be used. A shadcn CSS file isn't valid CSS, has no `:root { --… }` variables, or its `var()` references form a cycle. A DTCG token file isn't valid JSON, or an alias points at no token or forms a cycle. A `.resolver.json` breaks a rule of the DTCG Resolver Module: an unknown `version`, a modifier with fewer than two contexts or a `default` that isn't one of them, a `$ref` that points at nothing (or at a modifier from a set, or into `resolutionOrder`), an inline entry without `name` and `type`, a cycle, or a `theme.input` naming an unknown modifier or context.
+**Fix:** correct the file or the input named in the error. A shadcn theme is the CSS that `shadcn init` writes (`app/globals.css` or similar). For a resolver, `theme.input` picks every modifier except the one with `light` and `dark` contexts, which email-kit resolves both of.
 
 ### invalid-colour
 **Why:** a theme value isn't a CSS colour email-kit can convert (`oklch()`, `rgb()`, `hsl()`, `color(display-p3 …)`, hex or a named colour).

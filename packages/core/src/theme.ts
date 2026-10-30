@@ -66,10 +66,17 @@ export interface ThemeConfig {
    * Where the colours come from:
    * - a shadcn CSS file (`"app/globals.css"`);
    * - DTCG token files per mode (`{ light: "tokens/light.tokens.json", dark: "…" }`);
-   * - the variables themselves (`{ light: { primary: "oklch(0.2 0 0)" }, dark: { … } }`).
+   * - the variables themselves (`{ light: { primary: "oklch(0.2 0 0)" }, dark: { … } }`);
+   * - a DTCG resolver (`"tokens/theme.resolver.json"`): its modifier with `light` and `dark`
+   *   contexts gives the two modes, and `input` picks the others.
    * Default: email-kit's built-in neutral theme.
    */
   readonly source?: string | { readonly light: string; readonly dark?: string } | ThemeVariables
+  /**
+   * For a resolver source: the context of each modifier besides light/dark, such as
+   * `{ brand: "acme" }`. Default: each modifier's default. Every permutation is checked.
+   */
+  readonly input?: Readonly<Record<string, string>>
   /** Override a role with a CSS colour, or `"{token}"` from the source; for both modes or one. */
   readonly roles?: Readonly<
     Partial<Record<ThemeRole, string | { readonly light?: string; readonly dark?: string }>>

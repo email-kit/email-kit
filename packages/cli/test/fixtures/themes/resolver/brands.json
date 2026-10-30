@@ -1,0 +1,40 @@
+{
+  "acme": {
+    "brand": {
+      "$type": "color",
+      "600": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.1137,
+            0.3059,
+            0.8471
+          ],
+          "hex": "#1d4ed8"
+        }
+      },
+      "50": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.9373,
+            0.9647,
+            1.0
+          ],
+          "hex": "#eff6ff"
+        }
+      },
+      "300": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.5765,
+            0.7725,
+            0.9922
+          ],
+          "hex": "#93c5fd"
+        }
+      }
+    }
+  }
+}

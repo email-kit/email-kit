@@ -7,9 +7,9 @@ import { compile, describeResult, summarize } from "./compiler/build.ts"
 import { loadConfig } from "./compiler/config.ts"
 import { formatError } from "./compiler/problems.ts"
 import { watchProject } from "./compiler/watch.ts"
+import { checkPermutations } from "./theme/check.ts"
 import { formatTokens } from "./theme/report.ts"
 import { loadTheme } from "./theme/theme.ts"
-import { validateTheme } from "./theme/validate.ts"
 import { VERSION } from "./version.ts"
 
 export { VERSION }
@@ -77,7 +77,7 @@ async function tokensCommand(options: { config?: string }, io: Io): Promise<numb
   try {
     const config = await loadConfig({ cwd: io.cwd, config: options.config })
     const theme = loadTheme(config.theme, config.dir)
-    const findings = validateTheme(theme)
+    const findings = checkPermutations(theme, config.theme, config.dir)
     io.out(formatTokens(theme, findings))
     return findings.some((finding) => finding.level === "error") ? 1 : 0
   } catch (error) {

@@ -189,7 +189,16 @@ function readPlatform(value: unknown, problems: string[]): PlatformValues {
   return { constants, runtime: runtime.sort() }
 }
 
-const THEME_KEYS = new Set(["source", "roles", "typography", "radius", "layout", "dark", "emit"])
+const THEME_KEYS = new Set([
+  "source",
+  "input",
+  "roles",
+  "typography",
+  "radius",
+  "layout",
+  "dark",
+  "emit",
+])
 
 // The shape and the names; values (colours, files) are checked when the theme is loaded.
 function checkTheme(value: unknown, problems: string[]): void {
@@ -207,6 +216,17 @@ function checkTheme(value: unknown, problems: string[]): void {
     if (!(ROLES as readonly string[]).includes(role)) {
       const near = ROLES.find((r) => r.toLowerCase() === role.toLowerCase())
       problems.push(`theme.roles.${role}: unknown role${near ? ` (did you mean ${near}?)` : ""}`)
+    }
+  }
+  if (theme.input !== undefined) {
+    const input = theme.input
+    if (typeof input !== "object" || input === null || Array.isArray(input)) {
+      problems.push('theme.input: must be an object like { brand: "acme" }')
+    } else {
+      for (const [name, context] of Object.entries(input)) {
+        if (typeof context !== "string")
+          problems.push(`theme.input.${name}: must be a context name`)
+      }
     }
   }
   if (theme.dark !== undefined && theme.dark !== "authored" && theme.dark !== "none") {

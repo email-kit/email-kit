@@ -245,7 +245,7 @@ describe("compile with a theme", () => {
       ),
     ).toThrow(
       [
-        "  • theme.sorce: unknown option (known: source, roles, typography, radius, layout, dark, emit)",
+        "  • theme.sorce: unknown option (known: source, input, roles, typography, radius, layout, dark, emit)",
         "  • theme.roles.MutedInk: unknown role (did you mean mutedInk?)",
         '  • theme.dark: must be "authored" or "none"',
       ].join("\n"),

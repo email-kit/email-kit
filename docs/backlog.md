@@ -56,7 +56,10 @@ when** (acceptance).
   P1-104 (the THM-04 roles with the §12.5 shadcn mapping and status defaults), P1-111 (muted ink
   moved to the nearest passing lightness: shadcn's #737373 is 4.35:1 on its own page ground),
   and the colour checks of P1-110. Then: P1-100 (`theme` config, checked names with suggestions),
-  P1-102 (DTCG token files per mode and inline variables; **resolver files still to do**),
+  P1-102 (DTCG token files per mode, inline variables, and resolver files: sets, modifiers,
+  `resolutionOrder`, `$ref` to pointers, files and file pointers, extending, inline entries, the
+  spec's required errors; the modifier with `light`/`dark` contexts gives the modes and
+  `theme.input` picks the rest; every other permutation is checked too, for P1-110),
   P1-105/106 and the button/OTP part of P1-107, P1-108 (`dark: authored | none`), the rest of the
   P1-110 checks (font stacks, weights, sizes, button height, container, radius), P1-112
   (`theme.emit` → `theme.json`) and P1-114 (`email-kit tokens`). The built-in default theme is shadcn

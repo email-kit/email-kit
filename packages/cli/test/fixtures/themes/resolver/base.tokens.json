@@ -1,0 +1,136 @@
+{
+  "radius": {
+    "$type": "dimension",
+    "$value": {
+      "value": 10,
+      "unit": "px"
+    }
+  },
+  "neutral": {
+    "$type": "color",
+    "0": {
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "hex": "#ffffff"
+      }
+    },
+    "100": {
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [
+          0.9569,
+          0.9569,
+          0.9608
+        ],
+        "hex": "#f4f4f5"
+      }
+    },
+    "200": {
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [
+          0.8941,
+          0.8941,
+          0.9059
+        ],
+        "hex": "#e4e4e7"
+      }
+    },
+    "500": {
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [
+          0.4431,
+          0.4431,
+          0.4784
+        ],
+        "hex": "#71717a"
+      }
+    },
+    "600": {
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [
+          0.3216,
+          0.3216,
+          0.3569
+        ],
+        "hex": "#52525b"
+      }
+    },
+    "400": {
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [
+          0.6314,
+          0.6314,
+          0.6667
+        ],
+        "hex": "#a1a1aa"
+      }
+    },
+    "800": {
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [
+          0.1529,
+          0.1529,
+          0.1647
+        ],
+        "hex": "#27272a"
+      }
+    },
+    "900": {
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [
+          0.0941,
+          0.0941,
+          0.1059
+        ],
+        "hex": "#18181b"
+      }
+    },
+    "950": {
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [
+          0.0353,
+          0.0353,
+          0.0431
+        ],
+        "hex": "#09090b"
+      }
+    }
+  },
+  "red": {
+    "$type": "color",
+    "700": {
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [
+          0.7255,
+          0.1098,
+          0.1098
+        ],
+        "hex": "#b91c1c"
+      }
+    },
+    "400": {
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [
+          0.9725,
+          0.4431,
+          0.4431
+        ],
+        "hex": "#f87171"
+      }
+    }
+  }
+}

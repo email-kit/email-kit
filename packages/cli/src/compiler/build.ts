@@ -1,9 +1,9 @@
 // `email-kit compile`: config → every template × locale → the output folder (P1-087).
 
 import { basename, relative } from "node:path"
-
+import { checkPermutations } from "../theme/check.ts"
 import { loadTheme, type Theme } from "../theme/theme.ts"
-import { type TokenFinding, validateTheme } from "../theme/validate.ts"
+import type { TokenFinding } from "../theme/validate.ts"
 import { loadConfig, type ResolvedConfig } from "./config.ts"
 import { buildOutput, type WriteResult, writeOutput } from "./output.ts"
 import { type CompiledTemplate, compileProject } from "./project.ts"
@@ -32,7 +32,7 @@ export async function compile(options: CompileOptions): Promise<CompileResult> {
 export async function compileWithConfig(config: ResolvedConfig): Promise<CompileResult> {
   // Every theme permutation is resolved and validated on compile (THM-10).
   const theme = loadTheme(config.theme, config.dir)
-  const themeFindings = validateTheme(theme)
+  const themeFindings = checkPermutations(theme, config.theme, config.dir)
   const templates = await compileProject(config, theme)
   const output = buildOutput(templates, {
     locales: config.locales,

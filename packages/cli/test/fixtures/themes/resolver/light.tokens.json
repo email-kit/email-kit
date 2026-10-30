@@ -1,0 +1,44 @@
+{
+  "color": {
+    "$type": "color",
+    "background": {
+      "$value": "{neutral.0}"
+    },
+    "foreground": {
+      "$value": "{neutral.950}"
+    },
+    "card": {
+      "$value": "{neutral.0}"
+    },
+    "muted": {
+      "$root": {
+        "$value": "{neutral.100}"
+      },
+      "foreground": {
+        "$value": "{neutral.600}"
+      }
+    },
+    "primary": {
+      "$root": {
+        "$value": "{brand.600}"
+      },
+      "foreground": {
+        "$value": "{neutral.0}"
+      }
+    },
+    "secondary": {
+      "$root": {
+        "$value": "{brand.50}"
+      },
+      "foreground": {
+        "$value": "{neutral.900}"
+      }
+    },
+    "destructive": {
+      "$value": "{red.700}"
+    },
+    "border": {
+      "$value": "{neutral.200}"
+    }
+  }
+}

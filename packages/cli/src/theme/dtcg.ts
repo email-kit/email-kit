@@ -2,8 +2,8 @@
 // shadcn theme gives: colour tokens become flat names, so `color.primary.foreground` is
 // `primary-foreground` and the shadcn role mapping applies unchanged. Aliases (`{a.b}`) are
 // resolved, `$type` is inherited from groups, and a colour's `hex` fallback, when the designer
-// gave one, wins over conversion (research 05 §12.6). Resolver files (modifiers, permutations)
-// are not read yet; one file per mode is.
+// gave one, wins over conversion (research 05 §12.6). Resolver files merge their sources into one
+// document first (resolver.ts).
 
 import { EmailKitError } from "@email-kit/core/internal"
 
@@ -49,6 +49,11 @@ export function readDtcg(json: string, file = "tokens.json"): DtcgVariables {
       `${file} isn't valid JSON: ${(error as Error).message}`,
     )
   }
+  return readDtcgDocument(document, file)
+}
+
+/** A parsed (or merged) token document. */
+export function readDtcgDocument(document: unknown, file: string): DtcgVariables {
   if (!isObject(document))
     throw new EmailKitError("invalid-theme", `${file} isn't a DTCG token file`)
 
