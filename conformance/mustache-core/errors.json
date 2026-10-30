@@ -1,0 +1,214 @@
+{
+  "$schema": "./case-file.schema.json",
+  "dialect": "mustache-core@1",
+  "name": "errors",
+  "description": "Syntax errors (raised for the whole template before anything renders) and render errors (spec §10). A runtime never renders a blank for a missing value (DLG-03).",
+  "cases": [
+    {
+      "name": "unclosed tag",
+      "profile": "html",
+      "template": "Hello {{name",
+      "data": { "name": "Ada" },
+      "error": "unclosed-tag"
+    },
+    {
+      "name": "unclosed triple mustache",
+      "profile": "html",
+      "template": "{{{html}}",
+      "data": { "html": "x" },
+      "error": "unclosed-tag"
+    },
+    {
+      "name": "empty tag",
+      "profile": "html",
+      "template": "a{{}}b",
+      "data": {},
+      "error": "invalid-name"
+    },
+    {
+      "name": "space inside a name",
+      "profile": "html",
+      "template": "{{first name}}",
+      "data": {},
+      "error": "invalid-name"
+    },
+    {
+      "name": "empty segment in a dotted name",
+      "profile": "html",
+      "template": "{{a..b}}",
+      "data": {},
+      "error": "invalid-name"
+    },
+    {
+      "name": "trailing dot",
+      "profile": "html",
+      "template": "{{a.}}",
+      "data": {},
+      "error": "invalid-name"
+    },
+    {
+      "name": "numeric segment",
+      "description": "List items can't be addressed by index.",
+      "profile": "html",
+      "template": "{{items.0.name}}",
+      "data": {},
+      "error": "invalid-name"
+    },
+    {
+      "name": "hyphen in a name",
+      "profile": "html",
+      "template": "{{first-name}}",
+      "data": {},
+      "error": "invalid-name"
+    },
+    {
+      "name": "section sigil inside a triple mustache",
+      "profile": "html",
+      "template": "{{{#a}}}",
+      "data": {},
+      "error": "invalid-name"
+    },
+    {
+      "name": "comments are not supported",
+      "profile": "html",
+      "template": "{{! a comment }}",
+      "data": {},
+      "error": "unsupported-tag"
+    },
+    {
+      "name": "partials are not supported",
+      "profile": "html",
+      "template": "{{> header}}",
+      "data": {},
+      "error": "unsupported-tag"
+    },
+    {
+      "name": "set delimiters is not supported",
+      "profile": "html",
+      "template": "{{=<% %>=}}",
+      "data": {},
+      "error": "unsupported-tag"
+    },
+    {
+      "name": "ampersand raw tags are not supported",
+      "description": "Use {{{name}}} for unescaped values.",
+      "profile": "html",
+      "template": "{{&html}}",
+      "data": { "html": "x" },
+      "error": "unsupported-tag"
+    },
+    {
+      "name": "unclosed section",
+      "profile": "html",
+      "template": "{{#items}}x",
+      "data": { "items": [] },
+      "error": "unclosed-section"
+    },
+    {
+      "name": "closing an outer section while an inner one is open",
+      "profile": "html",
+      "template": "{{#a}}{{#b}}{{/a}}",
+      "data": {},
+      "error": "mismatched-close"
+    },
+    {
+      "name": "closing tag with nothing open",
+      "profile": "html",
+      "template": "x{{/items}}",
+      "data": {},
+      "error": "unexpected-close"
+    },
+    {
+      "name": "mismatched closing tag",
+      "profile": "html",
+      "template": "{{#a}}x{{/b}}",
+      "data": {},
+      "error": "mismatched-close"
+    },
+    {
+      "name": "syntax errors are raised even in skipped sections",
+      "description": "The whole template is parsed before rendering, so a bad tag inside a falsy section still fails.",
+      "profile": "html",
+      "template": "{{#flag}}{{bad name}}{{/flag}}",
+      "data": { "flag": false },
+      "error": "invalid-name"
+    },
+    {
+      "name": "missing value",
+      "profile": "html",
+      "template": "Hello, {{name}}!",
+      "data": {},
+      "error": "missing-value"
+    },
+    {
+      "name": "null value",
+      "profile": "html",
+      "template": "Hello, {{name}}!",
+      "data": { "name": null },
+      "error": "missing-value"
+    },
+    {
+      "name": "missing value in the text profile",
+      "profile": "text",
+      "template": "Hello, {{name}}!",
+      "data": {},
+      "error": "missing-value"
+    },
+    {
+      "name": "missing value in a triple mustache",
+      "profile": "html",
+      "template": "{{{html}}}",
+      "data": {},
+      "error": "missing-value"
+    },
+    {
+      "name": "broken dotted chain",
+      "profile": "html",
+      "template": "{{customer.name}}",
+      "data": { "customer": {} },
+      "error": "missing-value"
+    },
+    {
+      "name": "dotted chain through null",
+      "profile": "html",
+      "template": "{{customer.name}}",
+      "data": { "customer": null },
+      "error": "missing-value"
+    },
+    {
+      "name": "dotted names do not walk further out after the first match",
+      "profile": "html",
+      "template": "{{#a}}{{b.c}}{{/a}}",
+      "data": { "a": { "b": {} }, "b": { "c": "outer" } },
+      "error": "missing-value"
+    },
+    {
+      "name": "missing value inside a list item",
+      "profile": "html",
+      "template": "{{#items}}{{name}},{{/items}}",
+      "data": { "items": [{ "name": "a" }, {}] },
+      "error": "missing-value"
+    },
+    {
+      "name": "object as a variable",
+      "profile": "html",
+      "template": "{{customer}}",
+      "data": { "customer": { "name": "Ada" } },
+      "error": "non-scalar-value"
+    },
+    {
+      "name": "list as a variable",
+      "profile": "html",
+      "template": "{{items}}",
+      "data": { "items": ["a"] },
+      "error": "non-scalar-value"
+    },
+    {
+      "name": "implicit iterator on an object",
+      "profile": "html",
+      "template": "{{#customer}}{{.}}{{/customer}}",
+      "data": { "customer": { "name": "Ada" } },
+      "error": "non-scalar-value"
+    }
+  ]
+}

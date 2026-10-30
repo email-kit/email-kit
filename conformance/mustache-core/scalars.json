@@ -1,0 +1,115 @@
+{
+  "$schema": "./case-file.schema.json",
+  "dialect": "mustache-core@1",
+  "name": "scalars",
+  "description": "How numbers and booleans become text. Numbers are IEEE 754 doubles printed with the ECMAScript Number::toString algorithm (spec §8). Booleans print as true and false.",
+  "cases": [
+    {
+      "name": "integer",
+      "profile": "text",
+      "template": "{{n}}",
+      "data": { "n": 42 },
+      "expected": "42"
+    },
+    {
+      "name": "negative integer",
+      "profile": "text",
+      "template": "{{n}}",
+      "data": { "n": -7 },
+      "expected": "-7"
+    },
+    {
+      "name": "zero",
+      "profile": "text",
+      "template": "{{n}}",
+      "data": { "n": 0 },
+      "expected": "0"
+    },
+    {
+      "name": "negative zero prints as 0",
+      "profile": "text",
+      "template": "{{n}}",
+      "data": { "n": -0.0 },
+      "expected": "0"
+    },
+    {
+      "name": "decimal",
+      "profile": "text",
+      "template": "{{n}}",
+      "data": { "n": 1.5 },
+      "expected": "1.5"
+    },
+    {
+      "name": "whole-number decimal prints without a fraction",
+      "description": "100.0 in the data is the double 100. Runtimes whose JSON parser keeps a float type must not print 100.0.",
+      "profile": "text",
+      "template": "{{n}}",
+      "data": { "n": 100.0 },
+      "expected": "100"
+    },
+    {
+      "name": "shortest round-trip digits",
+      "profile": "text",
+      "template": "{{a}} {{b}} {{c}}",
+      "data": { "a": 0.1, "b": 0.30000000000000004, "c": 123456.789 },
+      "expected": "0.1 0.30000000000000004 123456.789"
+    },
+    {
+      "name": "large numbers below 1e21 print in full",
+      "profile": "text",
+      "template": "{{n}}",
+      "data": { "n": 1e20 },
+      "expected": "100000000000000000000"
+    },
+    {
+      "name": "1e21 and above use an exponent with a plus sign",
+      "profile": "text",
+      "template": "{{a}} {{b}}",
+      "data": { "a": 1e21, "b": 1.7976931348623157e308 },
+      "expected": "1e+21 1.7976931348623157e+308"
+    },
+    {
+      "name": "small numbers down to 1e-6 print in full",
+      "profile": "text",
+      "template": "{{a}} {{b}}",
+      "data": { "a": 0.000001, "b": 2.5e-5 },
+      "expected": "0.000001 0.000025"
+    },
+    {
+      "name": "numbers below 1e-6 use an exponent",
+      "profile": "text",
+      "template": "{{a}} {{b}} {{c}}",
+      "data": { "a": 1e-7, "b": 1.5e-10, "c": 5e-324 },
+      "expected": "1e-7 1.5e-10 5e-324"
+    },
+    {
+      "name": "integers beyond 2^53 are rounded to a double first",
+      "description": "9007199254740993 is not representable as a double; it becomes 9007199254740992. Runtimes with arbitrary-precision integers must convert to a double before printing.",
+      "profile": "text",
+      "template": "{{n}}",
+      "data": { "n": 9007199254740993 },
+      "expected": "9007199254740992"
+    },
+    {
+      "name": "true",
+      "profile": "text",
+      "template": "{{b}}",
+      "data": { "b": true },
+      "expected": "true"
+    },
+    {
+      "name": "false",
+      "profile": "text",
+      "template": "{{b}}",
+      "data": { "b": false },
+      "expected": "false"
+    },
+    {
+      "name": "numbers in the html profile",
+      "profile": "html",
+      "template": "<td>{{qty}}</td><td>{{price}}</td>",
+      "data": { "qty": 3, "price": -12.5 },
+      "expected": "<td>3</td><td>-12.5</td>"
+    }
+  ]
+}

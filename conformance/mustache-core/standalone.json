@@ -1,0 +1,110 @@
+{
+  "$schema": "./case-file.schema.json",
+  "dialect": "mustache-core@1",
+  "name": "standalone",
+  "description": "Standalone lines (spec §5): a section, inverted or closing tag alone on its line, apart from spaces and tabs, removes the whole line including its line ending.",
+  "cases": [
+    {
+      "name": "standalone section lines are removed",
+      "profile": "text",
+      "template": "{{#items}}\n- {{.}}\n{{/items}}\n",
+      "data": { "items": ["a", "b"] },
+      "expected": "- a\n- b\n"
+    },
+    {
+      "name": "indented standalone lines are removed",
+      "profile": "text",
+      "template": "start\n  {{#flag}}\n  yes\n  {{/flag}}\nend",
+      "data": { "flag": true },
+      "expected": "start\n  yes\nend"
+    },
+    {
+      "name": "tab indentation",
+      "profile": "text",
+      "template": "\t{{#flag}}\t\nyes\n\t{{/flag}}\nend",
+      "data": { "flag": true },
+      "expected": "yes\nend"
+    },
+    {
+      "name": "lines of a falsy section disappear completely",
+      "profile": "text",
+      "template": "a\n{{#flag}}\nhidden\n{{/flag}}\nb",
+      "data": { "flag": false },
+      "expected": "a\nb"
+    },
+    {
+      "name": "standalone inverted section",
+      "profile": "text",
+      "template": "a\n{{^items}}\nNo items\n{{/items}}\nb",
+      "data": { "items": [] },
+      "expected": "a\nNo items\nb"
+    },
+    {
+      "name": "CRLF line endings",
+      "profile": "text",
+      "template": "{{#flag}}\r\nyes\r\n{{/flag}}\r\nend",
+      "data": { "flag": true },
+      "expected": "yes\r\nend"
+    },
+    {
+      "name": "standalone at the end of the template without a line ending",
+      "profile": "text",
+      "template": "{{#flag}}\nyes\n  {{/flag}}",
+      "data": { "flag": true },
+      "expected": "yes\n"
+    },
+    {
+      "name": "text before the tag means not standalone",
+      "profile": "text",
+      "template": "x {{#flag}}\nyes{{/flag}}",
+      "data": { "flag": true },
+      "expected": "x \nyes"
+    },
+    {
+      "name": "text after the tag means not standalone",
+      "profile": "text",
+      "template": "{{#flag}}yes\n{{/flag}}",
+      "data": { "flag": true },
+      "expected": "yes\n"
+    },
+    {
+      "name": "two tags on one line are not standalone",
+      "profile": "text",
+      "template": "{{#flag}}{{/flag}}\nend",
+      "data": { "flag": true },
+      "expected": "\nend"
+    },
+    {
+      "name": "variables are never standalone",
+      "profile": "text",
+      "template": "  {{name}}\nend",
+      "data": { "name": "Ada" },
+      "expected": "  Ada\nend"
+    },
+    {
+      "name": "blank lines without tags are kept",
+      "profile": "text",
+      "template": "a\n  \n\nb",
+      "data": {},
+      "expected": "a\n  \n\nb"
+    },
+    {
+      "name": "inline sections keep their surroundings",
+      "profile": "text",
+      "template": "Items: {{#items}}{{.}}, {{/items}}done\n",
+      "data": { "items": ["a", "b"] },
+      "expected": "Items: a, b, done\n"
+    },
+    {
+      "name": "a plain-text receipt",
+      "profile": "text",
+      "template": "Order {{orderNumber}}\n\n{{#items}}\n- {{name}} x {{qty}}\n{{/items}}\n{{^items}}\nNo items.\n{{/items}}\n\nTotal: {{total}}\n",
+      "data": {
+        "orderNumber": "A-1042",
+        "total": "€9.50",
+        "items": [{ "name": "Tea", "qty": 2 }, { "name": "Cake", "qty": 1 }]
+      },
+      "expected": "Order A-1042\n\n- Tea x 2\n- Cake x 1\n\nTotal: €9.50\n"
+    }
+  ]
+}

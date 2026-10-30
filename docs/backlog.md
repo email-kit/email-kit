@@ -13,8 +13,10 @@ when** (acceptance).
 - a changeset is added if published output changes;
 - CI is green on Node 22, 24 and 26 and on Linux, macOS and Windows.
 
-**Status (2026-10-27):**
+**Status (2026-10-30):**
 - **P0-01 done.** The monorepo foundation is in place.
+- **P0-07 in review.** Draft spec in `docs/spec/mustache-core.md`, the TS reference renderer in
+  `packages/dialect` (internal) and a 142-case seed suite in `conformance/mustache-core/`.
 - **P0-02 prepared.** The placeholder packages and the release workflow are ready. Publishing and
   creating the repos need the maintainer's accounts: see `docs/setup/reserve-names.md`.
 - All other tasks are `todo`.

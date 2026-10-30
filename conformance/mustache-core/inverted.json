@@ -1,0 +1,85 @@
+{
+  "$schema": "./case-file.schema.json",
+  "dialect": "mustache-core@1",
+  "name": "inverted",
+  "description": "{{^name}}…{{/name}} renders once, in the current context, when the value is falsy (spec §7).",
+  "cases": [
+    {
+      "name": "missing renders",
+      "profile": "html",
+      "template": "[{{^discount}}none{{/discount}}]",
+      "data": {},
+      "expected": "[none]"
+    },
+    {
+      "name": "null renders",
+      "profile": "html",
+      "template": "[{{^discount}}none{{/discount}}]",
+      "data": { "discount": null },
+      "expected": "[none]"
+    },
+    {
+      "name": "false renders",
+      "profile": "html",
+      "template": "[{{^flag}}no{{/flag}}]",
+      "data": { "flag": false },
+      "expected": "[no]"
+    },
+    {
+      "name": "empty string renders",
+      "profile": "html",
+      "template": "[{{^note}}no note{{/note}}]",
+      "data": { "note": "" },
+      "expected": "[no note]"
+    },
+    {
+      "name": "zero renders",
+      "profile": "html",
+      "template": "[{{^count}}none{{/count}}]",
+      "data": { "count": 0 },
+      "expected": "[none]"
+    },
+    {
+      "name": "empty list renders",
+      "profile": "html",
+      "template": "[{{^items}}No items{{/items}}]",
+      "data": { "items": [] },
+      "expected": "[No items]"
+    },
+    {
+      "name": "true is skipped",
+      "profile": "html",
+      "template": "[{{^flag}}no{{/flag}}]",
+      "data": { "flag": true },
+      "expected": "[]"
+    },
+    {
+      "name": "a non-empty list is skipped once, not per item",
+      "profile": "html",
+      "template": "[{{^items}}none{{/items}}]",
+      "data": { "items": [1, 2, 3] },
+      "expected": "[]"
+    },
+    {
+      "name": "an object is skipped",
+      "profile": "html",
+      "template": "[{{^customer}}guest{{/customer}}]",
+      "data": { "customer": {} },
+      "expected": "[]"
+    },
+    {
+      "name": "the context does not change inside",
+      "profile": "html",
+      "template": "{{^discount}}{{name}}{{/discount}}",
+      "data": { "name": "Ada" },
+      "expected": "Ada"
+    },
+    {
+      "name": "section and inverted pair",
+      "profile": "html",
+      "template": "{{#items}}<li>{{.}}</li>{{/items}}{{^items}}<p>No items</p>{{/items}}",
+      "data": { "items": [] },
+      "expected": "<p>No items</p>"
+    }
+  ]
+}

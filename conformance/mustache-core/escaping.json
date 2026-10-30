@@ -1,0 +1,121 @@
+{
+  "$schema": "./case-file.schema.json",
+  "dialect": "mustache-core@1",
+  "name": "escaping",
+  "description": "The escaping table (spec §9). The html profile escapes exactly & < > \" ' in values; the text profile escapes nothing. Template text is never escaped.",
+  "cases": [
+    {
+      "name": "ampersand",
+      "profile": "html",
+      "template": "{{v}}",
+      "data": { "v": "Tom & Jerry" },
+      "expected": "Tom &amp; Jerry"
+    },
+    {
+      "name": "less-than",
+      "profile": "html",
+      "template": "{{v}}",
+      "data": { "v": "a < b" },
+      "expected": "a &lt; b"
+    },
+    {
+      "name": "greater-than",
+      "profile": "html",
+      "template": "{{v}}",
+      "data": { "v": "a > b" },
+      "expected": "a &gt; b"
+    },
+    {
+      "name": "double quote",
+      "profile": "html",
+      "template": "{{v}}",
+      "data": { "v": "say \"hi\"" },
+      "expected": "say &quot;hi&quot;"
+    },
+    {
+      "name": "single quote",
+      "profile": "html",
+      "template": "{{v}}",
+      "data": { "v": "it's" },
+      "expected": "it&#39;s"
+    },
+    {
+      "name": "all escaped characters together",
+      "profile": "html",
+      "template": "{{v}}",
+      "data": { "v": "<a href=\"x\">'&'</a>" },
+      "expected": "&lt;a href=&quot;x&quot;&gt;&#39;&amp;&#39;&lt;/a&gt;"
+    },
+    {
+      "name": "other punctuation is not escaped",
+      "description": "Unlike mustache.js, / ` = are not escaped.",
+      "profile": "html",
+      "template": "{{v}}",
+      "data": { "v": "a/b `c` d=e {f} [g] \\h" },
+      "expected": "a/b `c` d=e {f} [g] \\h"
+    },
+    {
+      "name": "existing entities are escaped again",
+      "profile": "html",
+      "template": "{{v}}",
+      "data": { "v": "&amp; &#39; &lt;" },
+      "expected": "&amp;amp; &amp;#39; &amp;lt;"
+    },
+    {
+      "name": "template text is not escaped",
+      "profile": "html",
+      "template": "<p class=\"x\">{{v}} & more</p>",
+      "data": { "v": "Ada & Co" },
+      "expected": "<p class=\"x\">Ada &amp; Co & more</p>"
+    },
+    {
+      "name": "the same escaping in attribute values",
+      "profile": "html",
+      "template": "<a title=\"{{t}}\" data-x='{{t}}'>x</a>",
+      "data": { "t": "\"Q\" & 'A'" },
+      "expected": "<a title=\"&quot;Q&quot; &amp; &#39;A&#39;\" data-x='&quot;Q&quot; &amp; &#39;A&#39;'>x</a>"
+    },
+    {
+      "name": "query string in an html attribute",
+      "profile": "html",
+      "template": "<a href=\"{{url}}\">",
+      "data": { "url": "https://example.test/?a=1&b=2" },
+      "expected": "<a href=\"https://example.test/?a=1&amp;b=2\">"
+    },
+    {
+      "name": "text profile escapes nothing",
+      "profile": "text",
+      "template": "{{v}}",
+      "data": { "v": "<b>\"Tom\" & 'Jerry'</b>" },
+      "expected": "<b>\"Tom\" & 'Jerry'</b>"
+    },
+    {
+      "name": "query string in the text profile is verbatim",
+      "profile": "text",
+      "template": "Open: {{url}}",
+      "data": { "url": "https://example.test/?a=1&b=2" },
+      "expected": "Open: https://example.test/?a=1&b=2"
+    },
+    {
+      "name": "triple mustache in the text profile",
+      "profile": "text",
+      "template": "{{{v}}}|{{v}}",
+      "data": { "v": "a & b" },
+      "expected": "a & b|a & b"
+    },
+    {
+      "name": "triple and double side by side in the html profile",
+      "profile": "html",
+      "template": "{{{v}}}|{{v}}",
+      "data": { "v": "a & b" },
+      "expected": "a & b|a &amp; b"
+    },
+    {
+      "name": "escaping inside sections",
+      "profile": "html",
+      "template": "{{#items}}<li>{{.}}</li>{{/items}}",
+      "data": { "items": ["<x>", "a&b"] },
+      "expected": "<li>&lt;x&gt;</li><li>a&amp;b</li>"
+    }
+  ]
+}

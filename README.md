@@ -30,6 +30,8 @@ Compiled emails work in Outlook, Gmail, Apple Mail and Yahoo, in light and dark 
 - [Research](docs/research/README.md): email-client rendering, dark mode and accessibility, law,
   deliverability, design and theming, tooling
 - [Architecture decision records](docs/adr/README.md)
+- Specs: [mustache-core](docs/spec/mustache-core.md), the placeholder dialect (draft), and its
+  [conformance suite](conformance/mustache-core/README.md)
 
 ## Contributing
 
