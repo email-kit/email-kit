@@ -210,11 +210,13 @@ export function createTranslate(
   locale: string,
   messages: Messages,
   plurals?: PluralSupport,
+  onUse?: (key: string) => void,
 ): Translate {
   return (key, params = {}) => {
     if (!Object.hasOwn(messages, key)) {
       throw new EmailKitError("missing-message", `Locale "${locale}" has no message "${key}"`)
     }
+    onUse?.(key)
     const where = `Message "${key}" in locale "${locale}"`
     const used = new Set<string>()
     const param = (name: string): MessageParam => {

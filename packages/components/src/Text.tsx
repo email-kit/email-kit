@@ -1,7 +1,7 @@
 import { type Child, type IrNode, role, type ThemeRole, useTheme } from "@email-kit/core"
 
 import { Block } from "./Block.tsx"
-import { font } from "./style.ts"
+import { font, textCell } from "./style.ts"
 
 export interface TextProps {
   readonly children?: Child
@@ -22,11 +22,14 @@ const TONES: Readonly<Record<NonNullable<TextProps["tone"]>, ThemeRole>> = {
 /** A paragraph (UI-08): px line height with Word's exact rule, colour from the theme, no margins. */
 export function Text(props: TextProps): IrNode {
   const theme = useTheme()
+  const cell = textCell()
   return (
     <Block bottom={theme.space.stack.md}>
       <p
+        {...cell.attrs}
         style={{
           margin: "0",
+          ...cell.style,
           ...font(props.size ?? "body", theme),
           color: role(TONES[props.tone ?? "default"]),
           ...(props.align && { textAlign: props.align }),

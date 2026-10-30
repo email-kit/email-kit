@@ -41,6 +41,8 @@ export interface EvaluateOptions {
   readonly theme?: ThemeContext
   /** The locale's CLDR plural rules, for {n, plural, …} (ADR 0003) */
   readonly plurals?: PluralSupport
+  /** Called with each message key t() resolves, for i18n.unused-keys */
+  readonly onMessage?: (key: string) => void
   /** The locale's writing direction, read with useDirection(). Default: `ltr` */
   readonly dir?: "ltr" | "rtl"
 }
@@ -54,7 +56,12 @@ export function evaluate<T>(
     withTheme(options.theme, () =>
       withScopes(() => {
         const data = createPlaceholder(0) as Data<T>
-        const t = createTranslate(options.locale, options.messages, options.plurals)
+        const t = createTranslate(
+          options.locale,
+          options.messages,
+          options.plurals,
+          options.onMessage,
+        )
         const platform = createPlatform(options.platform ?? { constants: {}, runtime: [] })
         return {
           subject: fragment(definition.subject(data, t, platform)),

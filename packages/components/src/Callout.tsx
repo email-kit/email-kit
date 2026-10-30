@@ -1,7 +1,7 @@
 import { type Child, type IrNode, role, useTheme } from "@email-kit/core"
 
 import { Block } from "./Block.tsx"
-import { font, PRESENTATION } from "./style.ts"
+import { font, PRESENTATION, textCell } from "./style.ts"
 
 export interface CalloutProps {
   readonly tone: "info" | "success" | "warning" | "error"
@@ -20,6 +20,7 @@ export function Callout(props: CalloutProps): IrNode {
   const { stack } = theme.space
   const status = `status.${props.tone}` as const
   const hasBody = props.children !== undefined
+  const cell = textCell()
   return (
     <Block bottom={stack.md}>
       <table {...PRESENTATION}>
@@ -38,8 +39,10 @@ export function Callout(props: CalloutProps): IrNode {
             >
               {/* Inside a coloured cell, a margin would show Word's background bleed. */}
               <p
+                {...cell.attrs}
                 style={{
                   margin: "0",
+                  ...cell.style,
                   ...(hasBody && { paddingBottom: `${stack.sm}px` }),
                   ...font("body", theme),
                   fontWeight: 700,
@@ -49,7 +52,15 @@ export function Callout(props: CalloutProps): IrNode {
                 {props.title}
               </p>
               {hasBody && (
-                <p style={{ margin: "0", ...font("bodySm", theme), color: role(`${status}.ink`) }}>
+                <p
+                  {...cell.attrs}
+                  style={{
+                    margin: "0",
+                    ...cell.style,
+                    ...font("bodySm", theme),
+                    color: role(`${status}.ink`),
+                  }}
+                >
                   {props.children}
                 </p>
               )}

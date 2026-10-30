@@ -27,6 +27,8 @@ export interface CompiledEmail {
   readonly html: string
   /** `text` profile */
   readonly text: string
+  /** The message keys the template used, for i18n.unused-keys */
+  readonly messageKeys: readonly string[]
 }
 
 export interface CompileOptions {
@@ -66,7 +68,14 @@ export function compileEmail<T>(
   const theme = options.theme ?? builtInTheme()
   const dir = isRtl(options.locale) ? "rtl" : "ltr"
   const plurals = pluralRules(options.locale)
-  const ir = evaluate(definition, { ...options, theme: themeContext(theme), dir, plurals })
+  const used = new Set<string>()
+  const ir = evaluate(definition, {
+    ...options,
+    theme: themeContext(theme),
+    dir,
+    plurals,
+    onMessage: (key) => used.add(key),
+  })
   if (options.model) {
     const parts = [ir.subject, ...(ir.preheader ? [ir.preheader] : []), ir.body]
     checkDerived(parts, options.model, `${definition.id} (${options.locale})`)
@@ -86,7 +95,15 @@ export function compileEmail<T>(
   })
   const text = renderTextPart(ir.body, preheader)
 
-  const compiled = { id: definition.id, locale: options.locale, subject, preheader, html, text }
+  const compiled = {
+    id: definition.id,
+    locale: options.locale,
+    subject,
+    preheader,
+    html,
+    text,
+    messageKeys: [...used].sort(),
+  }
   for (const part of ["subject", "preheader", "html", "text"] as const) {
     try {
       parse(compiled[part])

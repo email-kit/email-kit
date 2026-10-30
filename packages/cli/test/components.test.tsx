@@ -259,8 +259,9 @@ describe("DataTable", () => {
 
   it("aligns to the physical sides of a right-to-left locale", () => {
     const email = compile(table, "ar")
-    expect(email.body).toMatch(/<caption style="[^"]*text-align:right;/)
-    expect(email.body).toMatch(/<th scope="col" width="60" style="[^"]*text-align:left;/)
+    // Cells also carry dir, which some clients need on the cell itself (i18n.rtl-explicit).
+    expect(email.body).toMatch(/<caption dir="rtl" style="[^"]*text-align:right;/)
+    expect(email.body).toMatch(/<th dir="rtl" scope="col" width="60" style="[^"]*text-align:left;/)
   })
 
   it("lists each row as Header: value lines in the text part", () => {

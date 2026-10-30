@@ -1,7 +1,7 @@
 // Shared style helpers. Components take every value from the theme (UI-01): sizes from the type
 // scale, colours through role(), spacing from the space scale.
 
-import { type ThemeContext, type TypeStep, useTheme } from "@email-kit/core"
+import { type ThemeContext, type TypeStep, useDirection, useTheme } from "@email-kit/core"
 
 /** A non-breaking space, as an escape: keeps empty cells from collapsing in Outlook. */
 export const NBSP = "\u00a0"
@@ -35,3 +35,17 @@ export const PRESENTATION = {
   cellspacing: "0",
   border: "0",
 } as const
+
+/**
+ * In a right-to-left email, a text cell carries `dir` and an explicit alignment
+ * (i18n.rtl-explicit): Orange strips `dir` from tables and cells, and Outlook mishandles
+ * inherited direction. Left-to-right output is unchanged.
+ */
+export function textCell(dir: "rtl" | "ltr" = "rtl"): {
+  readonly attrs: { readonly dir?: "rtl" | "ltr" }
+  readonly style: { readonly textAlign?: "right" }
+} {
+  return useDirection() === "rtl"
+    ? { attrs: { dir }, style: { textAlign: "right" } }
+    : { attrs: {}, style: {} }
+}

@@ -27,7 +27,7 @@ export type {
 } from "./i18n.ts"
 export type { IrNode } from "./ir.ts"
 export { type Child, Fragment } from "./jsx-runtime.ts"
-export { secret, secretUrl, url } from "./markers.ts"
+export { type FormattedKind, formatted, secret, secretUrl, url } from "./markers.ts"
 export type {
   Data,
   ListPlaceholder,

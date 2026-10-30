@@ -391,6 +391,27 @@ variant instead of the compiled templates (each render then has `fixture`), or `
 
 **Fix:** Translations run up to three times longer and right to left: don't build copy from fragments, and don't let the layout depend on a string's length.
 
+### i18n.intl-format
+**Default:** error
+
+**Rule:** No currency symbols next to an argument, and no dates built from parts, in messages or templates.
+
+**Fix:** Format the value in the backend for the recipient's locale (Intl.NumberFormat with a currency, Intl.DateTimeFormat with a time zone) and pass it as a field marked formatted("money") or formatted("date").
+
+### i18n.unused-keys
+**Default:** warning
+
+**Rule:** Every message key is used by its template.
+
+**Fix:** Delete the key from every locale, or use it. Translators spend time on every key.
+
+### i18n.rtl-explicit
+**Default:** error
+
+**Rule:** In right-to-left emails, every text cell (p, h1–h6, li, td, th, caption) carries dir and an explicit alignment.
+
+**Fix:** Use email-kit's components, which do this, or add dir="rtl" and text-align to the element: Orange strips dir from tables and cells, and Outlook mishandles inherited direction.
+
 ## Copy
 
 ### copy.placeholder-fallbacks

@@ -280,7 +280,16 @@ override, compiled `dir="rtl"`), generated from the default locale's messages by
 literal ICU text; plurals gain the pseudo-locale's categories from `other`. `email-kit check`
 builds both in memory: the template checks run on them and report only what the real locales
 don't (`i18n.expansion` for a template that doesn't compile there). `locales.pseudo` ships them.
-Not yet: `i18n.expansion-render` (clipping, button lines; phase 2) and the other `i18n.*` checks.
+Not yet: `i18n.expansion-render` (clipping, button lines; phase 2).
+
+**P1-157** caller-formatted values: `formatted("date" | "time" | "date-time" | "money" | "number" |
+"percent")` marks a string field; the hint goes into `schema.json` and the generated data type's
+comment (how to format it); `docs/recipes/formatting.md` covers JS, Python and Go. New checks:
+`i18n.intl-format` (currency symbols next to arguments, dates from parts, in messages and template
+source), `i18n.unused-keys` (warn, per messages file) and `i18n.rtl-explicit` (text cells in RTL
+emails carry `dir` and alignment). The components now add `dir="rtl"` and right alignment to text
+cells in RTL emails only (LTR output unchanged; one-time codes stay `dir="ltr"`); the ar-XB build
+checks every project. Check findings now keep distinct locations of the same message.
 
 | ID | Task | Reqs | Pri | Dep | Done when |
 |---|---|---|---|---|---|

@@ -1,7 +1,7 @@
 import { type Child, type IrNode, role, useTheme } from "@email-kit/core"
 
 import { Block } from "./Block.tsx"
-import { font } from "./style.ts"
+import { font, textCell } from "./style.ts"
 
 export interface HeadingProps {
   readonly children?: Child
@@ -13,13 +13,16 @@ export interface HeadingProps {
 /** A heading (UI-07): the h1–h3 steps of the type scale. */
 export function Heading(props: HeadingProps): IrNode {
   const theme = useTheme()
+  const cell = textCell()
   const level = props.level ?? 1
   const Tag = `h${level}` as const
   return (
     <Block bottom={theme.space.stack.md}>
       <Tag
+        {...cell.attrs}
         style={{
           margin: "0",
+          ...cell.style,
           ...font(Tag, theme),
           color: role("ink"),
           ...(props.align && { textAlign: props.align }),

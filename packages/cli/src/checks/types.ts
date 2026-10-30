@@ -59,6 +59,15 @@ export interface CheckContext {
   readonly rendered: readonly CheckedEmail[]
   /** The templates compiled in the pseudo-locales that don't ship (I18N-05) */
   readonly pseudo: readonly CheckedEmail[]
+  /** Each template's messages per real locale, with the keys its templates used */
+  readonly messages: readonly {
+    readonly template: string
+    readonly locale: string
+    /** Relative to the project folder */
+    readonly file: string
+    readonly messages: Readonly<Record<string, string>>
+    readonly used: ReadonlySet<string>
+  }[]
   /** Templates that failed to compile in a pseudo-locale */
   readonly pseudoErrors: readonly {
     readonly template: string

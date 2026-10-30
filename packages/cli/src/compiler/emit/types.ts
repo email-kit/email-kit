@@ -7,14 +7,29 @@ export function dataInterface(name: string, root: Field, description: string): s
   return `/** ${description} */\nexport interface ${name} ${objectType(root, "")}\n`
 }
 
+// What a caller-formatted field (I18N-07) needs, where the backend developer sees it.
+const FORMATTED: Readonly<Record<string, string>> = {
+  date: "A date, formatted for the recipient: Intl.DateTimeFormat(locale, { dateStyle, timeZone }).",
+  time: "A time, formatted for the recipient: Intl.DateTimeFormat(locale, { timeStyle, timeZone }).",
+  "date-time":
+    "A date and time, formatted for the recipient with their time zone: Intl.DateTimeFormat(locale, { dateStyle, timeStyle, timeZone }).",
+  money:
+    'An amount, formatted for the recipient: Intl.NumberFormat(locale, { style: "currency", currency }).',
+  number: "A number, formatted for the recipient: Intl.NumberFormat(locale).",
+  percent:
+    'A percentage, formatted for the recipient: Intl.NumberFormat(locale, { style: "percent" }).',
+}
+
 function objectType(field: Field, indent: string): string {
   const properties = field.properties ?? []
   if (properties.length === 0) return "{}"
   const inner = `${indent}  `
   const lines = properties.map((property) => {
-    const docs = property.field.description
-      ? `${inner}/** ${comment(property.field.description)} */\n`
-      : ""
+    const notes = [
+      property.field.description,
+      property.field.formatted && FORMATTED[property.field.formatted],
+    ].filter(Boolean)
+    const docs = notes.length > 0 ? `${inner}/** ${comment(notes.join(" "))} */\n` : ""
     const optional = property.required ? "" : "?"
     const type = typeOf(property.field, inner)
     // `| undefined` so callers under exactOptionalPropertyTypes may pass an explicit undefined.

@@ -28,6 +28,8 @@ export interface Field {
   readonly properties?: readonly Property[]
   readonly secret?: true
   readonly url?: true
+  /** A caller-formatted value (I18N-07): date, time, date-time, money, number or percent */
+  readonly formatted?: string
 }
 
 export interface Property {
@@ -51,6 +53,8 @@ export interface PortableSchema {
 
 /** The vendor extension keyword carrying email-kit field markers. */
 export const MARKER_KEY = "x-email-kit"
+
+const FORMATTED = ["date", "time", "date-time", "money", "number", "percent"]
 
 const NAME = /^[A-Za-z_][A-Za-z0-9_]*$/
 const UNION = "Unions aren't portable: use one type, optionally nullable"
@@ -272,7 +276,7 @@ function toField(json: unknown, path: string, issues: SchemaIssue[]): Field | un
 
   const marker = schema[MARKER_KEY]
   if (marker !== undefined) {
-    const { secret, url, ...unknown } =
+    const { secret, url, formatted, ...unknown } =
       typeof marker === "object" && marker !== null ? (marker as Record<string, unknown>) : {}
     if (Object.keys(unknown).length > 0 || typeof marker !== "object") {
       fail(`Unknown ${MARKER_KEY} marker ${JSON.stringify(marker)}`)
@@ -281,6 +285,14 @@ function toField(json: unknown, path: string, issues: SchemaIssue[]): Field | un
     if (url === true) {
       if (fieldType !== "string") fail("Only string fields can be url fields")
       field.url = true
+    }
+    if (formatted !== undefined) {
+      if (fieldType !== "string")
+        fail("Only string fields can be formatted: the backend formats them as text")
+      if (typeof formatted !== "string" || !FORMATTED.includes(formatted)) {
+        fail(`formatted must be one of ${FORMATTED.join(", ")}`)
+      }
+      field.formatted = formatted as string
     }
   }
 
@@ -338,8 +350,12 @@ function emit(field: Field): Record<string, unknown> {
     const required = field.properties.filter((p) => p.required).map((p) => p.name)
     if (required.length > 0) out.required = required
   }
-  if (field.secret || field.url) {
-    out[MARKER_KEY] = { ...(field.secret && { secret: true }), ...(field.url && { url: true }) }
+  if (field.secret || field.url || field.formatted) {
+    out[MARKER_KEY] = {
+      ...(field.secret && { secret: true }),
+      ...(field.url && { url: true }),
+      ...(field.formatted && { formatted: field.formatted }),
+    }
   }
   return out
 }

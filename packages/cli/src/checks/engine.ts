@@ -109,6 +109,16 @@ export async function contextOf(project: BuiltProject): Promise<CheckContext> {
     rendered,
     pseudo,
     pseudoErrors,
+    messages: project.templates.flatMap((t) => {
+      const used = new Set(t.emails.flatMap((email) => email.messageKeys))
+      return t.localeMessages.map((m) => ({
+        template: t.id,
+        locale: m.locale,
+        file: relative(config.dir, m.file),
+        messages: m.messages,
+        used,
+      }))
+    }),
     templates: project.templates.map((t) => ({
       id: t.id,
       file: relative(config.dir, t.file),
@@ -173,6 +183,13 @@ export function runChecks(
   // A static problem shows in the template and in every render: keep the first, which has the
   // line number. Problems that come from data differ per fixture and stay.
   const seen = new Set<string>()
+  const located = new Set(
+    findings
+      .filter((f) => f.subject.fixture === undefined)
+      .map(
+        (f) => `${f.id}|${f.subject.template}|${f.subject.locale}|${f.subject.file}|${f.message}`,
+      ),
+  )
   // A pseudo-locale finding the real locales already have adds nothing: keep only the new ones.
   const real = new Set(
     findings
@@ -186,7 +203,10 @@ export function runChecks(
     ) {
       if (real.has(`${f.id}|${f.subject.template}|${f.message}`)) return false
     }
-    const key = `${f.id}|${f.subject.template}|${f.subject.locale}|${f.subject.file}|${f.message}`
+    const base = `${f.id}|${f.subject.template}|${f.subject.locale}|${f.subject.file}|${f.message}`
+    // A render repeats a static problem the template already shows, with its line: drop it.
+    if (f.subject.fixture !== undefined && located.has(base)) return false
+    const key = `${base}|${f.subject.line}|${f.subject.column}|${f.subject.fixture}`
     if (seen.has(key)) return false
     seen.add(key)
     return true

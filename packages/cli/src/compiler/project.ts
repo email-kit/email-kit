@@ -33,6 +33,12 @@ export interface CompiledTemplate {
   readonly sources: readonly string[]
   /** The pseudo-locales `check` built in memory, when it asked for them */
   readonly pseudo: readonly PseudoBuild[]
+  /** Each real locale's messages and their file, for the i18n.* checks */
+  readonly localeMessages: readonly {
+    readonly locale: string
+    readonly file: string
+    readonly messages: Readonly<Record<string, string>>
+  }[]
   /** The default locale's messages, for the generated t() types (P1-159) */
   readonly messages: Readonly<Record<string, string>>
   /** The fixtures from defineEmail(), validated against the schema */
@@ -164,6 +170,12 @@ async function compileTemplate(
     sources: files,
     fixtures: definition.fixtures ?? {},
     messages: defaults,
+    localeMessages: config.locales
+      .filter((locale) => !isPseudo(locale))
+      .map((locale) => {
+        const path = join(config.messages, locale, `${definition.id}.json`)
+        return { locale, file: path, messages: readMessages(path) }
+      }),
     schema: definition.schema,
   }
 }

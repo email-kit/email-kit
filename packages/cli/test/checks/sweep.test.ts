@@ -178,6 +178,7 @@ describe("checks on renders", () => {
     rendered,
     pseudo: [],
     pseudoErrors: [],
+    messages: [],
     templates: [],
     sources: [],
     theme: undefined as never,

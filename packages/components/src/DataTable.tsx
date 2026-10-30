@@ -14,7 +14,7 @@ import {
 } from "@email-kit/core"
 
 import { Block } from "./Block.tsx"
-import { font } from "./style.ts"
+import { font, textCell } from "./style.ts"
 
 export interface DataTableColumn<Item> {
   readonly header: Child
@@ -84,6 +84,8 @@ function summaryRows(
 export function DataTable<Item>(props: DataTableProps<Item>): IrNode {
   const theme = useTheme()
   const dir = useDirection()
+  // Alignment is already explicit, per side; cells only need dir (i18n.rtl-explicit).
+  const cell = textCell()
   if (props.columns.length < 2) {
     throw new EmailKitError(
       "invalid-table",
@@ -126,6 +128,7 @@ export function DataTable<Item>(props: DataTableProps<Item>): IrNode {
             style={{ borderCollapse: "collapse" }}
           >
             <caption
+              {...cell.attrs}
               style={{
                 padding: `0 0 ${pad}`,
                 textAlign: side(),
@@ -140,6 +143,7 @@ export function DataTable<Item>(props: DataTableProps<Item>): IrNode {
               <tr>
                 {props.columns.map((column) => (
                   <th
+                    {...cell.attrs}
                     scope="col"
                     width={column.width === undefined ? undefined : String(column.width)}
                     style={{
@@ -162,6 +166,7 @@ export function DataTable<Item>(props: DataTableProps<Item>): IrNode {
                       const Cell = rowHeaders && i === 0 ? "th" : "td"
                       return (
                         <Cell
+                          {...cell.attrs}
                           scope={Cell === "th" ? "row" : undefined}
                           style={{
                             ...cellStyle(column, "hairline"),
@@ -182,13 +187,16 @@ export function DataTable<Item>(props: DataTableProps<Item>): IrNode {
                 {summaryRows(props.summary, (row) => (
                   <tr>
                     <th
+                      {...cell.attrs}
                       scope="row"
                       colspan={String(props.columns.length - 1)}
                       style={summaryStyle(row)}
                     >
                       {row.label}
                     </th>
-                    <td style={summaryStyle(row)}>{row.amount}</td>
+                    <td {...cell.attrs} style={summaryStyle(row)}>
+                      {row.amount}
+                    </td>
                   </tr>
                 ))}
               </tfoot>

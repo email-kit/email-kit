@@ -1,6 +1,6 @@
 import { type Child, Conditional, type IrNode, role, useTheme } from "@email-kit/core"
 
-import { font, PRESENTATION } from "./style.ts"
+import { font, PRESENTATION, textCell } from "./style.ts"
 
 export interface KeyValueItem {
   readonly label: Child
@@ -25,16 +25,30 @@ export function KeyValue(props: KeyValueProps): IrNode {
   const theme = useTheme()
   const { stack } = theme.space
   const stacked = props.layout === "stacked"
+  const cell = textCell()
   const value = (item: KeyValueItem) =>
     item.copyable ? <span style={COPYABLE}>{item.value}</span> : item.value
   const row = (item: KeyValueItem) =>
     stacked ? (
       <>
         <Conditional when="htmlOnly">
-          <p style={{ margin: "0", ...font("caption", theme), color: role("mutedInk") }}>
+          <p
+            {...cell.attrs}
+            style={{
+              margin: "0",
+              ...cell.style,
+              ...font("caption", theme),
+              color: role("mutedInk"),
+            }}
+          >
             {item.label}
           </p>
-          <p style={{ margin: "0", ...font("body", theme), color: role("ink") }}>{value(item)}</p>
+          <p
+            {...cell.attrs}
+            style={{ margin: "0", ...cell.style, ...font("body", theme), color: role("ink") }}
+          >
+            {value(item)}
+          </p>
         </Conditional>
         <Conditional when="textOnly">
           <p>
@@ -43,7 +57,10 @@ export function KeyValue(props: KeyValueProps): IrNode {
         </Conditional>
       </>
     ) : (
-      <p style={{ margin: "0", ...font("body", theme), color: role("ink") }}>
+      <p
+        {...cell.attrs}
+        style={{ margin: "0", ...cell.style, ...font("body", theme), color: role("ink") }}
+      >
         <span style={{ color: role("mutedInk") }}>{item.label}:</span> {value(item)}
       </p>
     )

@@ -13,6 +13,20 @@ export const url: { readonly "x-email-kit": { readonly url: true } } = {
   "x-email-kit": { url: true },
 }
 
+/** What a caller-formatted value is (I18N-07, R5): the backend formats it for the recipient. */
+export type FormattedKind = "date" | "time" | "date-time" | "money" | "number" | "percent"
+
+/**
+ * A value the backend formats for the recipient, such as a date or an amount (I18N-07, R5).
+ * Templates don't format at send time, so output is identical in every runtime language:
+ * `z.string().meta(formatted("money"))`.
+ */
+export function formatted<Kind extends FormattedKind>(
+  kind: Kind,
+): { readonly "x-email-kit": { readonly formatted: Kind } } {
+  return { "x-email-kit": { formatted: kind } }
+}
+
 /** A URL carrying a token, such as a magic link. */
 export const secretUrl: { readonly "x-email-kit": { readonly secret: true; readonly url: true } } =
   {

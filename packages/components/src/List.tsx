@@ -1,6 +1,6 @@
 import { type Child, type IrNode, role, useTheme } from "@email-kit/core"
 
-import { font } from "./style.ts"
+import { font, textCell } from "./style.ts"
 
 export interface ListProps {
   /** `ListItem`s, or an `<Each>` of them */
@@ -27,10 +27,13 @@ export function List(props: ListProps): IrNode {
 /** One item of a `List`: body text in the ink colour, which Outlook won't inherit from the list. */
 export function ListItem(props: { readonly children?: Child }): IrNode {
   const theme = useTheme()
+  const cell = textCell()
   return (
     <li
+      {...cell.attrs}
       style={{
         margin: `0 0 ${theme.space.stack.sm}px`,
+        ...cell.style,
         ...font("body", theme),
         color: role("ink"),
       }}
