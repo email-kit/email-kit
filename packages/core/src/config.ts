@@ -1,6 +1,8 @@
 // The typed project config in email-kit.config.ts (CFG-01). Paths are relative to the config
-// file. M1.1 covers paths and locales; theme, targets, checks and platform values arrive with
-// their milestones.
+// file. M1.1 covers paths, locales, the module format and platform values; theme, targets and
+// checks arrive with their milestones.
+
+import type { PlatformKey } from "./platform.ts"
 
 export interface EmailKitConfig {
   /**
@@ -19,6 +21,11 @@ export interface EmailKitConfig {
    * `index.mjs` + `index.d.mts`, for projects built with plain `tsc` (ADR 0004). Default: `"ts"`.
    */
   readonly module?: "ts" | "mjs"
+  /**
+   * Platform values (CFG-07). A string is a compile-time constant, written into the output.
+   * `{ runtime: true }` means the backend passes it at send time: `createEmails({ siteUrl })`.
+   */
+  readonly platform?: Readonly<Partial<Record<PlatformKey, string | { readonly runtime: true }>>>
   readonly locales?: {
     /** The locale render() falls back to. Default: `"en"`. */
     readonly default: string

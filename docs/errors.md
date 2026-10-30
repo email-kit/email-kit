@@ -75,6 +75,10 @@ A test checks that every id the code can raise is listed here.
 **Why:** styles are fixed when the template compiles, so a `style` value can't come from `data`.
 **Fix:** choose between fixed styles with `<If>` and `<Unless>`.
 
+### platform-value-missing
+**Why:** the template reads `platform.<key>`, but the config doesn't set that platform value.
+**Fix:** set it in `email-kit.config.ts`: `platform: { productName: "Acme" }` for a fixed value, or `platform: { siteUrl: { runtime: true } }` for one the backend passes to `createEmails()` at send time.
+
 ### outside-evaluation
 **Why:** `<Each>`, `<If>` or `<Unless>` ran outside a compile, for example from a test that called the component directly.
 **Fix:** compile the template with `email-kit compile`, or through the compiler API.
@@ -158,4 +162,5 @@ A test checks that every id the code can raise is listed here.
 These come from the generated module in a backend, not from the CLI.
 
 - **`missing-value`, `non-scalar-value`, `invalid-number`:** from the placeholder renderer, when the data doesn't match the template. See the [mustache-core spec](spec/mustache-core.md#10-errors).
+- **`missing-context`:** `createEmails()` was called without a value the config marks `{ runtime: true }`, or with an empty one. Pass every runtime key as a non-empty string.
 - **`subject-line-break`:** the rendered subject contains CR or LF, usually from user data, and could inject mail headers. Strip line breaks from the value before rendering.

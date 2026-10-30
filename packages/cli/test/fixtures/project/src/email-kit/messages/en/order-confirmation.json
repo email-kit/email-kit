@@ -6,5 +6,7 @@
   "discount": "You saved {discount}.",
   "noDiscount": "No discount this time.",
   "viewTitle": "Order {order}",
-  "view": "View your order"
+  "view": "View your order",
+  "footer": "Sent by {product}.",
+  "visit": "Visit our shop"
 }

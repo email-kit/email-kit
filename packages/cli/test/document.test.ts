@@ -23,12 +23,18 @@ const messages = {
   noDiscount: "No discount this time.",
   viewTitle: "Order {order}",
   view: "View your order",
+  footer: "Sent by {product}.",
+  visit: "Visit our shop",
 }
 
 let html: string
 beforeAll(async () => {
   const { definition } = await loadTemplate(template, { cacheDir })
-  html = compileEmail(definition, { locale: "en", messages }).html
+  html = compileEmail(definition, {
+    locale: "en",
+    messages,
+    platform: { constants: { productName: "Shop Example" }, runtime: ["siteUrl"] },
+  }).html
 })
 
 const head = () => html.slice(html.indexOf("<head>"), html.indexOf("</head>"))
@@ -52,7 +58,8 @@ describe("document skeleton (research 01 §2)", () => {
     // Quotes need escaping in the attribute only, not in <title> text.
     expect(html).toContain('<title>Order "{{orderNumber}}" confirmed</title>')
     expect(html).toContain('aria-label="Order &quot;{{orderNumber}}&quot; confirmed"')
-    const rendered = render(html, { ...data, orderNumber: 'A"1' }, "html")
+    const context = { _ek: { context: { siteUrl: "https://shop.example" } } }
+    const rendered = render(html, { ...data, ...context, orderNumber: 'A"1' }, "html")
     expect(rendered).toContain('aria-label="Order &quot;A&quot;1&quot; confirmed"')
   })
 

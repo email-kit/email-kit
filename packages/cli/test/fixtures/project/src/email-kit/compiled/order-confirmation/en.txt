@@ -18,3 +18,5 @@ No discount this time.
 
 {{/discount}}
 View your order: {{orderUrl}}
+
+Sent by Shop Example. Visit our shop: {{_ek.context.siteUrl}}

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import { createTemplate, project, resolveLocale, type Shape } from "../src/module.ts"
+import { createTemplate, project, readContext, resolveLocale, type Shape } from "../src/module.ts"
 
 describe("resolveLocale", () => {
   const locales = ["en", "de", "pt-BR", "pt"]
@@ -102,6 +102,7 @@ describe("createTemplate", () => {
         text: "{{name}}",
       },
     },
+    {},
   )
 
   it("renders every part with the right profile and falls back by locale", () => {
@@ -136,5 +137,52 @@ describe("createTemplate", () => {
     expect(() => template.render({ name: "A\r\nBcc: x", currency: "", items: [] })).toThrow(
       expect.objectContaining({ code: "subject-line-break" }),
     )
+  })
+})
+
+describe("runtime context (RUN-04)", () => {
+  const template = createTemplate(
+    "welcome",
+    "transactional",
+    {
+      fields: { name: "scalar", links: { list: { fields: { label: "scalar" }, optional: [] } } },
+      optional: [],
+    },
+    ["en"],
+    {
+      en: {
+        subject: "Welcome",
+        preheader: "",
+        html: '<a href="{{_ek.context.siteUrl}}">{{name}}</a>{{#links}}<i>{{label}} {{_ek.context.siteUrl}}</i>{{/links}}',
+        text: "{{_ek.context.siteUrl}}",
+      },
+    },
+    readContext(["siteUrl"], { siteUrl: "https://shop.example", ignored: "x" }),
+  )
+
+  it("fills context placeholders", () => {
+    const email = template.render({ name: "Ada", links: [] })
+    expect(email.html).toBe('<a href="https://shop.example">Ada</a>')
+    expect(email.text).toBe("https://shop.example")
+  })
+
+  it("can't be overridden or shadowed by data", () => {
+    const email = template.render({
+      name: "Ada",
+      _ek: { context: { siteUrl: "https://evil.example" } },
+      siteUrl: "https://evil.example",
+      links: [{ label: "a", _ek: { context: { siteUrl: "https://evil.example" } } }],
+    })
+    expect(email.html).not.toContain("evil")
+    expect(email.html).toContain("<i>a https://shop.example</i>")
+  })
+
+  it("requires every runtime key as a non-empty string", () => {
+    for (const context of [{}, { siteUrl: "" }, { siteUrl: 1 }, null]) {
+      expect(() => readContext(["siteUrl"], context)).toThrow(
+        expect.objectContaining({ code: "missing-context" }),
+      )
+    }
+    expect(readContext(["siteUrl"], { siteUrl: "x", other: "y" })).toEqual({ siteUrl: "x" })
   })
 })

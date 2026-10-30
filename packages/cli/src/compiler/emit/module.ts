@@ -19,6 +19,8 @@ export interface ModuleOptions {
   readonly version: string
   /** Every locale, the default first */
   readonly locales: readonly string[]
+  /** Platform keys the backend passes to createEmails() (RUN-04) */
+  readonly context: readonly string[]
   /** The config file, relative to the output folder's project, for the header */
   readonly configFile: string
 }
@@ -46,28 +48,32 @@ export function generateModule(
     ),
   )
 
-  const entries = templates.map((t) => {
-    const parts = t.emails
+  const parts = templates.map((t) => {
+    const locales = t.emails
       .map(
         (email) =>
-          `      ${JSON.stringify(email.locale)}: {\n` +
-          `        subject: ${JSON.stringify(email.subject)},\n` +
-          `        preheader: ${JSON.stringify(email.preheader)},\n` +
-          `        html: ${JSON.stringify(email.html)},\n` +
-          `        text: ${JSON.stringify(email.text)},\n` +
-          "      },",
+          `    ${JSON.stringify(email.locale)}: {\n` +
+          `      subject: ${JSON.stringify(email.subject)},\n` +
+          `      preheader: ${JSON.stringify(email.preheader)},\n` +
+          `      html: ${JSON.stringify(email.html)},\n` +
+          `      text: ${JSON.stringify(email.text)},\n` +
+          "    },",
       )
       .join("\n")
-    return (
-      `  ${t.identifiers.property}: createTemplate(\n` +
-      `    ${JSON.stringify(t.id)},\n` +
-      `    ${JSON.stringify(t.purpose)},\n` +
-      `    ${JSON.stringify(shapeOf(t.model))},\n` +
-      "    locales,\n" +
-      `    {\n${parts}\n    },\n` +
-      `  ) as EmailTemplate<${JSON.stringify(t.id)}, ${t.identifiers.typeName}>,`
-    )
+    return `  ${t.identifiers.property}: {\n${locales}\n  },`
   })
+
+  const entries = templates.map(
+    (t) =>
+      `    ${t.identifiers.property}: createTemplate(\n` +
+      `      ${JSON.stringify(t.id)},\n` +
+      `      ${JSON.stringify(t.purpose)},\n` +
+      `      ${JSON.stringify(shapeOf(t.model))},\n` +
+      "      locales,\n" +
+      `      TEMPLATES.${t.identifiers.property},\n` +
+      "      values,\n" +
+      `    ) as EmailTemplate<${JSON.stringify(t.id)}, ${t.identifiers.typeName}>,`,
+  )
 
   const emailsType = templates
     .map(
@@ -75,6 +81,16 @@ export function generateModule(
         `  readonly ${t.identifiers.property}: EmailTemplate<${JSON.stringify(t.id)}, ${t.identifiers.typeName}>`,
     )
     .join("\n")
+
+  const contextType =
+    options.context.length === 0
+      ? "/** Nothing is passed at send time: every platform value is in the templates. */\nexport type EmailContext = Record<never, never>"
+      : "/** Platform values the backend passes once, at startup, to createEmails() (RUN-04). */\n" +
+        `export interface EmailContext {\n${options.context.map((key) => `  readonly ${key}: string`).join("\n")}\n}`
+  const ready =
+    options.context.length === 0
+      ? "\n/** Every email. Nothing varies by environment, so they are ready to use. */\nexport const emails: Emails = createEmails({})\n"
+      : ""
 
   return `${moduleHeader(options)}
 
@@ -117,16 +133,32 @@ export interface EmailTemplate<Id extends TemplateId, Data> {
   render(data: Data, options?: RenderOptions): RenderedEmail<Id>
 }
 
+${contextType}
+
+/** Every email, by the camelCase form of its id. */
+export interface Emails {
+${emailsType}
+}
+
 export { DIALECT, EmailRenderError, MustacheCoreError }
 
 // The mustache-core renderer and module runtime, inlined so this module has no dependencies.
 // Spec: https://github.com/email-kit/email-kit/blob/main/docs/spec/mustache-core.md
 
 ${runtimeSource}
-export const emails: {
-${emailsType}
-} = {
-${entries.join("\n")}
+const TEMPLATES = {
+${parts.join("\n")}
 }
-`
+
+/**
+ * Builds the emails with the values that vary by environment (RUN-04). Call it once, for
+ * example at startup, and reuse the result. Data passed to render() can't override them.
+ */
+export function createEmails(context: EmailContext): Emails {
+  const values = readContext(${JSON.stringify(options.context)}, context)
+  return {
+${entries.join("\n")}
+  }
+}
+${ready}`
 }

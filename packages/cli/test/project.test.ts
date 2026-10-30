@@ -38,7 +38,7 @@ const read = (dir: string, path: string) => readFileSync(join(compiledDir(dir), 
 afterAll(() => rmSync(TMP, { recursive: true, force: true }))
 
 interface GeneratedModule {
-  emails: {
+  createEmails(context: { siteUrl: string }): {
     orderConfirmation: {
       render(
         data: unknown,
@@ -91,9 +91,10 @@ describe("email-kit compile", () => {
   it("generates a module that renders every locale with fallback", async () => {
     const dir = copyProject()
     await compile({ cwd: dir })
-    const { emails, locales } = (await import(
+    const { createEmails, locales } = (await import(
       pathToFileURL(join(compiledDir(dir), "index.ts")).href
     )) as GeneratedModule
+    const emails = createEmails({ siteUrl: "https://shop.example" })
     expect(locales).toEqual(["en", "de"])
 
     const en = emails.orderConfirmation.render({ ...order, discount: "10%" })
@@ -116,15 +117,63 @@ describe("email-kit compile", () => {
   it("projects data onto the schema before rendering", async () => {
     const dir = copyProject()
     await compile({ cwd: dir })
-    const { emails } = (await import(
+    const { createEmails } = (await import(
       pathToFileURL(join(compiledDir(dir), "index.ts")).href
     )) as GeneratedModule
+    const emails = createEmails({ siteUrl: "https://shop.example" })
     // An unknown top-level key named like an item field must not leak into the items.
     const html = emails.orderConfirmation.render({ ...order, name: "LEAK", unknown: 1 }).html
     expect(html).toContain("<li>Tea × 2</li>")
     expect(html).not.toContain("LEAK")
     expect(() => emails.orderConfirmation.render({ ...order, orderNumber: "A\nB" })).toThrow(
       expect.objectContaining({ code: "subject-line-break" }),
+    )
+  })
+
+  it("fills platform values: constants at compile time, runtime keys from createEmails()", async () => {
+    const dir = copyProject()
+    await compile({ cwd: dir })
+    // The constant is text in the compiled template; the runtime key is a placeholder.
+    expect(read(dir, "order-confirmation/en.html")).toContain(
+      'Sent by Shop Example. <a href="{{_ek.context.siteUrl}}">Visit our shop</a>',
+    )
+    const manifest = JSON.parse(read(dir, "manifest.json"))
+    expect(manifest.platform).toEqual({
+      constants: { productName: "Shop Example" },
+      runtime: ["siteUrl"],
+    })
+
+    const { createEmails } = (await import(
+      pathToFileURL(join(compiledDir(dir), "index.ts")).href
+    )) as GeneratedModule
+    const emails = createEmails({ siteUrl: "https://shop.example" })
+    // Data can't override or shadow a context value (P1-053).
+    const html = emails.orderConfirmation.render({
+      ...order,
+      siteUrl: "https://evil.example",
+      _ek: { context: { siteUrl: "https://evil.example" } },
+      items: [{ name: "Tea", qty: 2, _ek: { context: { siteUrl: "https://evil.example" } } }],
+    }).html
+    expect(html).toContain('<a href="https://shop.example">Visit our shop</a>')
+    expect(html).not.toContain("evil")
+    expect(() => createEmails({} as { siteUrl: string })).toThrow(
+      expect.objectContaining({ code: "missing-context" }),
+    )
+  })
+
+  it("exports ready-made emails when nothing is passed at send time", async () => {
+    const dir = copyProject()
+    writeFileSync(
+      join(dir, "email-kit.config.ts"),
+      'import { defineConfig } from "@email-kit/core"\nexport default defineConfig({ locales: { default: "en" }, platform: { productName: "Shop Example", siteUrl: "https://shop.example" } })\n',
+    )
+    await compile({ cwd: dir })
+    expect(read(dir, "index.ts")).toContain("export type EmailContext = Record<never, never>")
+    const { emails } = (await import(pathToFileURL(join(compiledDir(dir), "index.ts")).href)) as {
+      emails: ReturnType<GeneratedModule["createEmails"]>
+    }
+    expect(emails.orderConfirmation.render(order).html).toContain(
+      '<a href="https://shop.example">Visit our shop</a>',
     )
   })
 
@@ -144,7 +193,7 @@ describe("email-kit compile", () => {
     writeFileSync(join(compiledDir(dir), "NOTES.md"), "mine")
     writeFileSync(
       join(dir, "email-kit.config.ts"),
-      'import { defineConfig } from "@email-kit/core"\nexport default defineConfig({ locales: { default: "en" } })\n',
+      'import { defineConfig } from "@email-kit/core"\nexport default defineConfig({ locales: { default: "en" }, platform: { productName: "Shop Example", siteUrl: { runtime: true } } })\n',
     )
     const result = await compile({ cwd: dir })
     expect(result.files.deleted).toEqual([
@@ -232,6 +281,27 @@ describe("config validation", () => {
     expect(config.locales).toEqual(["de", "en", "pt-BR"])
   })
 
+  it("validates platform values", () => {
+    expect(
+      resolve({ platform: { productName: "", siteUrl: { runtime: "yes" }, phone: "1" } }),
+    ).toThrow(
+      [
+        "has 3 problems:",
+        "  • platform.productName: must be a non-empty string, or { runtime: true } to pass it at send time",
+        "  • platform.siteUrl: must be a non-empty string, or { runtime: true } to pass it at send time",
+        "  • platform.phone: unknown platform value (known: productName, senderName, legalName, postalAddress, privacyUrl, helpUrl, supportEmail, siteUrl)",
+      ].join("\n"),
+    )
+    const config = resolveConfig(
+      { platform: { siteUrl: { runtime: true }, helpUrl: { runtime: true }, productName: "Acme" } },
+      { file, cacheDir: TMP },
+    )
+    expect(config.platform).toEqual({
+      constants: { productName: "Acme" },
+      runtime: ["helpUrl", "siteUrl"],
+    })
+  })
+
   it("lists every problem with its path", () => {
     expect(
       resolve({
@@ -242,7 +312,7 @@ describe("config validation", () => {
     ).toThrow(
       [
         "has 6 problems:",
-        "  • templets: unknown option (known: root, templates, messages, out, module, locales)",
+        "  • templets: unknown option (known: root, templates, messages, out, module, platform, locales)",
         "  • out: must not overlap the templates folder (src/email-kit/templates)",
         '  • locales.list[0]: "en_US" isn\'t a BCP 47 locale tag, such as "en" or "pt-BR"',
         '  • locales.list[1]: write "pt-br" as "pt-BR"',

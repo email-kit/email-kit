@@ -22,4 +22,5 @@ export type {
   Placeholder,
   Scalar,
 } from "./placeholder.ts"
+export type { Platform, PlatformKey, PlatformText } from "./platform.ts"
 export type { StandardSchemaV1 } from "./standard-schema.ts"

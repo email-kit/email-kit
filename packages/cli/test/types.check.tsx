@@ -62,6 +62,21 @@ defineEmail({
 })
 
 defineEmail({
+  id: "type-checks-platform",
+  purpose: "transactional",
+  schema,
+  subject: (_data, _t, platform) => platform.productName,
+  fixtures: {},
+  component: ({ platform }) => [
+    <a href={platform.siteUrl}>{platform.productName}</a>,
+    // @ts-expect-error: a runtime value is a placeholder, so no string methods
+    <p>{platform.siteUrl.toUpperCase()}</p>,
+    // @ts-expect-error: only the documented platform keys exist
+    <p>{platform.phone}</p>,
+  ],
+})
+
+defineEmail({
   id: "type-checks-fixtures",
   purpose: "transactional",
   schema,

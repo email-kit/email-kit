@@ -18,3 +18,5 @@ Diesmal kein Rabatt.
 
 {{/discount}}
 Bestellung ansehen: {{orderUrl}}
+
+Gesendet von Shop Example. Zum Shop: {{_ek.context.siteUrl}}

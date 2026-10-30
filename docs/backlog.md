@@ -39,7 +39,9 @@ when** (acceptance).
   P1-061 (the research 01 §2 skeleton; `aria-roledescription` waits for localised layout messages),
   P1-064, P1-065 (preheader element, filler, first line of the text part), P1-088 (error output:
   `file:line:col [id]`, code frames mapped through the bundle's source map, docs links into
-  `docs/errors.md`, which a test keeps complete).
+  `docs/errors.md`, which a test keeps complete), P1-008 and P1-053 (platform values: constants
+  written into the output, `{ runtime: true }` keys passed to `createEmails()`; data can't override
+  or shadow them).
   Fixture project with committed output in `packages/cli/test/fixtures/project/`.
 - **Phase 0 remaining:** P0-04 (needs real email clients), accepting ADRs 0002 and 0006, and
   P0-02 (publishing needs the maintainer's accounts).

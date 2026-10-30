@@ -30,6 +30,7 @@ export async function compileWithConfig(config: ResolvedConfig): Promise<Compile
     locales: config.locales,
     configFile: basename(config.file),
     module: config.module,
+    platform: config.platform,
   })
   return { config, templates, files: writeOutput(config.out, output) }
 }

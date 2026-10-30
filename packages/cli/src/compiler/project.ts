@@ -91,7 +91,11 @@ async function compileTemplate(file: string, config: ResolvedConfig): Promise<Co
   const emails = config.locales.map((locale) => {
     const messagesFile = join(config.messages, locale, `${definition.id}.json`)
     try {
-      return compileEmail(definition, { locale, messages: readMessages(messagesFile) })
+      return compileEmail(definition, {
+        locale,
+        messages: readMessages(messagesFile),
+        platform: config.platform,
+      })
     } catch (error) {
       if (isEmailKitError(error) && error.code === "missing-message") {
         // Amend rather than wrap: the original stack points at the t() call in the template.

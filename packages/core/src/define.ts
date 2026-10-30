@@ -2,6 +2,7 @@ import { EmailKitError } from "./errors.ts"
 import type { Translate } from "./i18n.ts"
 import type { Child } from "./jsx-runtime.ts"
 import type { Data } from "./placeholder.ts"
+import type { Platform } from "./platform.ts"
 import type { StandardSchemaV1 } from "./standard-schema.ts"
 
 /** The legal purpose of an email (AUTH-03); it decides the required footer parts. */
@@ -11,14 +12,16 @@ export interface EmailProps<T> {
   readonly data: Data<T>
   readonly t: Translate
   readonly locale: string
+  /** Platform values from the config: product name, postal address, site URL… */
+  readonly platform: Platform
 }
 
 export interface EmailDefinition<T = unknown> {
   readonly id: string
   readonly purpose: Purpose
   readonly schema: StandardSchemaV1<unknown, T>
-  readonly subject: (data: Data<T>, t: Translate) => Child
-  readonly preheader?: (data: Data<T>, t: Translate) => Child
+  readonly subject: (data: Data<T>, t: Translate, platform: Platform) => Child
+  readonly preheader?: (data: Data<T>, t: Translate, platform: Platform) => Child
   /** Named sample data, used for previews and checks. */
   readonly fixtures: Readonly<Record<string, T>>
   readonly component: (props: EmailProps<T>) => Child

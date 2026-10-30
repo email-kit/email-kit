@@ -13,6 +13,14 @@
     "en",
     "de"
   ],
+  "platform": {
+    "constants": {
+      "productName": "Shop Example"
+    },
+    "runtime": [
+      "siteUrl"
+    ]
+  },
   "templates": [
     {
       "id": "order-confirmation",
@@ -25,13 +33,13 @@
           "preheader": "Thanks for your order",
           "html": {
             "file": "order-confirmation/en.html",
-            "bytes": 3746,
-            "sha256": "ea99fab1f0ee0e37610f0abf6632e1a5038d618ea85a76b2c4a8ce94fad73c2e"
+            "bytes": 3828,
+            "sha256": "67d059d300634f710a02a6ecbdaf650d50cad67ec8ed576a458ae6c2a77cffa2"
           },
           "text": {
             "file": "order-confirmation/en.txt",
-            "bytes": 294,
-            "sha256": "511da6ce7f20fbda077887e6ddae220cb53acc80e6b74efa039b9ff0a308de4e"
+            "bytes": 357,
+            "sha256": "127918f275e21bb688dbe92d0232baf9fcc9a1acc8302e1c865c4da761a942b3"
           }
         },
         "de": {
@@ -39,13 +47,13 @@
           "preheader": "Danke für Ihre Bestellung",
           "html": {
             "file": "order-confirmation/de.html",
-            "bytes": 3783,
-            "sha256": "94489e7934810806b65c435c33ed859e852dcb35d8ff03d1834ad122419e29e1"
+            "bytes": 3864,
+            "sha256": "dd4b64d170d966d7dfa852b3a5ed6c55b117c2ef76147e4d8394700e68ab9c09"
           },
           "text": {
             "file": "order-confirmation/de.txt",
-            "bytes": 313,
-            "sha256": "dddece9097a553c88f3ebba4513c8807df347718f13d70296c29b43864b92eb3"
+            "bytes": 375,
+            "sha256": "d34e8da0c987bd205095776ec520ca025b14cc49394c54995f2c47cb5c681d3c"
           }
         }
       }

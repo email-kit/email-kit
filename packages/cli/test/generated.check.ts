@@ -2,13 +2,15 @@
 // generated.tsconfig.json. Every expected error must occur, or tsc reports the directive as unused.
 
 import {
-  emails,
+  createEmails,
   type Locale,
   locales,
   type OrderConfirmationData,
   type RenderedEmail,
   type TemplateId,
 } from "./fixtures/project/src/email-kit/compiled/index.ts"
+
+const emails = createEmails({ siteUrl: "https://shop.example" })
 
 const data: OrderConfirmationData = {
   customerName: "Ada",
@@ -35,6 +37,10 @@ const noTemplate = emails.welcome
 const noLocale = emails.orderConfirmation.templates.fr
 // @ts-expect-error: TemplateId is a closed union
 const unknownId: TemplateId = "welcome"
+// @ts-expect-error: the runtime context is required
+const noContext = createEmails({})
+// @ts-expect-error: with a runtime key, there is no ready-made \`emails\` export
+const notExported = (await import("./fixtures/project/src/email-kit/compiled/index.ts")).emails
 
 export const checks: readonly unknown[] = [
   email,
@@ -48,4 +54,6 @@ export const checks: readonly unknown[] = [
   noTemplate,
   noLocale,
   unknownId,
+  noContext,
+  notExported,
 ]

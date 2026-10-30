@@ -189,6 +189,41 @@ describe("messages", () => {
   })
 })
 
+describe("platform values", () => {
+  const withPlatform = (component: (props: EmailProps<Order>) => unknown) => {
+    const definition = defineEmail({
+      id: "order-confirmation",
+      purpose: "transactional",
+      schema: schema<Order>(),
+      subject: () => "Subject",
+      fixtures: {},
+      component: component as never,
+    })
+    return () =>
+      evaluate(definition, {
+        locale: "en",
+        messages: {},
+        platform: { constants: { productName: "Acme" }, runtime: ["siteUrl"] },
+      }).body
+  }
+
+  it("gives constants as text and runtime keys as reserved placeholders", () => {
+    expect(withPlatform(({ platform }) => [platform.productName, platform.siteUrl])()).toEqual({
+      kind: "fragment",
+      children: [
+        { kind: "text", value: "Acme" },
+        { kind: "placeholder", path: ["_ek", "context", "siteUrl"], scope: 0 },
+      ],
+    })
+  })
+
+  it("explains a platform value the config doesn't set", () => {
+    expect(withPlatform(({ platform }) => platform.postalAddress)).toThrow(
+      expect.objectContaining({ code: "platform-value-missing" }),
+    )
+  })
+})
+
 describe("defineEmail", () => {
   it("rejects an invalid id", () => {
     expect(() =>

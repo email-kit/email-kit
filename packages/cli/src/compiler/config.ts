@@ -4,7 +4,12 @@
 import { existsSync, statSync } from "node:fs"
 import { dirname, isAbsolute, join, relative, resolve } from "node:path"
 
-import { EmailKitError } from "@email-kit/core/internal"
+import {
+  EmailKitError,
+  PLATFORM_KEYS,
+  type PlatformKey,
+  type PlatformValues,
+} from "@email-kit/core/internal"
 
 import { loadModule } from "./load.ts"
 
@@ -21,6 +26,8 @@ export interface ResolvedConfig {
   readonly locales: readonly string[]
   /** The generated module's format */
   readonly module: "ts" | "mjs"
+  /** Platform values: compile-time constants and the keys passed at send time */
+  readonly platform: PlatformValues
   /** Where loaded modules are bundled to, inside the project so packages resolve */
   readonly cacheDir: string
 }
@@ -32,7 +39,7 @@ export const CONFIG_FILES: readonly string[] = [
   "email-kit.config.mjs",
 ]
 
-const KEYS = new Set(["root", "templates", "messages", "out", "module", "locales"])
+const KEYS = new Set(["root", "templates", "messages", "out", "module", "platform", "locales"])
 
 export async function loadConfig(options: {
   readonly cwd: string
@@ -106,6 +113,7 @@ export function resolveConfig(
   if (module !== "ts" && module !== "mjs") {
     problems.push(`module: must be "ts" or "mjs", not ${JSON.stringify(module)}`)
   }
+  const platform = readPlatform(config.platform, problems)
   const locales = readLocales(config.locales, problems)
   if (problems.length > 0) {
     throw new EmailKitError(
@@ -123,8 +131,40 @@ export function resolveConfig(
     out,
     locales,
     module: module === "mjs" ? "mjs" : "ts",
+    platform,
     cacheDir,
   }
+}
+
+function readPlatform(value: unknown, problems: string[]): PlatformValues {
+  const constants: Partial<Record<PlatformKey, string>> = {}
+  const runtime: PlatformKey[] = []
+  if (value === undefined) return { constants, runtime }
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    problems.push(
+      'platform: must be an object like { productName: "Acme", siteUrl: { runtime: true } }',
+    )
+    return { constants, runtime }
+  }
+  for (const [key, option] of Object.entries(value)) {
+    if (!(PLATFORM_KEYS as readonly string[]).includes(key)) {
+      problems.push(`platform.${key}: unknown platform value (known: ${PLATFORM_KEYS.join(", ")})`)
+    } else if (typeof option === "string" && option.trim() !== "") {
+      constants[key as PlatformKey] = option
+    } else if (
+      typeof option === "object" &&
+      option !== null &&
+      Object.keys(option).length === 1 &&
+      (option as { runtime?: unknown }).runtime === true
+    ) {
+      runtime.push(key as PlatformKey)
+    } else {
+      problems.push(
+        `platform.${key}: must be a non-empty string, or { runtime: true } to pass it at send time`,
+      )
+    }
+  }
+  return { constants, runtime: runtime.sort() }
 }
 
 function readLocales(value: unknown, problems: string[]): string[] {

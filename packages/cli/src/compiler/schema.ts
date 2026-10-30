@@ -9,7 +9,7 @@ import { createRequire } from "node:module"
 import { pathToFileURL } from "node:url"
 
 import type { StandardSchemaV1 } from "@email-kit/core"
-import { EmailKitError, isEmailKitError } from "@email-kit/core/internal"
+import { EmailKitError, isEmailKitError, RESERVED_KEY } from "@email-kit/core/internal"
 
 export type FieldType = "string" | "number" | "integer" | "boolean" | "array" | "object"
 
@@ -308,6 +308,13 @@ function toField(json: unknown, path: string, issues: SchemaIssue[]): Field | un
         issues.push({
           path: childPath,
           message: `The field name "${name}" isn't portable: use letters, digits and _`,
+        })
+        return []
+      }
+      if (name === RESERVED_KEY) {
+        issues.push({
+          path: childPath,
+          message: `The field name "${RESERVED_KEY}" is reserved for values email-kit adds at send time`,
         })
         return []
       }

@@ -1,5 +1,6 @@
 // The runtime half of a generated module (P1-074): locale fallback (OUT-09), projecting data
-// onto the schema before rendering, and the per-template render() (OUT-10, RUN-06). The compiler
+// onto the schema before rendering, the runtime context (RUN-04), and the per-template render()
+// (OUT-10, RUN-06). The compiler
 // inlines it after the renderer, so the same rules apply: no imports below the marker, ES2020,
 // and nothing unused (hosts may compile with noUnusedLocals).
 
@@ -102,13 +103,40 @@ function project(shape: Shape, value: unknown): unknown {
   return out
 }
 
-/** Builds one entry of the generated `emails` object. `locales[0]` is the default locale. */
+/**
+ * Checks the values passed to createEmails() (RUN-04): every runtime key is a non-empty string.
+ * Only the declared keys are kept.
+ */
+function readContext(keys: readonly string[], context: unknown): Readonly<Record<string, string>> {
+  const values: Record<string, string> = {}
+  for (const key of keys) {
+    const value =
+      typeof context === "object" && context !== null
+        ? (context as Record<string, unknown>)[key]
+        : undefined
+    if (typeof value !== "string" || value === "") {
+      throw new EmailRenderError(
+        "missing-context",
+        `createEmails() needs "${key}" as a non-empty string`,
+      )
+    }
+    values[key] = value
+  }
+  return values
+}
+
+/**
+ * Builds one entry of the generated `emails` object. `locales[0]` is the default locale. The
+ * context goes under the reserved `_ek` key after projection, so data can't override it: the
+ * schema can't declare `_ek`, and projection drops every undeclared key.
+ */
 function createTemplate(
   id: string,
   purpose: string,
   shape: Shape,
   locales: readonly string[],
   templates: Readonly<Record<string, TemplateParts>>,
+  context: Readonly<Record<string, string>>,
 ): RuntimeTemplate {
   return {
     meta: { id, purpose, locales },
@@ -116,8 +144,12 @@ function createTemplate(
     render(data, options = {}) {
       const locale = resolveLocale(options.locale, locales)
       const parts = templates[locale] as TemplateParts
-      const context = project(shape, data)
-      const subject = fill(parts.subject, context, "text")
+      const projected = project(shape, data)
+      const values =
+        typeof projected === "object" && projected !== null && !Array.isArray(projected)
+          ? { ...projected, _ek: { context } }
+          : projected
+      const subject = fill(parts.subject, values, "text")
       if (/[\r\n]/.test(subject)) {
         throw new EmailRenderError(
           "subject-line-break",
@@ -126,13 +158,21 @@ function createTemplate(
       }
       return {
         subject,
-        preheader: fill(parts.preheader, context, "text"),
-        html: fill(parts.html, context, "html"),
-        text: fill(parts.text, context, "text"),
+        preheader: fill(parts.preheader, values, "text"),
+        html: fill(parts.html, values, "html"),
+        text: fill(parts.text, values, "text"),
         meta: { id, locale, purpose },
       }
     },
   }
 }
 
-export { createTemplate, EmailRenderError, project, resolveLocale, type Shape, type TemplateParts }
+export {
+  createTemplate,
+  EmailRenderError,
+  project,
+  readContext,
+  resolveLocale,
+  type Shape,
+  type TemplateParts,
+}

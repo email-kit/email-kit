@@ -14,6 +14,7 @@ import {
 } from "node:fs"
 import { dirname, join, sep } from "node:path"
 
+import type { PlatformValues } from "@email-kit/core/internal"
 import { DIALECT } from "@email-kit/dialect"
 
 import { VERSION } from "../version.ts"
@@ -46,6 +47,7 @@ export function buildOutput(
     readonly locales: readonly string[]
     readonly configFile: string
     readonly module: "ts" | "mjs"
+    readonly platform: PlatformValues
   },
 ): OutputFile[] {
   const files: OutputFile[] = []
@@ -79,6 +81,7 @@ export function buildOutput(
     version: VERSION,
     locales: options.locales,
     configFile: options.configFile,
+    context: options.platform.runtime,
   }
   const typescript = generateModule(templates, moduleOptions)
   if (options.module === "mjs") {
@@ -97,6 +100,11 @@ export function buildOutput(
       dialect: DIALECT,
       profiles: { subject: "text", preheader: "text", html: "html", text: "text" },
       locales: options.locales,
+      // Constants are written into the templates; runtime keys are passed to createEmails().
+      platform: {
+        constants: sortKeys(options.platform.constants),
+        runtime: options.platform.runtime,
+      },
       templates: manifestTemplates,
       files: owned,
     }),
@@ -161,6 +169,14 @@ function describe(file: OutputFile) {
   const bytes = Buffer.byteLength(file.content, "utf8")
   const sha256 = createHash("sha256").update(file.content).digest("hex")
   return { file: file.path, bytes, sha256 }
+}
+
+function sortKeys(record: Readonly<Record<string, string | undefined>>): Record<string, string> {
+  return Object.fromEntries(
+    Object.entries(record)
+      .filter((entry): entry is [string, string] => entry[1] !== undefined)
+      .sort(([a], [b]) => (a < b ? -1 : 1)),
+  )
 }
 
 function json(value: unknown): string {

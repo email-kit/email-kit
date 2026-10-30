@@ -1,7 +1,12 @@
 // One template × one locale → the four parts of an email, as mustache-core templates (P0-03).
 
 import type { EmailDefinition } from "@email-kit/core"
-import { EmailKitError, evaluate, type Messages } from "@email-kit/core/internal"
+import {
+  EmailKitError,
+  evaluate,
+  type Messages,
+  type PlatformValues,
+} from "@email-kit/core/internal"
 import { parse } from "@email-kit/dialect"
 
 import { renderDocument } from "./document.ts"
@@ -23,6 +28,7 @@ export interface CompiledEmail {
 export interface CompileOptions {
   readonly locale: string
   readonly messages: Messages
+  readonly platform?: PlatformValues
 }
 
 const RTL = new Set(["ar", "dv", "fa", "he", "ps", "ur", "yi"])

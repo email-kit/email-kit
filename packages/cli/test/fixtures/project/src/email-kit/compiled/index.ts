@@ -53,6 +53,16 @@ export interface EmailTemplate<Id extends TemplateId, Data> {
   render(data: Data, options?: RenderOptions): RenderedEmail<Id>
 }
 
+/** Platform values the backend passes once, at startup, to createEmails() (RUN-04). */
+export interface EmailContext {
+  readonly siteUrl: string
+}
+
+/** Every email, by the camelCase form of its id. */
+export interface Emails {
+  readonly orderConfirmation: EmailTemplate<"order-confirmation", OrderConfirmationData>
+}
+
 export { DIALECT, EmailRenderError, MustacheCoreError }
 
 // The mustache-core renderer and module runtime, inlined so this module has no dependencies.
@@ -393,13 +403,40 @@ function project(shape: Shape, value: unknown): unknown {
   return out
 }
 
-/** Builds one entry of the generated `emails` object. `locales[0]` is the default locale. */
+/**
+ * Checks the values passed to createEmails() (RUN-04): every runtime key is a non-empty string.
+ * Only the declared keys are kept.
+ */
+function readContext(keys: readonly string[], context: unknown): Readonly<Record<string, string>> {
+  const values: Record<string, string> = {}
+  for (const key of keys) {
+    const value =
+      typeof context === "object" && context !== null
+        ? (context as Record<string, unknown>)[key]
+        : undefined
+    if (typeof value !== "string" || value === "") {
+      throw new EmailRenderError(
+        "missing-context",
+        `createEmails() needs "${key}" as a non-empty string`,
+      )
+    }
+    values[key] = value
+  }
+  return values
+}
+
+/**
+ * Builds one entry of the generated `emails` object. `locales[0]` is the default locale. The
+ * context goes under the reserved `_ek` key after projection, so data can't override it: the
+ * schema can't declare `_ek`, and projection drops every undeclared key.
+ */
 function createTemplate(
   id: string,
   purpose: string,
   shape: Shape,
   locales: readonly string[],
   templates: Readonly<Record<string, TemplateParts>>,
+  context: Readonly<Record<string, string>>,
 ): RuntimeTemplate {
   return {
     meta: { id, purpose, locales },
@@ -407,8 +444,12 @@ function createTemplate(
     render(data, options = {}) {
       const locale = resolveLocale(options.locale, locales)
       const parts = templates[locale] as TemplateParts
-      const context = project(shape, data)
-      const subject = fill(parts.subject, context, "text")
+      const projected = project(shape, data)
+      const values =
+        typeof projected === "object" && projected !== null && !Array.isArray(projected)
+          ? { ...projected, _ek: { context } }
+          : projected
+      const subject = fill(parts.subject, values, "text")
       if (/[\r\n]/.test(subject)) {
         throw new EmailRenderError(
           "subject-line-break",
@@ -417,36 +458,46 @@ function createTemplate(
       }
       return {
         subject,
-        preheader: fill(parts.preheader, context, "text"),
-        html: fill(parts.html, context, "html"),
-        text: fill(parts.text, context, "text"),
+        preheader: fill(parts.preheader, values, "text"),
+        html: fill(parts.html, values, "html"),
+        text: fill(parts.text, values, "text"),
         meta: { id, locale, purpose },
       }
     },
   }
 }
 
-export const emails: {
-  readonly orderConfirmation: EmailTemplate<"order-confirmation", OrderConfirmationData>
-} = {
-  orderConfirmation: createTemplate(
-    "order-confirmation",
-    "transactional",
-    {"fields":{"customerName":"scalar","orderNumber":"scalar","orderUrl":"scalar","items":{"list":{"fields":{"name":"scalar","qty":"scalar"},"optional":[]}},"discount":"scalar"},"optional":["discount"]},
-    locales,
-    {
-      "en": {
-        subject: "Order {{orderNumber}} confirmed",
-        preheader: "Thanks for your order",
-        html: "<!DOCTYPE html>\n<html lang=\"en\" dir=\"ltr\" xmlns:o=\"urn:schemas-microsoft-com:office:office\">\n<head>\n<meta charset=\"utf-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n<meta name=\"x-apple-disable-message-reformatting\">\n<meta name=\"format-detection\" content=\"telephone=no, date=no, address=no, email=no, url=no\">\n<title>Order {{orderNumber}} confirmed</title>\n<!--[if mso]><noscript><xml><o:OfficeDocumentSettings><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings></xml></noscript><![endif]-->\n<!--[if mso]><style>body, table, td, th, p, a, li, h1, h2, h3, h4, h5, h6 { font-family: Arial, Helvetica, sans-serif !important; }</style><![endif]-->\n<style>\na[x-apple-data-detectors] { color: inherit !important; text-decoration: none !important; font-size: inherit !important; font-family: inherit !important; font-weight: inherit !important; line-height: inherit !important; }\n</style>\n</head>\n<body xml:lang=\"en\" style=\"margin:0;padding:0\">\n<div role=\"article\" aria-label=\"Order {{orderNumber}} confirmed\" lang=\"en\" dir=\"ltr\">\n<div style=\"display:none;max-height:0;overflow:hidden;mso-hide:all\" aria-hidden=\"true\">Thanks for your order\n&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;\n&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;\n&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;\n&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;</div>\n<table role=\"presentation\" width=\"100%\"><tbody><tr><td style=\"padding:24px\"><h1>Thanks, {{customerName}}!</h1>\n<p>Your order {{orderNumber}} is confirmed.</p>\n<ul>{{#items}}<li>{{name}} × {{qty}}</li>\n{{/items}}</ul>\n{{#discount}}<p>You saved {{discount}}.</p>\n{{/discount}}{{^discount}}<p>No discount this time.</p>\n{{/discount}}<p><a href=\"{{orderUrl}}\" title=\"Order {{orderNumber}}\">View your order</a></p>\n</td>\n</tr>\n</tbody>\n</table>\n</div>\n</body>\n</html>\n",
-        text: "Thanks for your order\n\nThanks, {{customerName}}!\n=====================\n\nYour order {{orderNumber}} is confirmed.\n\n{{#items}}\n- {{name}} × {{qty}}\n{{/items}}\n\n{{#discount}}\nYou saved {{discount}}.\n\n{{/discount}}\n{{^discount}}\nNo discount this time.\n\n{{/discount}}\nView your order: {{orderUrl}}\n",
-      },
-      "de": {
-        subject: "Bestellung {{orderNumber}} bestätigt",
-        preheader: "Danke für Ihre Bestellung",
-        html: "<!DOCTYPE html>\n<html lang=\"de\" dir=\"ltr\" xmlns:o=\"urn:schemas-microsoft-com:office:office\">\n<head>\n<meta charset=\"utf-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n<meta name=\"x-apple-disable-message-reformatting\">\n<meta name=\"format-detection\" content=\"telephone=no, date=no, address=no, email=no, url=no\">\n<title>Bestellung {{orderNumber}} bestätigt</title>\n<!--[if mso]><noscript><xml><o:OfficeDocumentSettings><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings></xml></noscript><![endif]-->\n<!--[if mso]><style>body, table, td, th, p, a, li, h1, h2, h3, h4, h5, h6 { font-family: Arial, Helvetica, sans-serif !important; }</style><![endif]-->\n<style>\na[x-apple-data-detectors] { color: inherit !important; text-decoration: none !important; font-size: inherit !important; font-family: inherit !important; font-weight: inherit !important; line-height: inherit !important; }\n</style>\n</head>\n<body xml:lang=\"de\" style=\"margin:0;padding:0\">\n<div role=\"article\" aria-label=\"Bestellung {{orderNumber}} bestätigt\" lang=\"de\" dir=\"ltr\">\n<div style=\"display:none;max-height:0;overflow:hidden;mso-hide:all\" aria-hidden=\"true\">Danke für Ihre Bestellung\n&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;\n&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;\n&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;\n&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;</div>\n<table role=\"presentation\" width=\"100%\"><tbody><tr><td style=\"padding:24px\"><h1>Danke, {{customerName}}!</h1>\n<p>Ihre Bestellung {{orderNumber}} ist bestätigt.</p>\n<ul>{{#items}}<li>{{name}} × {{qty}}</li>\n{{/items}}</ul>\n{{#discount}}<p>Sie haben {{discount}} gespart.</p>\n{{/discount}}{{^discount}}<p>Diesmal kein Rabatt.</p>\n{{/discount}}<p><a href=\"{{orderUrl}}\" title=\"Bestellung {{orderNumber}}\">Bestellung ansehen</a></p>\n</td>\n</tr>\n</tbody>\n</table>\n</div>\n</body>\n</html>\n",
-        text: "Danke für Ihre Bestellung\n\nDanke, {{customerName}}!\n====================\n\nIhre Bestellung {{orderNumber}} ist bestätigt.\n\n{{#items}}\n- {{name}} × {{qty}}\n{{/items}}\n\n{{#discount}}\nSie haben {{discount}} gespart.\n\n{{/discount}}\n{{^discount}}\nDiesmal kein Rabatt.\n\n{{/discount}}\nBestellung ansehen: {{orderUrl}}\n",
-      },
+const TEMPLATES = {
+  orderConfirmation: {
+    "en": {
+      subject: "Order {{orderNumber}} confirmed",
+      preheader: "Thanks for your order",
+      html: "<!DOCTYPE html>\n<html lang=\"en\" dir=\"ltr\" xmlns:o=\"urn:schemas-microsoft-com:office:office\">\n<head>\n<meta charset=\"utf-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n<meta name=\"x-apple-disable-message-reformatting\">\n<meta name=\"format-detection\" content=\"telephone=no, date=no, address=no, email=no, url=no\">\n<title>Order {{orderNumber}} confirmed</title>\n<!--[if mso]><noscript><xml><o:OfficeDocumentSettings><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings></xml></noscript><![endif]-->\n<!--[if mso]><style>body, table, td, th, p, a, li, h1, h2, h3, h4, h5, h6 { font-family: Arial, Helvetica, sans-serif !important; }</style><![endif]-->\n<style>\na[x-apple-data-detectors] { color: inherit !important; text-decoration: none !important; font-size: inherit !important; font-family: inherit !important; font-weight: inherit !important; line-height: inherit !important; }\n</style>\n</head>\n<body xml:lang=\"en\" style=\"margin:0;padding:0\">\n<div role=\"article\" aria-label=\"Order {{orderNumber}} confirmed\" lang=\"en\" dir=\"ltr\">\n<div style=\"display:none;max-height:0;overflow:hidden;mso-hide:all\" aria-hidden=\"true\">Thanks for your order\n&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;\n&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;\n&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;\n&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;</div>\n<table role=\"presentation\" width=\"100%\"><tbody><tr><td style=\"padding:24px\"><h1>Thanks, {{customerName}}!</h1>\n<p>Your order {{orderNumber}} is confirmed.</p>\n<ul>{{#items}}<li>{{name}} × {{qty}}</li>\n{{/items}}</ul>\n{{#discount}}<p>You saved {{discount}}.</p>\n{{/discount}}{{^discount}}<p>No discount this time.</p>\n{{/discount}}<p><a href=\"{{orderUrl}}\" title=\"Order {{orderNumber}}\">View your order</a></p>\n<p>Sent by Shop Example. <a href=\"{{_ek.context.siteUrl}}\">Visit our shop</a></p>\n</td>\n</tr>\n</tbody>\n</table>\n</div>\n</body>\n</html>\n",
+      text: "Thanks for your order\n\nThanks, {{customerName}}!\n=====================\n\nYour order {{orderNumber}} is confirmed.\n\n{{#items}}\n- {{name}} × {{qty}}\n{{/items}}\n\n{{#discount}}\nYou saved {{discount}}.\n\n{{/discount}}\n{{^discount}}\nNo discount this time.\n\n{{/discount}}\nView your order: {{orderUrl}}\n\nSent by Shop Example. Visit our shop: {{_ek.context.siteUrl}}\n",
     },
-  ) as EmailTemplate<"order-confirmation", OrderConfirmationData>,
+    "de": {
+      subject: "Bestellung {{orderNumber}} bestätigt",
+      preheader: "Danke für Ihre Bestellung",
+      html: "<!DOCTYPE html>\n<html lang=\"de\" dir=\"ltr\" xmlns:o=\"urn:schemas-microsoft-com:office:office\">\n<head>\n<meta charset=\"utf-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n<meta name=\"x-apple-disable-message-reformatting\">\n<meta name=\"format-detection\" content=\"telephone=no, date=no, address=no, email=no, url=no\">\n<title>Bestellung {{orderNumber}} bestätigt</title>\n<!--[if mso]><noscript><xml><o:OfficeDocumentSettings><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings></xml></noscript><![endif]-->\n<!--[if mso]><style>body, table, td, th, p, a, li, h1, h2, h3, h4, h5, h6 { font-family: Arial, Helvetica, sans-serif !important; }</style><![endif]-->\n<style>\na[x-apple-data-detectors] { color: inherit !important; text-decoration: none !important; font-size: inherit !important; font-family: inherit !important; font-weight: inherit !important; line-height: inherit !important; }\n</style>\n</head>\n<body xml:lang=\"de\" style=\"margin:0;padding:0\">\n<div role=\"article\" aria-label=\"Bestellung {{orderNumber}} bestätigt\" lang=\"de\" dir=\"ltr\">\n<div style=\"display:none;max-height:0;overflow:hidden;mso-hide:all\" aria-hidden=\"true\">Danke für Ihre Bestellung\n&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;\n&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;\n&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;\n&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;</div>\n<table role=\"presentation\" width=\"100%\"><tbody><tr><td style=\"padding:24px\"><h1>Danke, {{customerName}}!</h1>\n<p>Ihre Bestellung {{orderNumber}} ist bestätigt.</p>\n<ul>{{#items}}<li>{{name}} × {{qty}}</li>\n{{/items}}</ul>\n{{#discount}}<p>Sie haben {{discount}} gespart.</p>\n{{/discount}}{{^discount}}<p>Diesmal kein Rabatt.</p>\n{{/discount}}<p><a href=\"{{orderUrl}}\" title=\"Bestellung {{orderNumber}}\">Bestellung ansehen</a></p>\n<p>Gesendet von Shop Example. <a href=\"{{_ek.context.siteUrl}}\">Zum Shop</a></p>\n</td>\n</tr>\n</tbody>\n</table>\n</div>\n</body>\n</html>\n",
+      text: "Danke für Ihre Bestellung\n\nDanke, {{customerName}}!\n====================\n\nIhre Bestellung {{orderNumber}} ist bestätigt.\n\n{{#items}}\n- {{name}} × {{qty}}\n{{/items}}\n\n{{#discount}}\nSie haben {{discount}} gespart.\n\n{{/discount}}\n{{^discount}}\nDiesmal kein Rabatt.\n\n{{/discount}}\nBestellung ansehen: {{orderUrl}}\n\nGesendet von Shop Example. Zum Shop: {{_ek.context.siteUrl}}\n",
+    },
+  },
+}
+
+/**
+ * Builds the emails with the values that vary by environment (RUN-04). Call it once, for
+ * example at startup, and reuse the result. Data passed to render() can't override them.
+ */
+export function createEmails(context: EmailContext): Emails {
+  const values = readContext(["siteUrl"], context)
+  return {
+    orderConfirmation: createTemplate(
+      "order-confirmation",
+      "transactional",
+      {"fields":{"customerName":"scalar","orderNumber":"scalar","orderUrl":"scalar","items":{"list":{"fields":{"name":"scalar","qty":"scalar"},"optional":[]}},"discount":"scalar"},"optional":["discount"]},
+      locales,
+      TEMPLATES.orderConfirmation,
+      values,
+    ) as EmailTemplate<"order-confirmation", OrderConfirmationData>,
+  }
 }

@@ -5,11 +5,18 @@ import { createTranslate, type Messages } from "./i18n.ts"
 import type { IrNode } from "./ir.ts"
 import { fragment } from "./jsx-runtime.ts"
 import { createPlaceholder, type Data, withScopes } from "./placeholder.ts"
+import { createPlatform, type PlatformValues } from "./platform.ts"
 
 export { isEmailDefinition } from "./define.ts"
 export { EmailKitError, isEmailKitError } from "./errors.ts"
 export type { Messages } from "./i18n.ts"
 export * from "./ir.ts"
+export {
+  PLATFORM_KEYS,
+  type PlatformKey,
+  type PlatformValues,
+  RESERVED_KEY,
+} from "./platform.ts"
 
 export interface EvaluatedEmail {
   readonly subject: IrNode
@@ -20,6 +27,7 @@ export interface EvaluatedEmail {
 export interface EvaluateOptions {
   readonly locale: string
   readonly messages: Messages
+  readonly platform?: PlatformValues
 }
 
 /** Runs a template once for one locale, with `data` as placeholders, and returns its IR. */
@@ -30,10 +38,13 @@ export function evaluate<T>(
   return withScopes(() => {
     const data = createPlaceholder(0) as Data<T>
     const t = createTranslate(options.locale, options.messages)
+    const platform = createPlatform(options.platform ?? { constants: {}, runtime: [] })
     return {
-      subject: fragment(definition.subject(data, t)),
-      preheader: definition.preheader ? fragment(definition.preheader(data, t)) : undefined,
-      body: fragment(definition.component({ data, t, locale: options.locale })),
+      subject: fragment(definition.subject(data, t, platform)),
+      preheader: definition.preheader
+        ? fragment(definition.preheader(data, t, platform))
+        : undefined,
+      body: fragment(definition.component({ data, t, locale: options.locale, platform })),
     }
   })
 }

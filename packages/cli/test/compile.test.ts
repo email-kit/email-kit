@@ -28,11 +28,17 @@ const compiled: Record<string, CompiledEmail> = {}
 beforeAll(async () => {
   loaded = await loadTemplate(emailKit("templates/order-confirmation.tsx"), { cacheDir })
   for (const locale of ["en", "de"]) {
-    compiled[locale] = compileEmail(loaded.definition, { locale, messages: messages(locale) })
+    compiled[locale] = compileEmail(loaded.definition, {
+      locale,
+      messages: messages(locale),
+      platform: { constants: { productName: "Shop Example" }, runtime: ["siteUrl"] },
+    })
   }
 })
 
-function renderAll(email: CompiledEmail, data: unknown) {
+// Rendering the raw templates directly, so add the runtime context the way render() does.
+function renderAll(email: CompiledEmail, fields: object) {
+  const data = { ...fields, _ek: { context: { siteUrl: "https://shop.example" } } }
   return {
     subject: render(email.subject, data, "text"),
     preheader: render(email.preheader, data, "text"),
@@ -78,7 +84,10 @@ describe.each(["en", "de"])("compiled %s", (locale) => {
   })
 
   it("renders with the default fixture", async () => {
-    const out = renderAll(compiled[locale] as CompiledEmail, loaded.definition.fixtures.default)
+    const out = renderAll(
+      compiled[locale] as CompiledEmail,
+      loaded.definition.fixtures.default as object,
+    )
     await expect(out.html).toMatchFileSnapshot(golden(`${locale}.rendered.html`))
     await expect(out.text).toMatchFileSnapshot(golden(`${locale}.rendered.txt`))
   })

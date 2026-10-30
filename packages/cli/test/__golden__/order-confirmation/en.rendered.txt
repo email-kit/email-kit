@@ -11,3 +11,5 @@ Your order A-1042 is confirmed.
 You saved 10%.
 
 View your order: https://shop.example/orders/A-1042?ref=email&lang=en
+
+Sent by Shop Example. Visit our shop: https://shop.example

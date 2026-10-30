@@ -28,7 +28,7 @@ export default defineEmail({
       discount: "10%",
     },
   },
-  component: ({ data, t }) => (
+  component: ({ data, t, platform }) => (
     <Card>
       <h1>{t("heading", { name: data.customerName })}</h1>
       <p>{t("orderLine", { order: data.orderNumber })}</p>
@@ -49,6 +49,9 @@ export default defineEmail({
         <a href={data.orderUrl} title={t("viewTitle", { order: data.orderNumber })}>
           {t("view")}
         </a>
+      </p>
+      <p>
+        {t("footer", { product: platform.productName })} <a href={platform.siteUrl}>{t("visit")}</a>
       </p>
     </Card>
   ),
