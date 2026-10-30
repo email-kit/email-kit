@@ -458,6 +458,14 @@ All depend on P1-165.
 
 ### M1.5 CLI, `init` and host integration (v0.5)
 
+**Status:** `examples/nextjs` (Next.js 16.4.2) is the reference integration: one template,
+`email-kit compile && next build`, a route handler importing `@/email-kit/compiled`, and tests
+that call the handlers directly; it runs in the repo pipeline. Verified first in a fresh
+`create-next-app` outside the repo, linked by path (`link:`; `file:` fails on the repo-only
+`catalog:` / `workspace:*` versions until packages are packed). Friction for `init` to remove:
+the per-template `@jsxImportSource` pragma (Next type-checks every `.tsx` as React) and wiring
+compile into the scripts.
+
 | ID | Task | Reqs | Pri | Dep | Done when |
 |---|---|---|---|---|---|
 | P1-200 | `create-email-kit` starter and `email-kit init` on the nearest `package.json` project | INIT-01 | MUST | P1-087 | Both entry points run `init` |

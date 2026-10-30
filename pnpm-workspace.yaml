@@ -23,3 +23,5 @@ minimumReleaseAge: 1440
 allowBuilds:
   "@swc/core": false
   esbuild: false
+  # Next.js's optional image optimiser (examples/nextjs doesn't use next/image).
+  sharp: false

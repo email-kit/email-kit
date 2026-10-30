@@ -337,6 +337,11 @@ interface Model {
   readonly required?: readonly string[]
 }
 
+/** "1 character", "2 characters" */
+function counted(n: number, word: string): string {
+  return `${n} ${word}${n === 1 ? "" : "s"}`
+}
+
 /** A value that doesn't match the schema, at a path such as `items[1].qty`. */
 interface DataIssue {
   readonly path: string
@@ -457,8 +462,8 @@ function validate(model: Model, value: unknown, path = ""): DataIssue[] {
       const min = number("minLength")
       const max = number("maxLength")
       const pattern = text("pattern")
-      if (min !== undefined && length < min) fail(`must be at least ${min} characters`)
-      if (max !== undefined && length > max) fail(`must be at most ${max} characters`)
+      if (min !== undefined && length < min) fail(`must be at least ${counted(min, "character")}`)
+      if (max !== undefined && length > max) fail(`must be at most ${counted(max, "character")}`)
       if (pattern !== undefined && !new RegExp(pattern, "u").test(value)) {
         fail(`must match ${pattern}`)
       }
@@ -502,9 +507,9 @@ function validate(model: Model, value: unknown, path = ""): DataIssue[] {
       const minItems = number("minItems")
       const maxItems = number("maxItems")
       if (minItems !== undefined && value.length < minItems)
-        fail(`must have at least ${minItems} items`)
+        fail(`must have at least ${counted(minItems, "item")}`)
       if (maxItems !== undefined && value.length > maxItems)
-        fail(`must have at most ${maxItems} items`)
+        fail(`must have at most ${counted(maxItems, "item")}`)
       value.forEach((item, index) => {
         issues.push(...validate(model.items as Model, item, `${path}[${index}]`))
       })

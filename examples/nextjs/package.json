@@ -1,0 +1,31 @@
+{
+  "name": "@email-kit/example-nextjs",
+  "private": true,
+  "type": "module",
+  "description": "email-kit in a Next.js app: one template, compiled, rendered in a route handler",
+  "scripts": {
+    "dev": "email-kit compile && next dev",
+    "emails": "email-kit compile --watch",
+    "build": "email-kit compile && next build",
+    "start": "next start",
+    "check:emails": "email-kit check",
+    "typecheck": "email-kit compile --quiet && tsc --noEmit",
+    "test": "email-kit compile --quiet && vitest run"
+  },
+  "dependencies": {
+    "@email-kit/components": "workspace:*",
+    "@email-kit/core": "workspace:*",
+    "next": "16.4.2",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@email-kit/cli": "workspace:*",
+    "@types/node": "catalog:",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "typescript": "5.9.3",
+    "vitest": "catalog:"
+  }
+}
