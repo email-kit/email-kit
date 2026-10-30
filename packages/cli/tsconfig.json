@@ -1,7 +1,9 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "types": ["node"]
+    "types": ["node"],
+    "jsx": "react-jsx",
+    "isolatedDeclarations": false
   },
   "include": ["src", "test", "tsdown.config.ts"]
 }

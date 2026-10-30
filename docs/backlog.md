@@ -13,8 +13,25 @@ when** (acceptance).
 - a changeset is added if published output changes;
 - CI is green on Node 22, 24 and 26 and on Linux, macOS and Windows.
 
-**Status (2026-10-27):**
+**Status (2026-10-30):**
 - **P0-01 done.** The monorepo foundation is in place.
+- **P0-07 done (draft).** Spec in `docs/spec/mustache-core.md`, the TS reference renderer in
+  `packages/dialect` (internal) and a 142-case seed suite in `conformance/mustache-core/`.
+- **P0-03 and P0-11 done.** Prototype compiler in `@email-kit/core` and `@email-kit/cli`; rolldown
+  recommended as the transform. Findings in `docs/spikes/`.
+- **P0-10 done.** Schema reader and portability check in `@email-kit/cli`; findings in
+  `docs/spikes/p0-10-schema.md` (one decision open: refinements).
+- **P0-09 done.** Recommendation: no HTML inliner by default (inline styles at the IR level);
+  juice with `data-embed` if stylesheets are ever authored. `docs/spikes/p0-09-css-inliner.md`.
+- **P0-08 done.** ADR 0004 proposed (`docs/adr/0004-import-alias-strategy.md`), backed by real
+  tsc 5.9 / 7.0, tsx and Node runs in `spikes/import-alias/`.
+- **P0-05 done.** Init rules confirmed across `jsx` unset, Hono, Next.js `preserve`/`react-jsx`,
+  classic and node10; core gained `typesVersions` for node10. `docs/spikes/p0-05-jsx-pragma.md`.
+- **P0-06 done; P0-12 partly.** ADRs 0003 (plurals), 0004 (aliases) and 0005 (no inliner)
+  accepted on 2026-10-30; 0002 and 0006 proposed; 0001 waits for P0-04. Refinements: allowed as
+  TS-only checks.
+- **Phase 0 remaining:** P0-04 (needs real email clients), accepting ADRs 0002 and 0006, and
+  P0-02 (publishing needs the maintainer's accounts).
 - **P0-02 prepared.** The placeholder packages and the release workflow are ready. Publishing and
   creating the repos need the maintainer's accounts: see `docs/setup/reserve-names.md`.
 - All other tasks are `todo`.
@@ -92,7 +109,7 @@ when** (acceptance).
 | P1-055 | CR/LF never in the rendered subject | RUN-06 | MUST | P1-050 | Tests with injected newlines |
 | P1-060 | Render template × locale from the IR to HTML | BLD-01 | MUST | P1-033 | A golden HTML snapshot exists for the example |
 | P1-061 | Document skeleton (doctype, `html` attributes, meta set, title, DPI XML in MSO + `noscript`, head style, bare body, wrapper with `role`/`aria-label`/`lang`/`dir`) | BLD-02 | MUST | P1-060 | Skeleton matches research 01 §2 (snapshot + checks) |
-| P1-062 | CSS pipeline: hex values, inlining (P0-09 choice), enhancement-only `<style>`, safe serialiser, ≤ 16 KB | BLD-03 | MUST | P1-060, P0-09 | `css.*` checks pass on the output |
+| P1-062 | CSS pipeline: hex values, inline styles written from the IR (ADR 0005), enhancement-only `<style>`, safe serialiser, ≤ 16 KB | BLD-03 | MUST | P1-060, P0-09 | `css.*` checks pass on the output |
 | P1-063 | Hybrid table layout shell with MSO ghost tables (classic target) | BLD-04 | MUST | P1-060, P0-04 | `layout.*` checks pass; Outlook screenshots match the spike |
 | P1-064 | MSO font override, data-detector reset, `format-detection` | BLD-06 | MUST | P1-061 | Present in the output |
 | P1-065 | Preheader element + filler; preheader text as the first line of the text part | BLD-07 | MUST | P1-061, P1-080 | `preheader.*` checks pass |
@@ -106,7 +123,7 @@ when** (acceptance).
 | P1-073 | `schema.json` per template (JSON Schema 2020-12) | OUT-04 | MUST | P1-013 | Emitted for the examples; validates the fixtures |
 | P1-074 | Generated self-contained `index.ts` (types from schema, unions, `emails` object, raw strings, `meta`, inlined renderer) | OUT-05 | MUST | P1-050, P1-073 | Imported in a TS project with zero dependencies; type tests pass |
 | P1-075 | Per-template entry points for tree-shaking | OUT-06 | SHOULD | P1-074 | A Worker bundle that imports one template has only that template |
-| P1-076 | Optional `js` + `.d.ts` emission | OUT-07 | SHOULD | P1-074 | A Node project without a TS loader imports it |
+| P1-076 | `.mjs` + `.d.mts` emission (ADR 0004 default for `tsc` hosts) | OUT-07 | MUST | P1-074 | A `tsc`-built ESM and CommonJS project imports it through `#email-kit` |
 | P1-077 | Optional dependency-free runtime validator from JSON Schema | OUT-08 | SHOULD | P1-073 | Invalid data rejected with field paths |
 | P1-078 | Locale fallback at render time (BCP 47 lookup) | OUT-09 | MUST | P1-074 | `pt-BR` → `pt` → default (tests) |
 | P1-079 | `render()` returns `{ subject, preheader, html, text, meta }` | OUT-10 | MUST | P1-074 | Return type and values tested |

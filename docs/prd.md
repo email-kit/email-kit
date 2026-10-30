@@ -241,7 +241,7 @@ check before deploy.
 | AUTH-01 | `defineEmail({ id, purpose, category?, schema, subject, preheader, fixtures, component, … })`, generic over its schema and fully typed | MUST | 1 | P2 defineTemplate, P1 catalogue |
 | AUTH-02 | Ids match `^[a-z][a-z0-9]*(-[a-z0-9]+)*$` and are unique; the docs say never rename a shipped id | MUST | 1 | P1 FR-06, P2 |
 | AUTH-03 | `purpose`: `transactional` \| `marketing` \| `consent-request` (required). Optional `category` (project-defined), `requestedByRecipient` and `expiresAfterMs`. All are emitted as metadata | MUST | 1 | 03 §15.1, P2 |
-| AUTH-04 | `schema`: any Standard Schema (Zod 4 is the documented default). It must stay within the portable JSON Schema subset (R4). Fields can be marked `secret` (codes, tokens) and `url` (HTTPS plus allow-list) | MUST | 1 | R4, 04 §10.4 |
+| AUTH-04 | `schema`: any Standard Schema (Zod 4 is the documented default). It must stay within the portable JSON Schema subset (R4). Fields can be marked `secret` (codes, tokens) and `url` (HTTPS plus allow-list). Refinements are allowed but run only in the TS validator | MUST | 1 | R4, 04 §10.4 |
 | AUTH-05 | `subject` and `preheader` are functions of `(data, t)` compiled to placeholder templates. The preheader must differ from the subject | MUST | 1 | P1 FR-07, 05 §7 |
 | AUTH-06 | `fixtures`: at least one named fixture, validated against the schema. Multiple cases are supported. Long, empty and hostile variants are generated automatically | MUST | 1 | P1 FR-74, 05 §8 |
 | AUTH-07 | Typed `data` proxy: scalars become placeholders; arrays are allowed only in `<Each>`; optional or boolean fields only in `<If>`; nested paths are supported; misuse is a type error | MUST | 1 | architecture-direction |
@@ -285,7 +285,7 @@ check before deploy.
 |---|---|---|---|---|
 | BLD-01 | Render every template × locale from the IR to HTML | MUST | 1 | D7 |
 | BLD-02 | Document skeleton as in research 01 §2:<br>• HTML5 doctype<br>• `<html lang dir>`, plus `xmlns:o`/`xmlns:v` only when used<br>• meta charset first, viewport, `x-apple-disable-message-reformatting`, `format-detection`, and the colour-scheme signals for the dark strategy<br>• `<title>` equal to the subject<br>• the DPI XML inside MSO conditionals and `<noscript>` (classic target)<br>• one `<style>`, in the head<br>• a bare `<body>` with `xml:lang`<br>• a wrapper `div` with `role="article"`, `aria-label` set to the subject, and `lang`/`dir` (`aria-roledescription` only when localised) | MUST | 1 | 01 §2, 02 |
-| BLD-03 | CSS pipeline:<br>• theme values become 6-digit hex;<br>• every declaration is inlined;<br>• only enhancement rules stay in `<style>`;<br>• the serialiser puts a space between `}` characters, writes ` !important` in lowercase, and emits no comments, nesting or custom properties;<br>• styles total at most 16 KB | MUST | 1 | 01 §3, §12.1 |
+| BLD-03 | CSS pipeline:<br>• theme values become 6-digit hex;<br>• every declaration is written inline by the compiler, with no HTML inliner (ADR 0005);<br>• only enhancement rules stay in `<style>`;<br>• the serialiser puts a space between `}` characters, writes ` !important` in lowercase, and emits no comments, nesting or custom properties;<br>• styles total at most 16 KB | MUST | 1 | 01 §3, §12.1 |
 | BLD-04 | Hybrid table layout shell: a 100% wrapper table, a container with `max-width` and an MSO ghost table, `role="presentation"` tables, inline-block columns with ghost cells, and media queries only to tune | MUST | 1 | 01 §4, §12.1 |
 | BLD-05 | Dark CSS generated from one rule list: `@media (prefers-color-scheme: dark)` and `[data-ogsc]`/`[data-ogsb]` twins, aimed at the element carrying the inline colour. Colour-scheme meta per strategy; `light only` opt-in for Gmail apps | MUST | 1 | 02 D2–D11, P1 FR-43/44 |
 | BLD-06 | An MSO font override, the Apple data-detector reset and the `format-detection` meta | MUST | 1 | P1, 01 §2 |
@@ -322,7 +322,7 @@ check before deploy.
 | OUT-04 | `schema.json` (JSON Schema 2020-12) per template, from `~standard.jsonSchema` or a converter | MUST | 1 | R4 |
 | OUT-05 | `index.ts` is self-contained, with no imports. It holds types emitted from the schemas, the `TemplateId` and `Locale` unions, the `emails` object (per template: `render()`, raw strings per locale, `meta`) and the inlined renderer | MUST | 1 | architecture-direction |
 | OUT-06 | Per-template entry points, so a Worker that sends one email bundles one template | SHOULD | 1 | 06 §4 |
-| OUT-07 | Optional `js` + `.d.ts` emission | SHOULD | 1 | P1 Q4 |
+| OUT-07 | `.mjs` + `.d.mts` emission: required for `tsc`-built hosts (the ADR 0004 default), optional elsewhere | MUST | 1 | P1 Q4, ADR 0004 |
 | OUT-08 | An optional, dependency-free runtime validator generated from the JSON Schema | SHOULD | 1 | architecture-direction |
 | OUT-09 | Locale fallback at render time (BCP 47 lookup) | MUST | 1 | 05 §10 |
 | OUT-10 | `render()` returns `{ subject, preheader, html, text, meta }` | MUST | 1 | P1 FR-80, P2 |
@@ -349,7 +349,7 @@ check before deploy.
 | I18N-03 | A missing key in any locale or slot (body, subject, preheader, alt, text) is a compile error | MUST | 1 | P2 FR-009 |
 | I18N-04 | Locale fallback chain (RFC 4647 lookup, CLDR parents) | MUST | 1 | 05 §10 |
 | I18N-05 | Generated pseudo-locales: length-scaled, accented and bracketed (`en-XA` style), and RTL (`ar-XB` style). Used by checks and the studio; never shipped unless configured | MUST | 1 | 05 ⚠5 |
-| I18N-06 | Runtime plurals, implemented per the SPK-04 ADR, with each locale's plural categories validated | MUST | 1 | SPK-04 |
+| I18N-06 | Runtime plurals per ADR 0003: generated CLDR category functions in each runtime's data-preparation step, with each locale's plural categories validated | MUST | 1 | SPK-04 |
 | I18N-07 | Values that depend on runtime data, such as dates and money, arrive as caller-formatted strings with `format` hints in the schema. The docs show the formatting recipes | MUST | 1 | R5 |
 | I18N-08 | CJK and Thai font stacks per script, with adjusted line heights | SHOULD | 1 | 05 §10 |
 | I18N-09 | Translator workflow: export and import messages (JSON or XLIFF), report unused keys, translator notes | SHOULD | 2 | 05 §10 |

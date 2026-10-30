@@ -1,0 +1,124 @@
+{
+  "$schema": "./case-file.schema.json",
+  "dialect": "mustache-core@1",
+  "name": "hostile",
+  "description": "Hostile values (R8, TST-10): markup, attribute breakouts, tags inside values, bidi controls, emoji, control characters and prototype-like keys. Values are never parsed as templates and never changed except by the escaping table.",
+  "cases": [
+    {
+      "name": "script tag",
+      "profile": "html",
+      "template": "<p>{{v}}</p>",
+      "data": { "v": "<script>alert(1)</script>" },
+      "expected": "<p>&lt;script&gt;alert(1)&lt;/script&gt;</p>"
+    },
+    {
+      "name": "double-quoted attribute breakout",
+      "profile": "html",
+      "template": "<img alt=\"{{v}}\">",
+      "data": { "v": "\"><img src=x onerror=alert(1)>" },
+      "expected": "<img alt=\"&quot;&gt;&lt;img src=x onerror=alert(1)&gt;\">"
+    },
+    {
+      "name": "single-quoted attribute breakout",
+      "profile": "html",
+      "template": "<a title='{{v}}'>",
+      "data": { "v": "' onclick='alert(1)" },
+      "expected": "<a title='&#39; onclick=&#39;alert(1)'>"
+    },
+    {
+      "name": "tags inside a value are not rendered",
+      "profile": "html",
+      "template": "{{v}}",
+      "data": {
+        "v": "{{secret}} {{#a}}x{{/a}} {{{raw}}}",
+        "secret": "LEAK",
+        "a": true,
+        "raw": "LEAK"
+      },
+      "expected": "{{secret}} {{#a}}x{{/a}} {{{raw}}}"
+    },
+    {
+      "name": "tags inside a value in the text profile",
+      "profile": "text",
+      "template": "{{v}}",
+      "data": { "v": "{{secret}}", "secret": "LEAK" },
+      "expected": "{{secret}}"
+    },
+    {
+      "name": "unbalanced braces inside a value",
+      "profile": "html",
+      "template": "{{a}}{{b}}",
+      "data": { "a": "{{", "b": "}}" },
+      "expected": "{{}}"
+    },
+    {
+      "name": "RTL text and bidi control characters pass through",
+      "profile": "html",
+      "template": "{{v}}",
+      "data": { "v": "مرحبا \u202Egnp.exe\u202C \u2067x\u2069" },
+      "expected": "مرحبا \u202Egnp.exe\u202C \u2067x\u2069"
+    },
+    {
+      "name": "emoji and ZWJ sequences pass through",
+      "profile": "html",
+      "template": "{{v}}",
+      "data": { "v": "👩\u200D💻 🇱🇰 ✓" },
+      "expected": "👩\u200D💻 🇱🇰 ✓"
+    },
+    {
+      "name": "no Unicode normalisation",
+      "description": "e + combining acute accent stays two code points; it is not composed to é.",
+      "profile": "text",
+      "template": "{{v}}",
+      "data": { "v": "Cafe\u0301" },
+      "expected": "Cafe\u0301"
+    },
+    {
+      "name": "control characters pass through",
+      "description": "The dialect does not strip CR, LF or NUL. Rejecting CR/LF in the subject is the generated module's job (RUN-06).",
+      "profile": "text",
+      "template": "[{{v}}]",
+      "data": { "v": "a\r\nb\u0000c\td" },
+      "expected": "[a\r\nb\u0000c\td]"
+    },
+    {
+      "name": "prototype names are not inherited",
+      "description": "Only own keys count. {{constructor}} on an empty object is a missing value, not a function.",
+      "profile": "html",
+      "template": "{{constructor}}",
+      "data": {},
+      "error": "missing-value"
+    },
+    {
+      "name": "prototype names in sections are falsy",
+      "profile": "html",
+      "template": "[{{#toString}}x{{/toString}}{{#__proto__}}y{{/__proto__}}]",
+      "data": {},
+      "expected": "[]"
+    },
+    {
+      "name": "a real __proto__ key is an ordinary key",
+      "profile": "html",
+      "template": "{{__proto__}}",
+      "data": { "__proto__": "ordinary" },
+      "expected": "ordinary"
+    },
+    {
+      "name": "dotted names do not reach string properties",
+      "description": "{{name.length}} does not read the length of a string: strings have no keys.",
+      "profile": "html",
+      "template": "{{name.length}}",
+      "data": { "name": "Ada" },
+      "error": "missing-value"
+    },
+    {
+      "name": "a long value",
+      "profile": "text",
+      "template": "<{{v}}>",
+      "data": {
+        "v": "0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789"
+      },
+      "expected": "<0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789>"
+    }
+  ]
+}

@@ -1,0 +1,187 @@
+{
+  "$schema": "./case-file.schema.json",
+  "dialect": "mustache-core@1",
+  "name": "sections",
+  "description": "{{#name}}…{{/name}}: truthiness (spec §7), lists, context pushes and name lookup through the context stack (spec §6).",
+  "cases": [
+    {
+      "name": "true renders once",
+      "profile": "html",
+      "template": "[{{#flag}}yes{{/flag}}]",
+      "data": { "flag": true },
+      "expected": "[yes]"
+    },
+    {
+      "name": "false is skipped",
+      "profile": "html",
+      "template": "[{{#flag}}yes{{/flag}}]",
+      "data": { "flag": false },
+      "expected": "[]"
+    },
+    {
+      "name": "a missing name is skipped, not an error",
+      "profile": "html",
+      "template": "[{{#discount}}yes{{/discount}}]",
+      "data": {},
+      "expected": "[]"
+    },
+    {
+      "name": "null is skipped",
+      "profile": "html",
+      "template": "[{{#discount}}yes{{/discount}}]",
+      "data": { "discount": null },
+      "expected": "[]"
+    },
+    {
+      "name": "empty string is falsy",
+      "profile": "html",
+      "template": "[{{#note}}yes{{/note}}]",
+      "data": { "note": "" },
+      "expected": "[]"
+    },
+    {
+      "name": "zero is falsy",
+      "profile": "html",
+      "template": "[{{#count}}yes{{/count}}]",
+      "data": { "count": 0 },
+      "expected": "[]"
+    },
+    {
+      "name": "empty list is falsy",
+      "profile": "html",
+      "template": "[{{#items}}yes{{/items}}]",
+      "data": { "items": [] },
+      "expected": "[]"
+    },
+    {
+      "name": "empty object is truthy",
+      "profile": "html",
+      "template": "[{{#meta}}yes{{/meta}}]",
+      "data": { "meta": {} },
+      "expected": "[yes]"
+    },
+    {
+      "name": "a non-empty string is truthy and becomes the context",
+      "profile": "html",
+      "template": "{{#discount}}Discount: {{.}}{{/discount}}",
+      "data": { "discount": "10%" },
+      "expected": "Discount: 10%"
+    },
+    {
+      "name": "a non-zero number is truthy and becomes the context",
+      "profile": "html",
+      "template": "{{#count}}{{.}} items{{/count}}",
+      "data": { "count": 3 },
+      "expected": "3 items"
+    },
+    {
+      "name": "an object becomes the context",
+      "profile": "html",
+      "template": "{{#customer}}{{name}} ({{email}}){{/customer}}",
+      "data": { "customer": { "name": "Ada", "email": "ada@example.test" } },
+      "expected": "Ada (ada@example.test)"
+    },
+    {
+      "name": "a list renders once per item",
+      "profile": "html",
+      "template": "{{#items}}<li>{{name}} × {{qty}}</li>{{/items}}",
+      "data": {
+        "items": [{ "name": "Tea", "qty": 2 }, { "name": "Cake", "qty": 1 }]
+      },
+      "expected": "<li>Tea × 2</li><li>Cake × 1</li>"
+    },
+    {
+      "name": "a list of strings with the implicit iterator",
+      "profile": "html",
+      "template": "{{#tags}}#{{.}} {{/tags}}",
+      "data": { "tags": ["a", "b", "c"] },
+      "expected": "#a #b #c "
+    },
+    {
+      "name": "a list of lists",
+      "profile": "html",
+      "template": "{{#rows}}[{{#.}}{{.}}{{/.}}]{{/rows}}",
+      "data": { "rows": [[1, 2], [3], []] },
+      "expected": "[12][3][]"
+    },
+    {
+      "name": "nested lists",
+      "profile": "html",
+      "template": "{{#orders}}{{id}}:{{#items}} {{name}}{{/items}};{{/orders}}",
+      "data": {
+        "orders": [
+          { "id": "A", "items": [{ "name": "x" }, { "name": "y" }] },
+          { "id": "B", "items": [{ "name": "z" }] }
+        ]
+      },
+      "expected": "A: x y;B: z;"
+    },
+    {
+      "name": "dotted section name",
+      "profile": "html",
+      "template": "{{#order.discount}}-{{.}}{{/order.discount}}",
+      "data": { "order": { "discount": "5" } },
+      "expected": "-5"
+    },
+    {
+      "name": "names fall back to outer contexts",
+      "profile": "html",
+      "template": "{{#items}}{{name}} ({{currency}}) {{/items}}",
+      "data": { "currency": "EUR", "items": [{ "name": "Tea" }, { "name": "Cake" }] },
+      "expected": "Tea (EUR) Cake (EUR) "
+    },
+    {
+      "name": "inner keys shadow outer keys",
+      "profile": "html",
+      "template": "{{name}}:{{#items}} {{name}}{{/items}}",
+      "data": { "name": "outer", "items": [{ "name": "inner" }] },
+      "expected": "outer: inner"
+    },
+    {
+      "name": "an inner null shadows an outer value",
+      "description": "Lookup stops at the first context that has the key, even when its value is null.",
+      "profile": "html",
+      "template": "{{#items}}[{{#note}}{{.}}{{/note}}]{{/items}}",
+      "data": { "note": "outer", "items": [{ "note": null }, {}] },
+      "expected": "[][outer]"
+    },
+    {
+      "name": "scalar contexts are skipped by name lookup",
+      "profile": "html",
+      "template": "{{#tags}}{{label}}{{.}} {{/tags}}",
+      "data": { "label": "#", "tags": ["a", "b"] },
+      "expected": "#a #b "
+    },
+    {
+      "name": "true does not change the context",
+      "description": "Inside {{#flag}} with flag true, {{.}} is still the enclosing context (as in mustache.js).",
+      "profile": "html",
+      "template": "{{#tags}}{{#flag}}{{.}}{{/flag}}{{/tags}}",
+      "data": { "flag": true, "tags": ["a", "b"] },
+      "expected": "ab"
+    },
+    {
+      "name": "dotted names resolve against the first match only",
+      "description": "Once the first segment is found, the rest resolve against that value; the lookup does not walk further out.",
+      "profile": "html",
+      "template": "{{#a}}[{{#b.c}}found{{/b.c}}]{{/a}}",
+      "data": { "a": { "b": {} }, "b": { "c": true } },
+      "expected": "[]"
+    },
+    {
+      "name": "the same section twice",
+      "profile": "html",
+      "template": "{{#flag}}a{{/flag}}-{{#flag}}b{{/flag}}",
+      "data": { "flag": true },
+      "expected": "a-b"
+    },
+    {
+      "name": "values in skipped sections are not checked",
+      "description": "A missing value inside a falsy section is not an error, because the section is not rendered.",
+      "profile": "html",
+      "template": "[{{#discount}}{{discount.amount}} {{missing}}{{/discount}}]",
+      "data": {},
+      "expected": "[]"
+    }
+  ]
+}

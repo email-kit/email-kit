@@ -1,0 +1,136 @@
+{
+  "$schema": "./case-file.schema.json",
+  "dialect": "mustache-core@1",
+  "name": "variables",
+  "description": "Plain text, {{name}} and {{{name}}} tags, padding inside tags, dotted names and the implicit iterator.",
+  "cases": [
+    {
+      "name": "no tags",
+      "profile": "html",
+      "template": "Plain text, no tags.",
+      "data": {},
+      "expected": "Plain text, no tags."
+    },
+    {
+      "name": "empty template",
+      "profile": "html",
+      "template": "",
+      "data": {},
+      "expected": ""
+    },
+    {
+      "name": "string value",
+      "profile": "html",
+      "template": "Hello, {{name}}!",
+      "data": { "name": "Ada" },
+      "expected": "Hello, Ada!"
+    },
+    {
+      "name": "several variables",
+      "profile": "html",
+      "template": "{{first}} {{last}} ({{first}})",
+      "data": { "first": "Ada", "last": "Lovelace" },
+      "expected": "Ada Lovelace (Ada)"
+    },
+    {
+      "name": "empty string value",
+      "description": "An empty string is a value: it renders as nothing and is not an error.",
+      "profile": "html",
+      "template": "[{{name}}]",
+      "data": { "name": "" },
+      "expected": "[]"
+    },
+    {
+      "name": "padding with spaces",
+      "profile": "html",
+      "template": "[{{ name }}]",
+      "data": { "name": "Ada" },
+      "expected": "[Ada]"
+    },
+    {
+      "name": "padding with tabs",
+      "profile": "html",
+      "template": "[{{\tname\t}}]",
+      "data": { "name": "Ada" },
+      "expected": "[Ada]"
+    },
+    {
+      "name": "names with underscores and digits",
+      "profile": "html",
+      "template": "{{_id}}/{{order_id2}}/{{orderNumber}}",
+      "data": { "_id": "a", "order_id2": "b", "orderNumber": "c" },
+      "expected": "a/b/c"
+    },
+    {
+      "name": "names are case-sensitive",
+      "profile": "html",
+      "template": "{{name}} {{Name}}",
+      "data": { "name": "lower", "Name": "Upper" },
+      "expected": "lower Upper"
+    },
+    {
+      "name": "dotted name",
+      "profile": "html",
+      "template": "{{customer.name}}",
+      "data": { "customer": { "name": "Ada" } },
+      "expected": "Ada"
+    },
+    {
+      "name": "deep dotted name",
+      "profile": "html",
+      "template": "{{a.b.c.d}}",
+      "data": { "a": { "b": { "c": { "d": "deep" } } } },
+      "expected": "deep"
+    },
+    {
+      "name": "implicit iterator on a scalar root",
+      "description": "The root context can be any value. {{.}} is the current context.",
+      "profile": "html",
+      "template": "<{{.}}>",
+      "data": "root",
+      "expected": "<root>"
+    },
+    {
+      "name": "triple mustache inserts the value unescaped",
+      "profile": "html",
+      "template": "{{{html}}}",
+      "data": { "html": "<b>bold</b> & \"quoted\"" },
+      "expected": "<b>bold</b> & \"quoted\""
+    },
+    {
+      "name": "triple mustache with padding",
+      "profile": "html",
+      "template": "{{{ html }}}",
+      "data": { "html": "<i>x</i>" },
+      "expected": "<i>x</i>"
+    },
+    {
+      "name": "multi-line value kept as is",
+      "profile": "text",
+      "template": "{{address}}",
+      "data": { "address": "1 Main St\nSpringfield" },
+      "expected": "1 Main St\nSpringfield"
+    },
+    {
+      "name": "closing braces in text are plain text",
+      "profile": "html",
+      "template": "a }} b }}} c {{name}}",
+      "data": { "name": "Ada" },
+      "expected": "a }} b }}} c Ada"
+    },
+    {
+      "name": "single braces are plain text",
+      "profile": "html",
+      "template": "{ {name} } {name}",
+      "data": { "name": "Ada" },
+      "expected": "{ {name} } {name}"
+    },
+    {
+      "name": "unused data is ignored",
+      "profile": "html",
+      "template": "{{a}}",
+      "data": { "a": "1", "b": "2", "c": { "d": [] } },
+      "expected": "1"
+    }
+  ]
+}

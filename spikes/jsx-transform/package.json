@@ -1,0 +1,20 @@
+{
+  "name": "@email-kit/spike-jsx-transform",
+  "version": "0.0.0",
+  "private": true,
+  "description": "P0-11 spike: compare JSX transforms for loading templates independently of the host tsconfig.",
+  "type": "module",
+  "scripts": {
+    "bench": "node bench.ts"
+  },
+  "dependencies": {
+    "@email-kit/core": "workspace:*"
+  },
+  "devDependencies": {
+    "@swc/core": "^1.16.20",
+    "esbuild": "^0.28.2",
+    "oxc-transform": "^0.156.0",
+    "rolldown": "catalog:",
+    "zod": "catalog:"
+  }
+}

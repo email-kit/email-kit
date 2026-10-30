@@ -1,0 +1,10 @@
+{
+  "subject": "Order {order} confirmed",
+  "preheader": "Thanks for your order",
+  "heading": "Thanks, {name}!",
+  "orderLine": "Your order {order} is confirmed.",
+  "discount": "You saved {discount}.",
+  "noDiscount": "No discount this time.",
+  "viewTitle": "Order {order}",
+  "view": "View your order"
+}

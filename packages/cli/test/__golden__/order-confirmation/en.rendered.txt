@@ -1,0 +1,13 @@
+Thanks for your order
+
+Thanks, Ada!
+=====================
+
+Your order A-1042 is confirmed.
+
+- Tea × 2
+- Cake × 1
+
+You saved 10%.
+
+View your order: https://shop.example/orders/A-1042?ref=email&lang=en

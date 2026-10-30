@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/email-kit/email-kit/conformance/mustache-core/case-file.schema.json",
+  "title": "mustache-core conformance case file",
+  "type": "object",
+  "required": ["dialect", "name", "description", "cases"],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": { "type": "string" },
+    "dialect": { "const": "mustache-core@1" },
+    "name": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+    "description": { "type": "string" },
+    "cases": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/case" }
+    }
+  },
+  "$defs": {
+    "case": {
+      "type": "object",
+      "required": ["name", "profile", "template", "data"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "description": { "type": "string" },
+        "profile": { "enum": ["html", "text"] },
+        "template": { "type": "string" },
+        "data": {},
+        "expected": { "type": "string" },
+        "error": {
+          "enum": [
+            "unclosed-tag",
+            "unsupported-tag",
+            "invalid-name",
+            "unclosed-section",
+            "unexpected-close",
+            "mismatched-close",
+            "missing-value",
+            "non-scalar-value",
+            "invalid-number"
+          ]
+        }
+      },
+      "oneOf": [{ "required": ["expected"] }, { "required": ["error"] }]
+    }
+  }
+}

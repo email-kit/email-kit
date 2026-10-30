@@ -1,0 +1,2 @@
+Order {{orderNumber}} confirmed
+Thanks for your order

@@ -40,10 +40,19 @@
     "test": "vitest run",
     "check:package": "publint --strict"
   },
+  "dependencies": {
+    "@email-kit/core": "workspace:*",
+    "rolldown": "catalog:"
+  },
   "devDependencies": {
+    "@email-kit/dialect": "workspace:*",
     "@types/node": "catalog:",
+    "@valibot/to-json-schema": "catalog:",
+    "arktype": "catalog:",
     "tsdown": "catalog:",
     "typescript": "catalog:",
-    "vitest": "catalog:"
+    "valibot": "catalog:",
+    "vitest": "catalog:",
+    "zod": "catalog:"
   }
 }
