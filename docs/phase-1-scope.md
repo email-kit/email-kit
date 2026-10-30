@@ -310,7 +310,9 @@ start script, with no bundler) and offers three choices:
 3. **Keep a relative import** (`../emails`).
 
 In a `tsc`-built project, `#emails` has to point at the source for type-checking and at the compiled
-file at runtime. How to map that cleanly is to be settled in the prototype.
+file at runtime. Settled in [ADR 0004](adr/0004-import-alias-strategy.md): by default `#email-kit`
+points at a generated `compiled/index.mjs` + `.d.mts`, and a condition-based mapping serves
+projects that deploy only their build output.
 
 The alias that was chosen is saved in `email-kit.config.ts`. The studio, the docs `init` prints, and
 `new` all use it in their import examples.

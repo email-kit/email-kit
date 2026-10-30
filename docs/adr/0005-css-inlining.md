@@ -1,6 +1,6 @@
 # ADR 0005: CSS inlining
 
-**Status:** Proposed (2026-10-30). **Task:** P0-09 (SPK-07), recorded in P0-12.
+**Status:** Accepted (2026-10-30). **Task:** P0-09 (SPK-07), recorded in P0-12.
 **Evidence:** [`docs/spikes/p0-09-css-inliner.md`](../spikes/p0-09-css-inliner.md) and
 [`spikes/css-inliner/`](../../spikes/css-inliner/bench.ts).
 
@@ -22,7 +22,7 @@ The options were tested on a realistic compiled email.
 | `juice` 12 | Placeholders correct (built-in `{{ }}` protection, a forgiving parser). Silently drops unmatched enhancement rules (`[data-ogsc]`, `a[x-apple-data-detectors]`) unless they are in `<style data-embed>`. 19.7 MB of dependencies |
 | **No HTML inliner** | Components write inline `style` from theme tokens into the IR; the compiler generates `<style>` from rule lists |
 
-## Decision (proposed)
+## Decision
 
 **No HTML inliner in the pipeline.**
 - Styles are inline when the IR is built.
@@ -46,5 +46,5 @@ hatch), use **juice**, with:
 - **No inliner dependency;** MSO comments stay byte-identical by construction.
 - **The `css.*` checks still verify the final output,** so a component that emits bad CSS is
   caught.
-- **BLD-03's wording changes:** "inlining" becomes "inline styles written by the compiler". It
-  needs a PRD edit once this ADR is accepted.
+- **BLD-03's wording changes:** "inlining" becomes "inline styles written by the compiler"
+  (done in the PRD).

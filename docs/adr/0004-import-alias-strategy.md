@@ -1,6 +1,6 @@
 # ADR 0004: Import alias strategy
 
-**Status:** Proposed (2026-10-30). Accepted or changed in P0-12.
+**Status:** Accepted (2026-10-30).
 **Task:** P0-08 (SPK-06). **Evidence:** [`spikes/import-alias/run.ts`](../../spikes/import-alias/run.ts).
 Run it with `pnpm --filter @email-kit/spike-import-alias run`.
 
@@ -58,7 +58,7 @@ Findings:
    `./compiled/index.js` suits `tsc` with nodenext; `./compiled/index.ts` suits type stripping or
    `rewriteRelativeImportExtensions`. `init` has to pick it; one fixed line can't serve every host.
 
-## Decision (proposed)
+## Decision
 
 `init` picks one strategy per host and records it (CFG-09):
 

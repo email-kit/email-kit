@@ -261,8 +261,8 @@ const ROWS: readonly Row[] = [
     },
   },
   {
-    construct: "custom refinement",
-    expect: "record",
+    construct: "custom refinement (allowed; runs in the TS validator only)",
+    expect: "portable",
     schemas: {
       Zod: () => z.object({ code: z.string().refine((s) => s.length === 6) }),
       ArkType: () => type({ code: type.string.narrow((s) => s.length === 6) }),

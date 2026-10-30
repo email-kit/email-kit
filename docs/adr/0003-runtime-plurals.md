@@ -1,6 +1,6 @@
 # ADR 0003: Runtime plurals
 
-**Status:** Proposed. **Decision needed from the maintainer.** **Task:** P0-06 (SPK-04).
+**Status:** Accepted (2026-10-30): option (b). **Task:** P0-06 (SPK-04).
 
 ## Context
 
@@ -84,4 +84,5 @@ is byte-identical across languages. Details to settle when it is accepted:
 
 ## Decision
 
-_Pending: (a), (b) or (c), chosen by the maintainer._
+**Option (b)**, with the details listed under Recommendation. P1-156 implements it, together with the
+data-preparation chapter of the runtime spec (P1-040) and its conformance cases.

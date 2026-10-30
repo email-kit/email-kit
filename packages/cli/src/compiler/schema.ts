@@ -162,12 +162,14 @@ async function toJsonSchema(
       )
     }
     const converter = (await import(pathToFileURL(path).href)) as {
-      toJsonSchema: (schema: unknown, config: Record<string, string>) => unknown
+      toJsonSchema: (schema: unknown, config: Record<string, unknown>) => unknown
     }
     return converter.toJsonSchema(schema, {
       target: "draft-2020-12",
       typeMode: io,
       errorMode: "throw",
+      // Refinements are allowed as TS-only checks, as Zod and ArkType treat them (P0-10).
+      ignoreActions: ["check"],
     })
   }
   throw new EmailKitError(

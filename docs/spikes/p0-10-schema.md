@@ -72,13 +72,14 @@ whitelist, so a keyword nobody anticipated is reported rather than dropped.
    - Zod's `.refine()` and ArkType's `.narrow()` are dropped silently.
    - Valibot's converter refuses `v.check()` outright.
 
-   A refinement would run in the TS validator but not in a Python or Go runtime. **Decision
-   needed:**
+   A refinement would run in the TS validator but not in a Python or Go runtime. The options
+   were:
    - (a) allow refinements, documented as "TS-only, advisory", and pass Valibot
      `ignoreActions: ["check"]`;
    - (b) forbid them, which Zod and ArkType can only enforce by reading library internals.
 
-   I recommend (a).
+   **Decided 2026-10-30: (a).** Refinements are allowed and advisory (TS validator only). Valibot
+   conversion passes `ignoreActions: ["check"]`, and the matrix row now reads "allowed".
 2. **ArkType loses the declared property order.** Its JSON Schema is alphabetical, so the
    generated types for ArkType users list fields alphabetically. The output is still deterministic.
 3. **ArkType doesn't fail on `Date` or `bigint`.** It writes `{}`. The "no JSON type" rule catches

@@ -20,4 +20,4 @@
 | recursive schema | ✗ Recursive or shared definitions ($defs) aren't portable | — | — |
 | field name with a hyphen | ✗ `first-name`: The field name "first-name" isn't portable: use letters, digits and _ | ✗ `first-name`: The field name "first-name" isn't portable: use letters, digits and _ | ✗ `first-name`: The field name "first-name" isn't portable: use letters, digits and _ |
 | root is not an object | ✗ The schema must be an object (z.object, type({…}), v.object) | ✗ The schema must be an object (z.object, type({…}), v.object) | ✗ The schema must be an object (z.object, type({…}), v.object) |
-| custom refinement | ✓ portable | ✓ portable | ✗ JSON Schema conversion failed: The "check" action cannot be converted to JSON Schema. |
+| custom refinement (allowed; runs in the TS validator only) | ✓ portable | ✓ portable | ✓ portable |
