@@ -15,6 +15,12 @@ supersedes an old one.
 | 0005 | CSS inliner | P0-09 (SPK-07, [findings](../spikes/p0-09-css-inliner.md)) |
 | 0006 | Package split (`@email-kit/cli` vs `@email-kit/core`) and JSX transform | P0-11 ([findings](../spikes/p0-11-jsx-transform.md)), P0-12 |
 
+## Proposed
+
+| ADR | Decision |
+|---|---|
+| [0004](0004-import-alias-strategy.md) | Import alias per host: `@/email-kit` where tsconfig aliases work at runtime; `#email-kit` to the source (type stripping) or to generated `.mjs` (`tsc` builds); a condition-based mapping for build-output-only deployments; relative otherwise |
+
 ## Accepted
 
 None yet.

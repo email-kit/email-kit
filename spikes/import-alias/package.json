@@ -1,0 +1,16 @@
+{
+  "name": "@email-kit/spike-import-alias",
+  "version": "0.0.0",
+  "private": true,
+  "description": "P0-08 spike: how a backend imports email-kit output in tsc-built and type-stripping Node projects.",
+  "type": "module",
+  "scripts": {
+    "run": "node run.ts"
+  },
+  "devDependencies": {
+    "tsc-alias": "^1.9.9",
+    "tsx": "^4.23.15",
+    "typescript": "catalog:",
+    "typescript5": "npm:typescript@5.9.3"
+  }
+}

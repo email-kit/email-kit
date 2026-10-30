@@ -23,6 +23,8 @@ when** (acceptance).
   `docs/spikes/p0-10-schema.md` (one decision open: refinements).
 - **P0-09 done.** Recommendation: no HTML inliner by default (inline styles at the IR level);
   juice with `data-embed` if stylesheets are ever authored. `docs/spikes/p0-09-css-inliner.md`.
+- **P0-08 done.** ADR 0004 proposed (`docs/adr/0004-import-alias-strategy.md`), backed by real
+  tsc 5.9 / 7.0, tsx and Node runs in `spikes/import-alias/`.
 - **P0-02 prepared.** The placeholder packages and the release workflow are ready. Publishing and
   creating the repos need the maintainer's accounts: see `docs/setup/reserve-names.md`.
 - All other tasks are `todo`.
