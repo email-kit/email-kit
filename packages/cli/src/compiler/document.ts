@@ -13,7 +13,7 @@
 // - a bare <body> (margin and padding zero, nothing else);
 // - the preheader first in the wrapper, hidden, padded with filler.
 
-import { type IrNode, parseRoleClass } from "@email-kit/core/internal"
+import { type IrNode, parseRoleClass, roleClass } from "@email-kit/core/internal"
 
 import { renderAttributeValue, renderHtml } from "./html.ts"
 
@@ -34,6 +34,12 @@ export interface DocumentOptions {
    * get dark rules, and the colour-scheme signals are added when there are any (BLD-05).
    */
   readonly dark?: Readonly<Record<string, string>> | undefined
+  /**
+   * The light canvas and ink, painted inline on the wrapper. Once `light dark` is declared the
+   * client's default ground turns dark, so unstyled text and the content ground must inherit from
+   * a root that the dark CSS restyles (research 02 D1, D3).
+   */
+  readonly ground?: { readonly canvas: string; readonly ink: string } | undefined
 }
 
 /**
@@ -89,7 +95,11 @@ const DATA_DETECTOR_RESET =
 
 export function renderDocument(doc: DocumentOptions): string {
   const body = renderHtml(doc.body).trimEnd()
-  const dark = doc.dark ? darkRules(body, doc.dark) : []
+  const ground = doc.ground
+    ? ` style="background-color:${doc.ground.canvas};color:${doc.ground.ink}" class="${roleClass("background-color", "canvas")} ${roleClass("color", "ink")}"`
+    : ""
+  const wrapper = `<div role="article" aria-label="${renderAttributeValue(doc.subject)}" lang="${doc.lang}" dir="${doc.dir}"${ground}>`
+  const dark = doc.dark ? darkRules(`${wrapper}\n${body}`, doc.dark) : []
   // Declare dark support only when the email ships dark rules (research 02 D2).
   const colorScheme = doc.colorScheme ?? (dark.length > 0 ? "light dark" : undefined)
   const namespaces = [
@@ -104,7 +114,6 @@ export function renderDocument(doc: DocumentOptions): string {
     ...(doc.styles ?? []),
     ...dark,
   ]
-  const label = renderAttributeValue(doc.subject)
   return [
     "<!DOCTYPE html>",
     `<html lang="${doc.lang}" dir="${doc.dir}"${namespaces}>`,
@@ -124,7 +133,7 @@ export function renderDocument(doc: DocumentOptions): string {
     `<style>\n${styles.join("\n")}\n</style>`,
     "</head>",
     `<body xml:lang="${doc.lang}" style="margin:0;padding:0">`,
-    `<div role="article" aria-label="${label}" lang="${doc.lang}" dir="${doc.dir}">`,
+    wrapper,
     ...(doc.preheader ? [preheader(doc.preheader)] : []),
     body,
     "</div>",

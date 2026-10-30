@@ -2,10 +2,10 @@
   The placeholder {{qty}} was used as a value at compile time. Templates only place data; they can't compute with it, because the value only exists at send time. Compute the value in the backend and pass it as its own field.
 
     38 |           {(item) => (
-    39 |             <li>
+    39 |             <ListItem>
   > 40 |               {item.name} × {(item.qty as unknown as number) * 2}
        |                                        ^
-    41 |             </li>
+    41 |             </ListItem>
     42 |           )}
 
   Docs: https://github.com/email-kit/email-kit/blob/main/docs/errors.md#placeholder-misuse

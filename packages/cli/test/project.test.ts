@@ -124,7 +124,7 @@ describe("email-kit compile", () => {
     const emails = createEmails({ siteUrl: "https://shop.example" })
     // An unknown top-level key named like an item field must not leak into the items.
     const html = emails.orderConfirmation.render({ ...order, name: "LEAK", unknown: 1 }).html
-    expect(html).toContain("<li>Tea × 2</li>")
+    expect(html).toContain('class="ek-c--ink">Tea × 2</li>')
     expect(html).not.toContain("LEAK")
     expect(() => emails.orderConfirmation.render({ ...order, orderNumber: "A\nB" })).toThrow(
       expect.objectContaining({ code: "subject-line-break" }),
@@ -214,7 +214,7 @@ describe("email-kit compile", () => {
     )) as GeneratedModule
     const emails = createEmails({ siteUrl: "https://shop.example" })
     const bad = { ...order, items: [{ name: "Tea", qty: "2" }] }
-    expect(emails.orderConfirmation.render(bad).html).toContain("<li>Tea × 2</li>")
+    expect(emails.orderConfirmation.render(bad).html).toContain('class="ek-c--ink">Tea × 2</li>')
     expect(emails.orderConfirmation.validate(bad)).toHaveLength(1)
   })
 

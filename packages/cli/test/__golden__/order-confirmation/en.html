@@ -15,6 +15,7 @@ a[x-apple-data-detectors] { color: inherit !important; text-decoration: none !im
 @media (prefers-color-scheme: dark) {
   .ek-bc--action-primary-border { border-color: #e5e5e5 !important; }
   .ek-bg--action-primary-fill { background-color: #e5e5e5 !important; }
+  .ek-bg--canvas { background-color: #171717 !important; }
   .ek-c--action-primary-label { color: #171717 !important; }
   .ek-c--ink { color: #fafafa !important; }
   .ek-c--link { color: #e5e5e5 !important; }
@@ -22,6 +23,7 @@ a[x-apple-data-detectors] { color: inherit !important; text-decoration: none !im
 }
 [data-ogsc] .ek-bc--action-primary-border { border-color: #e5e5e5 !important; }
 [data-ogsb] .ek-bg--action-primary-fill { background-color: #e5e5e5 !important; }
+[data-ogsb] .ek-bg--canvas { background-color: #171717 !important; }
 [data-ogsc] .ek-c--action-primary-label { color: #171717 !important; }
 [data-ogsc] .ek-c--ink { color: #fafafa !important; }
 [data-ogsc] .ek-c--link { color: #e5e5e5 !important; }
@@ -29,23 +31,43 @@ a[x-apple-data-detectors] { color: inherit !important; text-decoration: none !im
 </style>
 </head>
 <body xml:lang="en" style="margin:0;padding:0">
-<div role="article" aria-label="Order {{orderNumber}} confirmed" lang="en" dir="ltr">
+<div role="article" aria-label="Order {{orderNumber}} confirmed" lang="en" dir="ltr" style="background-color:#ffffff;color:#0a0a0a" class="ek-bg--canvas ek-c--ink">
 <div style="display:none;max-height:0;overflow:hidden;mso-hide:all" aria-hidden="true">Thanks for your order
 &#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;
 &#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;
 &#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;
 &#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;</div>
-<table role="presentation" width="100%"><tbody><tr><td style="padding:24px"><h1 style="margin:0 0 16px;font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;font-size:28px;line-height:36px;font-weight:700;mso-line-height-rule:exactly;color:#0a0a0a" class="ek-c--ink">Thanks, {{customerName}}!</h1>
-<p style="margin:0 0 16px;font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;font-size:16px;line-height:24px;font-weight:400;mso-line-height-rule:exactly;color:#0a0a0a" class="ek-c--ink">Your order {{orderNumber}} is confirmed.</p>
-<ul>{{#items}}<li>{{name}} × {{qty}}</li>
+<table role="presentation" width="100%"><tbody><tr><td style="padding:24px"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tbody><tr><td style="padding:0 0 16px"><h1 style="margin:0;font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;font-size:28px;line-height:36px;font-weight:700;mso-line-height-rule:exactly;color:#0a0a0a" class="ek-c--ink">Thanks, {{customerName}}!</h1>
+</td>
+</tr>
+</tbody>
+</table>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tbody><tr><td style="padding:0 0 16px"><p style="margin:0;font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;font-size:16px;line-height:24px;font-weight:400;mso-line-height-rule:exactly;color:#0a0a0a" class="ek-c--ink">Your order {{orderNumber}} is confirmed.</p>
+</td>
+</tr>
+</tbody>
+</table>
+<ul style="margin:0 24px 16px;padding:0">{{#items}}<li style="margin:0 0 8px;font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;font-size:16px;line-height:24px;font-weight:400;mso-line-height-rule:exactly;color:#0a0a0a" class="ek-c--ink">{{name}} × {{qty}}</li>
 {{/items}}</ul>
-{{#discount}}<p style="margin:0 0 16px;font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;font-size:16px;line-height:24px;font-weight:400;mso-line-height-rule:exactly;color:#0a0a0a" class="ek-c--ink">You saved {{discount}}.</p>
-{{/discount}}{{^discount}}<p style="margin:0 0 16px;font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;font-size:16px;line-height:24px;font-weight:400;mso-line-height-rule:exactly;color:#707070" class="ek-c--mutedInk">No discount this time.</p>
+{{#discount}}<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tbody><tr><td style="padding:0 0 16px"><p style="margin:0;font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;font-size:16px;line-height:24px;font-weight:400;mso-line-height-rule:exactly;color:#0a0a0a" class="ek-c--ink">You saved {{discount}}.</p>
+</td>
+</tr>
+</tbody>
+</table>
+{{/discount}}{{^discount}}<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tbody><tr><td style="padding:0 0 16px"><p style="margin:0;font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;font-size:16px;line-height:24px;font-weight:400;mso-line-height-rule:exactly;color:#707070" class="ek-c--mutedInk">No discount this time.</p>
+</td>
+</tr>
+</tbody>
+</table>
 {{/discount}}<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse:separate"><tbody><tr><td align="center" bgcolor="#171717" style="background-color:#171717;border-style:solid;border-width:1px;border-color:#171717;border-radius:8px;mso-padding-alt:10px 24px" class="ek-bg--action-primary-fill ek-bc--action-primary-border"><a href="{{orderUrl}}" target="_blank" rel="noopener" title="Order {{orderNumber}}" style="display:inline-block;padding:10px 24px;font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;font-size:16px;line-height:24px;font-weight:700;mso-line-height-rule:exactly;color:#fafafa;text-decoration:none;border-radius:8px" class="ek-c--action-primary-label">View your order</a></td>
 </tr>
 </tbody>
 </table>
-<p style="margin:0 0 16px;font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;font-size:14px;line-height:20px;font-weight:400;mso-line-height-rule:exactly;color:#707070" class="ek-c--mutedInk">Sent by Shop Example. <a href="{{_ek.context.siteUrl}}" style="color:#171717;text-decoration:underline" class="ek-c--link">Visit our shop</a></p>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tbody><tr><td style="padding:0 0 16px"><p style="margin:0;font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;font-size:14px;line-height:20px;font-weight:400;mso-line-height-rule:exactly;color:#707070" class="ek-c--mutedInk">Sent by Shop Example. <a href="{{_ek.context.siteUrl}}" style="color:#171717;text-decoration:underline" class="ek-c--link">Visit our shop</a></p>
+</td>
+</tr>
+</tbody>
+</table>
 </td>
 </tr>
 </tbody>

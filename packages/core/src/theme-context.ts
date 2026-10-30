@@ -43,6 +43,7 @@ export interface ThemeContext {
       >
     >
     readonly link: { readonly underline: boolean }
+    readonly otp: { readonly font: TypeStep; readonly surface: "codeSurface" }
   }
 }
 

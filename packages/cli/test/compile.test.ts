@@ -109,7 +109,7 @@ describe("rendering", () => {
     expect(out.html).toContain(
       '<a href="https://shop.example/orders/A-1042?ref=email&amp;lang=en" target="_blank" rel="noopener" title="Order A-1042"',
     )
-    expect(out.html).toContain("<li>Tea × 2</li>")
+    expect(out.html).toContain('class="ek-c--ink">Tea × 2</li>')
     expect(out.html).toContain("You saved 10%.")
     expect(out.html).not.toContain("No discount")
     expect(out.text).toContain(
@@ -122,7 +122,7 @@ describe("rendering", () => {
     const out = renderAll(compiled.en as CompiledEmail, { ...base, items: [] })
     expect(out.html).toContain("No discount this time.")
     expect(out.html).not.toContain("You saved")
-    expect(out.html).toContain("<ul></ul>")
+    expect(out.html).toContain('<ul style="margin:0 24px 16px;padding:0"></ul>')
     expect(out.text).toContain("No discount this time.")
   })
 

@@ -104,15 +104,21 @@ const find = (node: IrNode, tag: string): Element => {
 
 describe("Text and Heading", () => {
   it("uses the type scale, Word's exact line height and a role colour", () => {
-    const p = render(() => <Text tone="muted">Hello</Text>)
+    const block = render(() => <Text tone="muted">Hello</Text>)
+    const p = find(block, "p")
+    // Spacing is the cell's padding, never a margin (research 01 §10).
+    expect(style(find(block, "td"))).toBe("padding:0 0 16px")
     expect(style(p)).toBe(
-      "margin:0 0 16px;font-family:'Segoe UI', Arial, sans-serif;font-size:16px;line-height:24px;font-weight:400;mso-line-height-rule:exactly;color:#mutedi",
+      "margin:0;font-family:'Segoe UI', Arial, sans-serif;font-size:16px;line-height:24px;font-weight:400;mso-line-height-rule:exactly;color:#mutedi",
     )
     expect(classes(p)).toBe("ek-c--mutedInk")
   })
 
   it("maps levels to h1–h3 and their steps", () => {
-    const h = render(() => <Heading level={2}>Title</Heading>) as Element
+    const h = find(
+      render(() => <Heading level={2}>Title</Heading>),
+      "h2",
+    )
     expect(h.tag).toBe("h2")
     expect(style(h)).toContain("font-size:22px;line-height:30px;font-weight:700")
   })

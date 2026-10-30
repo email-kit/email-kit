@@ -18,7 +18,7 @@ export {
   type PlatformValues,
   RESERVED_KEY,
 } from "./platform.ts"
-export { parseRoleClass, type ThemeContext } from "./theme-context.ts"
+export { parseRoleClass, roleClass, type ThemeContext } from "./theme-context.ts"
 
 export interface EvaluatedEmail {
   readonly subject: IrNode

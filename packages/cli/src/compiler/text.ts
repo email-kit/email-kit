@@ -57,8 +57,19 @@ function element(node: IrElement, scopes: readonly number[]): string {
     }
     case "li":
       return `- ${inner.trim()}\n`
+    case "ol": {
+      // Number the items when they're all known at compile time; repeated items (<Each>) can't
+      // be counted in a template, so those keep the bullet.
+      const items = node.children.filter((child) => !(child.kind === "text" && !child.value.trim()))
+      if (
+        items.length === 0 ||
+        !items.every((child) => child.kind === "element" && child.tag === "li")
+      ) {
+        return `${inner}\n`
+      }
+      return `${items.map((item, i) => `${i + 1}. ${renderText(item, scopes).slice(2)}`).join("")}\n`
+    }
     case "ul":
-    case "ol":
       return `${inner}\n`
     case "br":
       return "\n"

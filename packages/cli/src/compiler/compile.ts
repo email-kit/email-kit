@@ -68,6 +68,7 @@ export function compileEmail<T>(
     // Classic Outlook stays a target by default until the targets config (CFG-05, M1.2).
     outlookClassic: true,
     dark: theme.dark === "authored" ? theme.roles.dark : undefined,
+    ground: { canvas: theme.roles.light.canvas, ink: theme.roles.light.ink },
   })
   const text = renderTextPart(ir.body, preheader)
 

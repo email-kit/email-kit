@@ -1,5 +1,5 @@
 /** @jsxImportSource @email-kit/core */
-import { Button, Heading, Link, Text } from "@email-kit/components"
+import { Button, Heading, Link, List, ListItem, Text } from "@email-kit/components"
 import { defineEmail, Each, If, Unless, url } from "@email-kit/core"
 import { z } from "zod"
 
@@ -33,15 +33,15 @@ export default defineEmail({
     <Card>
       <Heading>{t("heading", { name: data.customerName })}</Heading>
       <Text>{t("orderLine", { order: data.orderNumber })}</Text>
-      <ul>
+      <List>
         <Each of={data.items}>
           {(item) => (
-            <li>
+            <ListItem>
               {item.name} × {item.qty}
-            </li>
+            </ListItem>
           )}
         </Each>
-      </ul>
+      </List>
       <If when={data.discount}>{(discount) => <Text>{t("discount", { discount })}</Text>}</If>
       <Unless when={data.discount}>
         <Text tone="muted">{t("noDiscount")}</Text>

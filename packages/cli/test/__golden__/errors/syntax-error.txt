@@ -6,7 +6,7 @@
   > 34 |       <Heading>{t("heading", { name: data.customerName })}</Heading>
        |                 ^
     35 |       <Text>{t("orderLine", { order: data.orderNumber })}</Text>
-    36 |       <ul>
+    36 |       <List>
 
   Docs: https://github.com/email-kit/email-kit/blob/main/docs/errors.md#syntax-error
 

@@ -70,6 +70,14 @@ when** (acceptance).
   yet), `Text`, `Heading`, `Link`, `Button` (no VML, `showUrl` or text form yet), `Divider`,
   `Spacer` and `Section` exist (P1-124/126–129/132/133, partial). `EmailRoot`, `Layout` and
   `Row/Column` wait on ADR 0001; the lint banning literal values (P1-120) is still to do.
+- Then `List`/`ListItem` (P1-134; Outlook margins unverified until P0-04), `KeyValue` (P1-135,
+  inline and stacked, `copyable`; text part `Label: value`), `OtpCode` (P1-138, the code once and
+  contiguous in each part) and `Callout` (P1-139; icons wait for `Image`). Components space
+  themselves with cell padding, never margins (research 01 §10), and the document wrapper paints
+  the canvas and ink inline so unstyled text has a ground the dark CSS restyles (research 02 D1,
+  D3). The text part numbers `<ol>` items known at compile time. The `dark.*`, `copy.code-once`
+  and `auth.code-format` checks need the check engine (M1.4, P1-140/165); the output is built to
+  pass them and tests pin that.
 - **Phase 0 remaining:** P0-04 (needs real email clients), accepting ADRs 0002 and 0006, and
   P0-02 (publishing needs the maintainer's accounts).
 - **P0-02 prepared.** The placeholder packages and the release workflow are ready. Publishing and

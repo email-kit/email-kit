@@ -50,7 +50,18 @@ describe("document skeleton (research 01 §2)", () => {
   it("puts lang and dir on <html> and repeats them on the wrapper, the first element of <body>", () => {
     expect(html).toMatch(/<html lang="en" dir="ltr"/)
     expect(body()).toMatch(
-      /^<body xml:lang="en" style="margin:0;padding:0">\n<div role="article" aria-label="[^"]+" lang="en" dir="ltr">/,
+      /^<body xml:lang="en" style="margin:0;padding:0">\n<div role="article" aria-label="[^"]+" lang="en" dir="ltr"[ >]/,
+    )
+  })
+
+  it("paints the canvas and ink on the wrapper, restyled by the dark CSS (research 02 D1, D3)", () => {
+    // Under `light dark` the client's default ground turns dark; unstyled text (the raw <li>
+    // here) must inherit a colour from a root the dark CSS restyles.
+    expect(body()).toMatch(
+      /<div role="article"[^>]* style="background-color:#ffffff;color:#0a0a0a" class="ek-bg--canvas ek-c--ink">/,
+    )
+    expect(head()).toMatch(
+      /\[data-ogsb\] \.ek-bg--canvas \{ background-color: #[0-9a-f]{6} !important; \}/,
     )
   })
 
