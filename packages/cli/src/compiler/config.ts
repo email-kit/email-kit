@@ -29,6 +29,8 @@ export interface ResolvedConfig {
   readonly out: string
   /** Every locale to compile, the default first */
   readonly locales: readonly string[]
+  /** `locales.fallback`: a requested tag → the compiled locale it goes to */
+  readonly localeFallback: Readonly<Record<string, string>>
   /** The generated module's format */
   readonly module: "ts" | "mjs"
   /** Also write `<out>/<id>/index.*` per template */
@@ -146,6 +148,7 @@ export function resolveConfig(
     problems,
   )
   const locales = readLocales(config.locales, problems)
+  const localeFallback = readLocaleFallback(config.locales, locales, problems)
   if (problems.length > 0) {
     throw new EmailKitError(
       "invalid-config",
@@ -161,6 +164,7 @@ export function resolveConfig(
     messages,
     out,
     locales,
+    localeFallback,
     module: module === "mjs" ? "mjs" : "ts",
     perTemplateEntries: perTemplateEntries === true,
     validate: validate !== false,
@@ -363,13 +367,45 @@ function distance(a: string, b: string): number {
   return row[b.length] as number
 }
 
+// CFG-03: `{ "pt": "pt-BR" }`: a tag that isn't compiled → a compiled locale.
+function readLocaleFallback(
+  value: unknown,
+  locales: readonly string[],
+  problems: string[],
+): Record<string, string> {
+  const chain =
+    typeof value === "object" && value !== null
+      ? (value as Record<string, unknown>).fallback
+      : undefined
+  if (chain === undefined) return {}
+  if (typeof chain !== "object" || chain === null || Array.isArray(chain)) {
+    problems.push('locales.fallback: must be an object like { pt: "pt-BR" }')
+    return {}
+  }
+  const compiled = (tag: string) => locales.find((l) => l.toLowerCase() === tag.toLowerCase())
+  const out: Record<string, string> = {}
+  for (const [tag, target] of Object.entries(chain)) {
+    const problem = localeProblem(tag)
+    const to = typeof target === "string" ? compiled(target) : undefined
+    if (problem) problems.push(`locales.fallback: "${tag}": ${problem}`)
+    else if (compiled(tag))
+      problems.push(`locales.fallback.${tag}: "${tag}" is compiled, so it never falls back`)
+    else if (!to)
+      problems.push(
+        `locales.fallback.${tag}: must be one of the compiled locales (${locales.join(", ")})`,
+      )
+    else out[tag] = to
+  }
+  return out
+}
+
 function readLocales(value: unknown, problems: string[]): string[] {
   if (value === undefined) return ["en"]
   if (typeof value !== "object" || value === null || Array.isArray(value)) {
     problems.push('locales: must be an object like { default: "en", list: ["en", "de"] }')
     return ["en"]
   }
-  const { default: fallback, list, ...unknown } = value as Record<string, unknown>
+  const { default: fallback, list, fallback: _chain, ...unknown } = value as Record<string, unknown>
   for (const key of Object.keys(unknown)) problems.push(`locales.${key}: unknown option`)
   const fallbackProblem = localeProblem(fallback)
   if (typeof fallback !== "string" || fallbackProblem) {

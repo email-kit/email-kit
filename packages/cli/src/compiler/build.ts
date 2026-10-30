@@ -49,6 +49,7 @@ export async function compileWithConfig(config: ResolvedConfig): Promise<Compile
   const { templates, theme, themeFindings } = await buildProject(config)
   const output = buildOutput(templates, {
     locales: config.locales,
+    localeFallback: config.localeFallback,
     configFile: basename(config.file),
     module: config.module,
     perTemplateEntries: config.perTemplateEntries,

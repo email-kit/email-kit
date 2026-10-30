@@ -36,7 +36,10 @@ export interface EmailParts {
 }
 
 export interface RenderOptions {
-  /** A BCP 47 tag. Falls back by subtags (`de-AT` → `de`), then to the default locale. */
+  /**
+   * A BCP 47 tag. Falls back along CLDR's parents (`es-AR` → `es-419` → `es`, `de-AT` →
+   * `de`) and `locales.fallback`, then to the default locale.
+   */
   readonly locale?: Locale | (string & {}) | undefined
 }
 
@@ -392,17 +395,57 @@ function fill(template: string, data: unknown, profile: "html" | "text"): string
  * BCP 47 lookup (RFC 4647 §3.4): try the tag, then drop subtags from the end (`pt-BR` → `pt`),
  * then fall back to the default locale. Matching ignores case.
  */
-function resolveLocale(requested: string | undefined, available: readonly string[]): string {
+/** CLDR data for resolving a requested locale, filtered to the project's languages (§16). */
+interface LocaleData {
+  readonly parents: Readonly<Record<string, string>>
+  readonly scripts: Readonly<Record<string, string>>
+  readonly regions: Readonly<Record<string, string>>
+}
+
+const NO_LOCALE_DATA: LocaleData = { parents: {}, scripts: {}, regions: {} }
+
+/**
+ * The compiled locale for a requested one (I18N-04): RFC 4647 lookup over CLDR parents. A region
+ * that implies another script gets it first (`zh-TW` → `zh-Hant-TW`); then each step tries a
+ * compiled locale, and moves to the configured or CLDR parent, or drops the last subtag. `und`,
+ * or dropping an unusual script (`sr-Latn` → `sr`), stops at the default: the first locale.
+ */
+function resolveLocale(
+  requested: string | undefined,
+  available: readonly string[],
+  data: LocaleData = NO_LOCALE_DATA,
+): string {
   const fallback = available[0] as string
-  let tag = requested?.toLowerCase()
-  while (tag) {
-    for (const locale of available) {
-      if (locale.toLowerCase() === tag) return locale
-    }
-    const cut = tag.lastIndexOf("-")
-    tag = cut > 0 ? tag.slice(0, cut) : undefined
+  const keyOf = (tag: string) => {
+    const parts = tag.toLowerCase().replace(/_/g, "-").split("-")
+    const region =
+      parts.length >= 2 && (parts[1] as string).length !== 4
+        ? data.regions[`${parts[0]}-${parts[1]}`]
+        : undefined
+    return (region ? [parts[0], region, ...parts.slice(1)] : parts).join("-")
+  }
+  const compiled: Record<string, string> = {}
+  for (const locale of available) compiled[keyOf(locale)] = locale
+  let tag = requested ? keyOf(requested) : undefined
+  for (let steps = 0; tag && steps < 32; steps++) {
+    if (has(compiled, tag)) return compiled[tag] as string
+    const next = has(data.parents, tag) ? data.parents[tag] : truncate(tag, data)
+    tag = next === "und" || next === "root" ? undefined : next
   }
   return fallback
+}
+
+// RFC 4647: drop the last subtag, and a singleton (`x`, `u`) left at the end with it.
+function truncate(tag: string, data: LocaleData): string | undefined {
+  const parts = tag.split("-")
+  parts.pop()
+  while (parts.length > 0 && (parts[parts.length - 1] as string).length === 1) parts.pop()
+  if (parts.length === 0) return undefined
+  // CLDR nonlikelyScript: a language in an unusual script doesn't fall back to the language.
+  const script = tag.split("-")[1] as string
+  const likely = data.scripts[parts[0] as string]
+  if (parts.length === 1 && script.length === 4 && likely && script !== likely) return undefined
+  return parts.join("-")
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -665,6 +708,7 @@ function createTemplate(
   context: Readonly<Record<string, string>>,
   checkData: boolean,
   plurals: Readonly<Record<string, (n: number) => string>>,
+  localeData: LocaleData = NO_LOCALE_DATA,
 ): RuntimeTemplate {
   return {
     meta: { id, purpose, locales },
@@ -683,7 +727,7 @@ function createTemplate(
           )
         }
       }
-      const locale = resolveLocale(options.locale, locales)
+      const locale = resolveLocale(options.locale, locales, localeData)
       const parts = templates[locale] as TemplateParts
       const projected = project(model, data)
       prepare(model, projected, plurals[locale] ?? (() => "other"))
@@ -725,6 +769,124 @@ const TEMPLATES = {
   },
 }
 
+/** CLDR 47 parents and scripts for resolving a requested locale (spec §16). */
+const LOCALE_DATA: LocaleData = {
+  "parents": {
+    "en-150": "en-001",
+    "en-ag": "en-001",
+    "en-ai": "en-001",
+    "en-au": "en-001",
+    "en-bb": "en-001",
+    "en-bm": "en-001",
+    "en-bs": "en-001",
+    "en-bw": "en-001",
+    "en-bz": "en-001",
+    "en-cc": "en-001",
+    "en-ck": "en-001",
+    "en-cm": "en-001",
+    "en-cx": "en-001",
+    "en-cy": "en-001",
+    "en-dg": "en-001",
+    "en-dm": "en-001",
+    "en-er": "en-001",
+    "en-fj": "en-001",
+    "en-fk": "en-001",
+    "en-fm": "en-001",
+    "en-gb": "en-001",
+    "en-gd": "en-001",
+    "en-gg": "en-001",
+    "en-gh": "en-001",
+    "en-gi": "en-001",
+    "en-gm": "en-001",
+    "en-gs": "en-001",
+    "en-gy": "en-001",
+    "en-hk": "en-001",
+    "en-id": "en-001",
+    "en-ie": "en-001",
+    "en-il": "en-001",
+    "en-im": "en-001",
+    "en-in": "en-001",
+    "en-io": "en-001",
+    "en-je": "en-001",
+    "en-jm": "en-001",
+    "en-ke": "en-001",
+    "en-ki": "en-001",
+    "en-kn": "en-001",
+    "en-ky": "en-001",
+    "en-lc": "en-001",
+    "en-lr": "en-001",
+    "en-ls": "en-001",
+    "en-mg": "en-001",
+    "en-mo": "en-001",
+    "en-ms": "en-001",
+    "en-mt": "en-001",
+    "en-mu": "en-001",
+    "en-mv": "en-001",
+    "en-mw": "en-001",
+    "en-my": "en-001",
+    "en-na": "en-001",
+    "en-nf": "en-001",
+    "en-ng": "en-001",
+    "en-nr": "en-001",
+    "en-nu": "en-001",
+    "en-nz": "en-001",
+    "en-pg": "en-001",
+    "en-pk": "en-001",
+    "en-pn": "en-001",
+    "en-pw": "en-001",
+    "en-rw": "en-001",
+    "en-sb": "en-001",
+    "en-sc": "en-001",
+    "en-sd": "en-001",
+    "en-sg": "en-001",
+    "en-sh": "en-001",
+    "en-sl": "en-001",
+    "en-ss": "en-001",
+    "en-sx": "en-001",
+    "en-sz": "en-001",
+    "en-tc": "en-001",
+    "en-tk": "en-001",
+    "en-to": "en-001",
+    "en-tt": "en-001",
+    "en-tv": "en-001",
+    "en-tz": "en-001",
+    "en-ug": "en-001",
+    "en-vc": "en-001",
+    "en-vg": "en-001",
+    "en-vu": "en-001",
+    "en-ws": "en-001",
+    "en-za": "en-001",
+    "en-zm": "en-001",
+    "en-zw": "en-001",
+    "en-at": "en-150",
+    "en-be": "en-150",
+    "en-ch": "en-150",
+    "en-cz": "en-150",
+    "en-de": "en-150",
+    "en-dk": "en-150",
+    "en-es": "en-150",
+    "en-fi": "en-150",
+    "en-fr": "en-150",
+    "en-hu": "en-150",
+    "en-it": "en-150",
+    "en-nl": "en-150",
+    "en-no": "en-150",
+    "en-pl": "en-150",
+    "en-pt": "en-150",
+    "en-ro": "en-150",
+    "en-se": "en-150",
+    "en-si": "en-150",
+    "en-sk": "en-150",
+    "en-dsrt": "und",
+    "en-shaw": "und"
+  },
+  "scripts": {
+    "de": "latn",
+    "en": "latn"
+  },
+  "regions": {}
+}
+
 /** CLDR 47 plural rules per locale (ADR 0003): the category of a number. */
 const PLURALS: Readonly<Record<string, (n: number) => string>> = {
   "en": (n) => {
@@ -763,6 +925,7 @@ export function createEmails(context: EmailContext): Emails {
       values,
       true,
       PLURALS,
+      LOCALE_DATA,
     ) as EmailTemplate<"order-confirmation", OrderConfirmationData>,
   }
 }

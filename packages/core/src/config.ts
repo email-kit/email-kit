@@ -52,6 +52,11 @@ export interface EmailKitConfig {
     readonly default: string
     /** Every locale to compile. Default: only the default locale. */
     readonly list?: readonly string[]
+    /**
+     * Where a requested locale goes when no compiled one matches it, before CLDR's parents and the
+     * default (CFG-03): `{ pt: "pt-BR" }` sends `pt` and `pt-AO` to Brazilian Portuguese.
+     */
+    readonly fallback?: Readonly<Record<string, string>>
   }
 }
 

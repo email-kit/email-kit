@@ -6,6 +6,7 @@
 import type { Purpose } from "@email-kit/core"
 import { source as runtimeSource } from "@email-kit/dialect/source"
 
+import type { LocaleData } from "../../i18n/locales.ts"
 import { CLDR_VERSION, pluralRules } from "../../i18n/plurals.ts"
 import type { CompiledTemplate } from "../project.ts"
 import { dataInterface, modelOf } from "./types.ts"
@@ -20,6 +21,8 @@ export interface ModuleOptions {
   readonly version: string
   /** Every locale, the default first */
   readonly locales: readonly string[]
+  /** CLDR parents and scripts for the project's languages, and locales.fallback (I18N-04) */
+  readonly localeData: LocaleData
   /** Platform keys the backend passes to createEmails() (RUN-04) */
   readonly context: readonly string[]
   /** render() validates data against the schema first (OUT-08) */
@@ -77,6 +80,7 @@ export function generateModule(
       "      values,\n" +
       `      ${options.validate},\n` +
       "      PLURALS,\n" +
+      "      LOCALE_DATA,\n" +
       `    ) as EmailTemplate<${JSON.stringify(t.id)}, ${t.identifiers.typeName}>,`,
   )
 
@@ -121,7 +125,10 @@ export interface EmailParts {
 }
 
 export interface RenderOptions {
-  /** A BCP 47 tag. Falls back by subtags (\`de-AT\` → \`de\`), then to the default locale. */
+  /**
+   * A BCP 47 tag. Falls back along CLDR's parents (\`es-AR\` → \`es-419\` → \`es\`, \`de-AT\` →
+   * \`de\`) and \`locales.fallback\`, then to the default locale.
+   */
   readonly locale?: Locale | (string & {}) | undefined
 }
 
@@ -158,6 +165,9 @@ ${runtimeSource}
 const TEMPLATES = {
 ${parts.join("\n")}
 }
+
+/** CLDR ${CLDR_VERSION} parents and scripts for resolving a requested locale (spec §16). */
+const LOCALE_DATA: LocaleData = ${JSON.stringify(options.localeData, null, 2)}
 
 /** CLDR ${CLDR_VERSION} plural rules per locale (ADR 0003): the category of a number. */
 const PLURALS: Readonly<Record<string, (n: number) => string>> = {

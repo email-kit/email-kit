@@ -17,6 +17,7 @@ import { dirname, join, sep } from "node:path"
 import type { PlatformValues } from "@email-kit/core/internal"
 import { DIALECT } from "@email-kit/dialect"
 
+import { localeData } from "../i18n/locales.ts"
 import { CLDR_VERSION } from "../i18n/plurals.ts"
 import type { Theme } from "../theme/theme.ts"
 
@@ -49,6 +50,7 @@ export function buildOutput(
   templates: readonly CompiledTemplate[],
   options: {
     readonly locales: readonly string[]
+    readonly localeFallback?: Readonly<Record<string, string>>
     readonly configFile: string
     readonly module: "ts" | "mjs"
     readonly perTemplateEntries: boolean
@@ -88,6 +90,7 @@ export function buildOutput(
   const moduleOptions = {
     version: VERSION,
     locales: options.locales,
+    localeData: localeData(options.locales, options.localeFallback),
     configFile: options.configFile,
     context: options.platform.runtime,
     validate: options.validate,

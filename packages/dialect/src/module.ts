@@ -87,17 +87,57 @@ function fill(template: string, data: unknown, profile: "html" | "text"): string
  * BCP 47 lookup (RFC 4647 §3.4): try the tag, then drop subtags from the end (`pt-BR` → `pt`),
  * then fall back to the default locale. Matching ignores case.
  */
-function resolveLocale(requested: string | undefined, available: readonly string[]): string {
+/** CLDR data for resolving a requested locale, filtered to the project's languages (§16). */
+interface LocaleData {
+  readonly parents: Readonly<Record<string, string>>
+  readonly scripts: Readonly<Record<string, string>>
+  readonly regions: Readonly<Record<string, string>>
+}
+
+const NO_LOCALE_DATA: LocaleData = { parents: {}, scripts: {}, regions: {} }
+
+/**
+ * The compiled locale for a requested one (I18N-04): RFC 4647 lookup over CLDR parents. A region
+ * that implies another script gets it first (`zh-TW` → `zh-Hant-TW`); then each step tries a
+ * compiled locale, and moves to the configured or CLDR parent, or drops the last subtag. `und`,
+ * or dropping an unusual script (`sr-Latn` → `sr`), stops at the default: the first locale.
+ */
+function resolveLocale(
+  requested: string | undefined,
+  available: readonly string[],
+  data: LocaleData = NO_LOCALE_DATA,
+): string {
   const fallback = available[0] as string
-  let tag = requested?.toLowerCase()
-  while (tag) {
-    for (const locale of available) {
-      if (locale.toLowerCase() === tag) return locale
-    }
-    const cut = tag.lastIndexOf("-")
-    tag = cut > 0 ? tag.slice(0, cut) : undefined
+  const keyOf = (tag: string) => {
+    const parts = tag.toLowerCase().replace(/_/g, "-").split("-")
+    const region =
+      parts.length >= 2 && (parts[1] as string).length !== 4
+        ? data.regions[`${parts[0]}-${parts[1]}`]
+        : undefined
+    return (region ? [parts[0], region, ...parts.slice(1)] : parts).join("-")
+  }
+  const compiled: Record<string, string> = {}
+  for (const locale of available) compiled[keyOf(locale)] = locale
+  let tag = requested ? keyOf(requested) : undefined
+  for (let steps = 0; tag && steps < 32; steps++) {
+    if (has(compiled, tag)) return compiled[tag] as string
+    const next = has(data.parents, tag) ? data.parents[tag] : truncate(tag, data)
+    tag = next === "und" || next === "root" ? undefined : next
   }
   return fallback
+}
+
+// RFC 4647: drop the last subtag, and a singleton (`x`, `u`) left at the end with it.
+function truncate(tag: string, data: LocaleData): string | undefined {
+  const parts = tag.split("-")
+  parts.pop()
+  while (parts.length > 0 && (parts[parts.length - 1] as string).length === 1) parts.pop()
+  if (parts.length === 0) return undefined
+  // CLDR nonlikelyScript: a language in an unusual script doesn't fall back to the language.
+  const script = tag.split("-")[1] as string
+  const likely = data.scripts[parts[0] as string]
+  if (parts.length === 1 && script.length === 4 && likely && script !== likely) return undefined
+  return parts.join("-")
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -360,6 +400,7 @@ function createTemplate(
   context: Readonly<Record<string, string>>,
   checkData: boolean,
   plurals: Readonly<Record<string, (n: number) => string>>,
+  localeData: LocaleData = NO_LOCALE_DATA,
 ): RuntimeTemplate {
   return {
     meta: { id, purpose, locales },
@@ -378,7 +419,7 @@ function createTemplate(
           )
         }
       }
-      const locale = resolveLocale(options.locale, locales)
+      const locale = resolveLocale(options.locale, locales, localeData)
       const parts = templates[locale] as TemplateParts
       const projected = project(model, data)
       prepare(model, projected, plurals[locale] ?? (() => "other"))
@@ -407,6 +448,7 @@ export {
   createTemplate,
   type DataIssue,
   EmailRenderError,
+  type LocaleData,
   type Model,
   prepare,
   project,

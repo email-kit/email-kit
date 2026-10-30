@@ -267,6 +267,13 @@ select a string, a plain argument any message value). `defineEmail` infers the i
 and types `t` from it; a template not compiled yet keeps an untyped `t`. Verified on TS 5.9 and
 7 through the bundled declarations, by type tests, and in the Next.js example.
 
+**P1-154** locale fallback, and the fallback part of **P1-150**: `render({ locale })` resolves by
+RFC 4647 lookup over CLDR 47 parents (`es-AR` → `es-419`, `pt-AO` → `pt-PT`, `en-AU` → `en-001`),
+inserting the script a region implies (`zh-TW` → `zh-Hant-TW`, so it never lands on Simplified
+`zh`) and stopping at an unusual script (`sr-Latn` ↛ `sr`). `locales.fallback` (`{ pt: "pt-BR" }`)
+overrides CLDR's parents; targets must be compiled locales. The module embeds only its languages'
+CLDR data (spec §16). Messages don't inherit: every compiled locale still has every key (I18N-03).
+
 | ID | Task | Reqs | Pri | Dep | Done when |
 |---|---|---|---|---|---|
 | P1-150 | Locale config (default, list, fallback chain, pseudo-locale toggles) | CFG-03 | MUST | P1-004 | Typed and validated |

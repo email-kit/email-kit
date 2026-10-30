@@ -311,3 +311,25 @@ which is why every object inherits its parents' entries.
 A CLDR category function takes a double `n` and uses the operands of UTS #35 computed from its
 shortest round-trip decimal form: `i` the integer part, `v` and `f` the fraction digits and their
 value, `w` and `t` the same without trailing zeros, `c` and `e` zero.
+
+## 16. Locale resolution in generated modules
+
+`render(data, { locale })` picks one of the compiled locales for the requested BCP 47 tag
+(I18N-04): RFC 4647 lookup, honouring CLDR's parent locales. The generated module embeds the
+data, from the CLDR version in the manifest, filtered to the project's languages: `parents`
+(a lowercase tag → the next tag; `und` means the root), `scripts` (a language → its likely
+script) and `regions` (`language-region` → the script it implies, when that differs from the
+language's). Explicit `locales.fallback` entries are written into `parents`, over CLDR's.
+
+1. **Key** a tag by lowercasing it, turning `_` into `-`, and, when its second subtag is a
+   region rather than a script, inserting the script `regions` gives (`zh-TW` → `zh-hant-tw`).
+   Compiled locales are keyed the same way.
+2. **Look up** the requested key among the compiled keys. A match returns that compiled locale.
+3. **Step** to `parents[key]` if there is one; otherwise drop the last subtag, and any
+   single-character subtag (`x`, `u`) left at the end. Dropping a script that isn't the
+   language's likely one to reach the bare language (`sr-latn` → `sr`) ends the lookup, as does
+   reaching `und` or `root`, or running out of subtags. Otherwise go to 2.
+4. **Default:** the first compiled locale.
+
+Examples, with CLDR 47: `es-AR` → `es-419` → `es`; `pt-AO` → `pt-PT` → `pt`; `en-AU` →
+`en-001` → `en`; `zh-TW` → `zh-Hant-TW` → `zh-Hant` → root, never `zh` (Simplified).
