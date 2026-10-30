@@ -6,8 +6,10 @@ import {
   evaluate,
   type Messages,
   type PlatformValues,
+  type ThemeContext,
 } from "@email-kit/core/internal"
 import { parse } from "@email-kit/dialect"
+import { loadTheme, type Theme } from "../theme/theme.ts"
 
 import { renderDocument } from "./document.ts"
 import { renderLine, renderTextPart } from "./text.ts"
@@ -29,6 +31,21 @@ export interface CompileOptions {
   readonly locale: string
   readonly messages: Messages
   readonly platform?: PlatformValues
+  /** The resolved theme; the built-in default when left out */
+  readonly theme?: Theme
+}
+
+/** What components see through useTheme(): the light palette and the other tokens. */
+export function themeContext(theme: Theme): ThemeContext {
+  return { ...theme, roles: theme.roles.light }
+}
+
+let defaultTheme: Theme | undefined
+
+/** The built-in theme, loaded once: it reads no files. */
+function builtInTheme(): Theme {
+  defaultTheme ??= loadTheme(undefined, ".")
+  return defaultTheme
 }
 
 const RTL = new Set(["ar", "dv", "fa", "he", "ps", "ur", "yi"])
@@ -37,7 +54,8 @@ export function compileEmail<T>(
   definition: EmailDefinition<T>,
   options: CompileOptions,
 ): CompiledEmail {
-  const ir = evaluate(definition, options)
+  const theme = options.theme ?? builtInTheme()
+  const ir = evaluate(definition, { ...options, theme: themeContext(theme) })
   const subject = renderLine(ir.subject, "subject")
   const preheader = ir.preheader ? renderLine(ir.preheader, "preheader") : ""
   const language = options.locale.split("-")[0] ?? ""
@@ -49,6 +67,7 @@ export function compileEmail<T>(
     body: ir.body,
     // Classic Outlook stays a target by default until the targets config (CFG-05, M1.2).
     outlookClassic: true,
+    dark: theme.dark === "authored" ? theme.roles.dark : undefined,
   })
   const text = renderTextPart(ir.body, preheader)
 

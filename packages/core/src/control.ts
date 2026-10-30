@@ -14,6 +14,17 @@ import {
   placeholderInfo,
 } from "./placeholder.ts"
 
+/**
+ * Content for some renderers only (UI-22): `mso` (Outlook's Word engine), `notMso` (every other
+ * client), `htmlOnly` (the HTML part) or `textOnly` (the plain-text part).
+ */
+export function Conditional(props: {
+  readonly when: "mso" | "notMso" | "htmlOnly" | "textOnly"
+  readonly children?: Child
+}): IrNode {
+  return { kind: "conditional", when: props.when, children: toNodes(props.children) }
+}
+
 /** Repeats its content for each item of a list field: `{{#items}}…{{/items}}`. */
 export function Each<Item>(props: {
   readonly of: ListPlaceholder<Item>

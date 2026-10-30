@@ -79,6 +79,10 @@ A test checks that every id the code can raise is listed here.
 **Why:** the template reads `platform.<key>`, but the config doesn't set that platform value.
 **Fix:** set it in `email-kit.config.ts`: `platform: { productName: "Acme" }` for a fixed value, or `platform: { siteUrl: { runtime: true } }` for one the backend passes to `createEmails()` at send time.
 
+### no-theme
+**Why:** a component called `useTheme()` (or styled with `role(…)`) outside a compile, for example from a test that called it directly.
+**Fix:** compile the template with `email-kit compile`, or through the compiler API, which provides the theme.
+
 ### outside-evaluation
 **Why:** `<Each>`, `<If>` or `<Unless>` ran outside a compile, for example from a test that called the component directly.
 **Fix:** compile the template with `email-kit compile`, or through the compiler API.

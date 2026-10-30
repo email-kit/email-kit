@@ -13,7 +13,7 @@
 // - a bare <body> (margin and padding zero, nothing else);
 // - the preheader first in the wrapper, hidden, padded with filler.
 
-import type { IrNode } from "@email-kit/core/internal"
+import { type IrNode, parseRoleClass } from "@email-kit/core/internal"
 
 import { renderAttributeValue, renderHtml } from "./html.ts"
 
@@ -29,6 +29,41 @@ export interface DocumentOptions {
   readonly colorScheme?: "light dark" | "light only" | undefined
   /** Enhancement rules for the head <style> (BLD-03); declarations are inline already. */
   readonly styles?: readonly string[] | undefined
+  /**
+   * The dark palette, for an authored dark strategy (THM-08). Elements tagged with a role class
+   * get dark rules, and the colour-scheme signals are added when there are any (BLD-05).
+   */
+  readonly dark?: Readonly<Record<string, string>> | undefined
+}
+
+/**
+ * The dark CSS for the role classes in `html`, from one rule list (BLD-05, research 02 D5):
+ * `@media (prefers-color-scheme: dark)` for Apple Mail and others, and the Outlook.com twins,
+ * `[data-ogsb]` for backgrounds and `[data-ogsc]` for text and borders, flat, `!important`, aimed
+ * at the element that carries the inline colour.
+ */
+export function darkRules(html: string, dark: Readonly<Record<string, string>>): string[] {
+  const classes = new Set<string>()
+  for (const match of html.matchAll(/\bclass="([^"]*)"/g)) {
+    for (const name of (match[1] as string).split(/\s+/))
+      if (name.startsWith("ek-")) classes.add(name)
+  }
+  const rules: { selector: string; declaration: string; outlook: string }[] = []
+  for (const name of [...classes].sort()) {
+    const parsed = parseRoleClass(name)
+    const colour = parsed ? dark[parsed.role] : undefined
+    if (!parsed || !colour) continue
+    const declaration = `${parsed.property}: ${colour} !important;`
+    const outlook = parsed.property.startsWith("background") ? "[data-ogsb]" : "[data-ogsc]"
+    rules.push({ selector: `.${name}`, declaration, outlook })
+  }
+  if (rules.length === 0) return []
+  return [
+    "@media (prefers-color-scheme: dark) {",
+    ...rules.map((rule) => `  ${rule.selector} { ${rule.declaration} }`),
+    "}",
+    ...rules.map((rule) => `${rule.outlook} ${rule.selector} { ${rule.declaration} }`),
+  ]
 }
 
 /** The fallback family Word uses instead of Times New Roman (research 01 §7). */
@@ -54,6 +89,9 @@ const DATA_DETECTOR_RESET =
 
 export function renderDocument(doc: DocumentOptions): string {
   const body = renderHtml(doc.body).trimEnd()
+  const dark = doc.dark ? darkRules(body, doc.dark) : []
+  // Declare dark support only when the email ships dark rules (research 02 D2).
+  const colorScheme = doc.colorScheme ?? (dark.length > 0 ? "light dark" : undefined)
   const namespaces = [
     ...(doc.outlookClassic || body.includes("<o:")
       ? [' xmlns:o="urn:schemas-microsoft-com:office:office"']
@@ -62,8 +100,9 @@ export function renderDocument(doc: DocumentOptions): string {
   ].join("")
   const styles = [
     DATA_DETECTOR_RESET,
-    ...(doc.colorScheme ? [":root { color-scheme: light dark; }"] : []),
+    ...(colorScheme ? [":root { color-scheme: light dark; }"] : []),
     ...(doc.styles ?? []),
+    ...dark,
   ]
   const label = renderAttributeValue(doc.subject)
   return [
@@ -74,7 +113,7 @@ export function renderDocument(doc: DocumentOptions): string {
     '<meta name="viewport" content="width=device-width, initial-scale=1">',
     '<meta name="x-apple-disable-message-reformatting">',
     '<meta name="format-detection" content="telephone=no, date=no, address=no, email=no, url=no">',
-    ...(doc.colorScheme ? [`<meta name="color-scheme" content="${doc.colorScheme}">`] : []),
+    ...(colorScheme ? [`<meta name="color-scheme" content="${colorScheme}">`] : []),
     `<title>${renderHtml(doc.subject)}</title>`,
     ...(doc.outlookClassic
       ? [

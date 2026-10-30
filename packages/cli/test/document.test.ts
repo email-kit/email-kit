@@ -96,7 +96,8 @@ describe("document skeleton (research 01 §2)", () => {
   it("writes CSS the way strict clients accept it: lowercase ` !important`, no `}}`", () => {
     const css = (html.match(/<style>([\s\S]*?)<\/style>/g) ?? []).join("\n")
     expect(css.replace(/ !important/g, "")).not.toMatch(/!\s*important/i)
-    expect(css).not.toMatch(/\}\s*\}/)
+    // Outlook drops all CSS after `}}`; braces separated by whitespace are fine (research 01 §5).
+    expect(css).not.toMatch(/\}\}/)
   })
 
   it("leaves <body> bare and loads nothing external", () => {
@@ -116,8 +117,18 @@ describe("document skeleton (research 01 §2)", () => {
     expect(longest).toBeLessThanOrEqual(998)
   })
 
-  it("has no colour-scheme signals without a dark palette", () => {
-    expect(html).not.toMatch(/color-scheme/)
+  it("writes dark rules for the roles used, with Outlook.com twins, and declares dark support", () => {
+    // The built-in theme has an authored dark palette (BLD-05, research 02 D2, D5).
+    expect(head()).toContain('<meta name="color-scheme" content="light dark">')
+    expect(head()).toMatch(
+      /@media \(prefers-color-scheme: dark\) \{\n {2}\.ek-bc--action-primary-border \{ border-color: #[0-9a-f]{6} !important; \}\n/,
+    )
+    expect(head()).toMatch(
+      /\[data-ogsb\] \.ek-bg--action-primary-fill \{ background-color: #[0-9a-f]{6} !important; \}/,
+    )
+    expect(head()).toMatch(/\[data-ogsc\] \.ek-c--ink \{ color: #[0-9a-f]{6} !important; \}/)
+    // Only roles the email uses get rules.
+    expect(head()).not.toContain("ek-bg--muted")
   })
 })
 
@@ -137,6 +148,25 @@ describe("renderDocument options", () => {
       expect(doc).toContain(`<meta name="color-scheme" content="${scheme}">`)
       expect(doc).toContain(":root { color-scheme: light dark; }")
     }
+  })
+
+  it("has no colour-scheme signals without a dark palette", () => {
+    expect(renderDocument(base)).not.toMatch(/color-scheme|prefers-color-scheme/)
+  })
+
+  it("writes dark rules only for role classes with a dark value", () => {
+    const tagged: IrNode = {
+      kind: "element",
+      tag: "p",
+      attrs: { class: ["intro ek-c--ink ek-c--link"] },
+      children: [],
+    }
+    const doc = renderDocument({ ...base, body: tagged, dark: { ink: "#fafafa" } })
+    expect(doc).toContain("  .ek-c--ink { color: #fafafa !important; }")
+    expect(doc).toContain("[data-ogsc] .ek-c--ink { color: #fafafa !important; }")
+    expect(doc).not.toContain(".ek-c--link {")
+    expect(doc).toContain('<meta name="color-scheme" content="light dark">')
+    expect(renderDocument({ ...base, body: tagged, dark: {} })).not.toMatch(/color-scheme/)
   })
 
   it("adds xmlns:v only when VML is used", () => {

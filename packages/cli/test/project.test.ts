@@ -136,7 +136,7 @@ describe("email-kit compile", () => {
     await compile({ cwd: dir })
     // The constant is text in the compiled template; the runtime key is a placeholder.
     expect(read(dir, "order-confirmation/en.html")).toContain(
-      'Sent by Shop Example. <a href="{{_ek.context.siteUrl}}">Visit our shop</a>',
+      'Sent by Shop Example. <a href="{{_ek.context.siteUrl}}" style=',
     )
     const manifest = JSON.parse(read(dir, "manifest.json"))
     expect(manifest.platform).toEqual({
@@ -155,7 +155,7 @@ describe("email-kit compile", () => {
       _ek: { context: { siteUrl: "https://evil.example" } },
       items: [{ name: "Tea", qty: 2, _ek: { context: { siteUrl: "https://evil.example" } } }],
     }).html
-    expect(html).toContain('<a href="https://shop.example">Visit our shop</a>')
+    expect(html).toContain('<a href="https://shop.example" style=')
     expect(html).not.toContain("evil")
     expect(() => createEmails({} as { siteUrl: string })).toThrow(
       expect.objectContaining({ code: "missing-context" }),
@@ -174,7 +174,7 @@ describe("email-kit compile", () => {
       emails: ReturnType<GeneratedModule["createEmails"]>
     }
     expect(emails.orderConfirmation.render(order).html).toContain(
-      '<a href="https://shop.example">Visit our shop</a>',
+      '<a href="https://shop.example" style=',
     )
   })
 

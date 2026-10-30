@@ -4,6 +4,7 @@
 import { EmailKitError } from "./errors.ts"
 import { type IrAttr, type IrNode, isIrNode } from "./ir.ts"
 import { describePath, type Placeholder, placeholderInfo, toIrPlaceholder } from "./placeholder.ts"
+import { type RoleColour, roleClass, roleOf, useTheme } from "./theme-context.ts"
 
 /** Anything a template can render. `false`, `null` and `undefined` render nothing. */
 export type Child =
@@ -27,7 +28,8 @@ export type AttrValue =
   | Placeholder<number>
   | IrNode
 
-export type StyleValue = Readonly<Record<string, string | number>>
+/** Inline styles. A theme colour is `role("ink")`: never a raw value in components (UI-01). */
+export type StyleValue = Readonly<Record<string, string | number | RoleColour>>
 
 export interface IntrinsicProps {
   readonly children?: Child
@@ -102,13 +104,21 @@ function toAttrs(
   attributes: Readonly<Record<string, unknown>>,
 ): Record<string, IrAttr> {
   const attrs: Record<string, IrAttr> = {}
+  const roleClasses: string[] = []
   for (const [name, value] of Object.entries(attributes)) {
     if (value === null || value === undefined || value === false) continue
     if (name === "style" && typeof value === "object" && !isIrNode(value)) {
-      attrs[name] = [styleText(tag, value as StyleValue)]
+      const { css, classes } = styleText(tag, value as StyleValue)
+      attrs[name] = [css]
+      roleClasses.push(...classes)
     } else {
       attrs[name] = attrParts(tag, name, value)
     }
+  }
+  // Theme colours tag the element that carries them, for the dark CSS (BLD-05).
+  if (roleClasses.length > 0) {
+    const own = attrs.class ?? []
+    attrs.class = [...own, ...(own.length > 0 ? [" "] : []), roleClasses.join(" ")]
   }
   return attrs
 }
@@ -136,9 +146,10 @@ function attrParts(tag: string, name: string, value: unknown): IrAttr {
   throw new EmailKitError("invalid-attribute", `<${tag} ${name}> can't be a ${typeof value}`)
 }
 
-function styleText(tag: string, style: StyleValue): string {
-  return Object.entries(style)
-    .map(([property, value]) => {
+function styleText(tag: string, style: StyleValue): { css: string; classes: string[] } {
+  const classes: string[] = []
+  const css = Object.entries(style)
+    .map(([key, value]) => {
       const info = placeholderInfo(value)
       if (info) {
         throw new EmailKitError(
@@ -147,7 +158,14 @@ function styleText(tag: string, style: StyleValue): string {
             "compile time; choose between styles with <If> instead.",
         )
       }
-      return `${property.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`)}:${value}`
+      const property = key.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`)
+      const name = roleOf(value)
+      if (name) {
+        classes.push(roleClass(property, name))
+        return `${property}:${useTheme().roles[name]}`
+      }
+      return `${property}:${value as string | number}`
     })
     .join(";")
+  return { css, classes }
 }

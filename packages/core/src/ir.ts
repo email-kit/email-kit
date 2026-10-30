@@ -1,7 +1,7 @@
 // The intermediate tree (IR) that templates evaluate to at compile time (JSX-01, JSX-04).
-// Prototype (P0-03): MSO conditionals and html-only / text-only branches arrive with P1-033.
+// Conditional branches (MSO, html-only, text-only) are IrConditional.
 
-export type IrNode = IrElement | IrText | IrPlaceholder | IrSection | IrFragment
+export type IrNode = IrElement | IrText | IrPlaceholder | IrSection | IrFragment | IrConditional
 
 export interface IrElement {
   readonly kind: "element"
@@ -39,12 +39,22 @@ export interface IrSection {
   readonly children: readonly IrNode[]
 }
 
+/**
+ * Content for some renderers only (UI-22): `mso` for Outlook's Word engine, `notMso` for every
+ * other client, `htmlOnly` for the HTML part, `textOnly` for the plain-text part.
+ */
+export interface IrConditional {
+  readonly kind: "conditional"
+  readonly when: "mso" | "notMso" | "htmlOnly" | "textOnly"
+  readonly children: readonly IrNode[]
+}
+
 export interface IrFragment {
   readonly kind: "fragment"
   readonly children: readonly IrNode[]
 }
 
-const KINDS = new Set(["element", "text", "placeholder", "section", "fragment"])
+const KINDS = new Set(["element", "text", "placeholder", "section", "fragment", "conditional"])
 
 export function isIrNode(value: unknown): value is IrNode {
   return typeof value === "object" && value !== null && KINDS.has((value as IrNode).kind)

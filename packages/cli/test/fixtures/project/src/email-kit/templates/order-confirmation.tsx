@@ -1,4 +1,5 @@
 /** @jsxImportSource @email-kit/core */
+import { Button, Heading, Link, Text } from "@email-kit/components"
 import { defineEmail, Each, If, Unless, url } from "@email-kit/core"
 import { z } from "zod"
 
@@ -30,8 +31,8 @@ export default defineEmail({
   },
   component: ({ data, t, platform }) => (
     <Card>
-      <h1>{t("heading", { name: data.customerName })}</h1>
-      <p>{t("orderLine", { order: data.orderNumber })}</p>
+      <Heading>{t("heading", { name: data.customerName })}</Heading>
+      <Text>{t("orderLine", { order: data.orderNumber })}</Text>
       <ul>
         <Each of={data.items}>
           {(item) => (
@@ -41,18 +42,17 @@ export default defineEmail({
           )}
         </Each>
       </ul>
-      <If when={data.discount}>{(discount) => <p>{t("discount", { discount })}</p>}</If>
+      <If when={data.discount}>{(discount) => <Text>{t("discount", { discount })}</Text>}</If>
       <Unless when={data.discount}>
-        <p>{t("noDiscount")}</p>
+        <Text tone="muted">{t("noDiscount")}</Text>
       </Unless>
-      <p>
-        <a href={data.orderUrl} title={t("viewTitle", { order: data.orderNumber })}>
-          {t("view")}
-        </a>
-      </p>
-      <p>
-        {t("footer", { product: platform.productName })} <a href={platform.siteUrl}>{t("visit")}</a>
-      </p>
+      <Button href={data.orderUrl} title={t("viewTitle", { order: data.orderNumber })}>
+        {t("view")}
+      </Button>
+      <Text size="caption" tone="muted">
+        {t("footer", { product: platform.productName })}{" "}
+        <Link href={platform.siteUrl}>{t("visit")}</Link>
+      </Text>
     </Card>
   ),
 })

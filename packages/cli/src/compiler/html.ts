@@ -23,6 +23,13 @@ export function renderHtml(node: IrNode, scopes: readonly number[] = [0]): strin
       const inner = [...scopes, node.opens]
       return open + node.children.map((child) => renderHtml(child, inner)).join("") + close
     }
+    case "conditional": {
+      const inner = node.children.map((child) => renderHtml(child, scopes)).join("")
+      // Word reads [if mso]; every other client hides it as a comment, and the reverse for notMso.
+      if (node.when === "mso") return `<!--[if mso]>${inner}<![endif]-->`
+      if (node.when === "notMso") return `<!--[if !mso]><!-->${inner}<!--<![endif]-->`
+      return node.when === "htmlOnly" ? inner : ""
+    }
     case "element": {
       const attrs = Object.entries(node.attrs)
         .map(([name, value]) => attribute(name, value, scopes))
@@ -51,6 +58,10 @@ export function renderAttributeValue(node: IrNode, scopes: readonly number[] = [
         open + node.children.map((child) => renderAttributeValue(child, inner)).join("") + close
       )
     }
+    case "conditional":
+      return node.when === "textOnly" || node.when === "mso"
+        ? ""
+        : node.children.map((child) => renderAttributeValue(child, scopes)).join("")
     case "element":
       throw new EmailKitError(
         "invalid-attribute",

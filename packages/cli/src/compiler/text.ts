@@ -38,6 +38,9 @@ function renderText(node: IrNode, scopes: readonly number[] = [0]): string {
       // Block content puts the tags on their own lines; mustache-core removes such lines.
       return inner.endsWith("\n") ? `${open}\n${inner}${close}\n` : open + inner + close
     }
+    case "conditional":
+      // The text part follows every client but Outlook's Word engine, and has its own branch.
+      return node.when === "notMso" || node.when === "textOnly" ? join(node.children, scopes) : ""
     case "element":
       return element(node, scopes)
   }

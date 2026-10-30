@@ -1,5 +1,10 @@
-// Placeholder entry for @email-kit/components. The P0 component set (EmailRoot,
-// Layout, Button, OtpCode, Receipt…) arrives in milestone M1.2 (backlog P1-120+).
+// @email-kit/components: email-safe components that take every value from the theme (UI-01).
+// The page shell (Layout, Row, Column) waits for ADR 0001.
 
-/** Name of this package, used in diagnostics. */
-export const PACKAGE_NAME = "@email-kit/components" as const
+export { Button, type ButtonProps } from "./Button.tsx"
+export { Divider } from "./Divider.tsx"
+export { Heading, type HeadingProps } from "./Heading.tsx"
+export { Link, type LinkProps } from "./Link.tsx"
+export { Section, type SectionProps } from "./Section.tsx"
+export { Spacer, type SpacerProps } from "./Spacer.tsx"
+export { Text, type TextProps } from "./Text.tsx"

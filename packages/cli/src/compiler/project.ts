@@ -6,7 +6,7 @@ import { basename, join, relative } from "node:path"
 
 import type { Purpose } from "@email-kit/core"
 import { EmailKitError, isEmailKitError } from "@email-kit/core/internal"
-
+import type { Theme } from "../theme/theme.ts"
 import { type CompiledEmail, compileEmail } from "./compile.ts"
 import type { ResolvedConfig } from "./config.ts"
 import { assertUniqueIdentifiers, type Identifiers, identifiersFor } from "./emit/identifiers.ts"
@@ -31,7 +31,10 @@ export interface CompiledTemplate {
   readonly sources: readonly string[]
 }
 
-export async function compileProject(config: ResolvedConfig): Promise<readonly CompiledTemplate[]> {
+export async function compileProject(
+  config: ResolvedConfig,
+  theme?: Theme,
+): Promise<readonly CompiledTemplate[]> {
   if (!isDirectory(config.templates)) {
     throw new EmailKitError(
       "no-templates-folder",
@@ -48,7 +51,7 @@ export async function compileProject(config: ResolvedConfig): Promise<readonly C
   const templates: CompiledTemplate[] = []
   for (const file of files) {
     try {
-      templates.push(await compileTemplate(file, config))
+      templates.push(await compileTemplate(file, config, theme))
     } catch (error) {
       problems.push(toProblem(error, file, config.dir))
     }
@@ -77,7 +80,11 @@ export async function compileProject(config: ResolvedConfig): Promise<readonly C
   return [...byId.values()].sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))
 }
 
-async function compileTemplate(file: string, config: ResolvedConfig): Promise<CompiledTemplate> {
+async function compileTemplate(
+  file: string,
+  config: ResolvedConfig,
+  theme: Theme | undefined,
+): Promise<CompiledTemplate> {
   const { definition, files } = await loadTemplate(file, { cacheDir: config.cacheDir })
   const schema = await readSchema(definition.schema, { resolveFrom: file })
   if (schema.issues.length > 0 || !schema.model || !schema.jsonSchema) {
@@ -95,6 +102,7 @@ async function compileTemplate(file: string, config: ResolvedConfig): Promise<Co
         locale,
         messages: readMessages(messagesFile),
         platform: config.platform,
+        ...(theme && { theme }),
       })
     } catch (error) {
       if (isEmailKitError(error) && error.code === "missing-message") {

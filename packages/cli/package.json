@@ -48,6 +48,7 @@
     "rolldown": "catalog:"
   },
   "devDependencies": {
+    "@email-kit/components": "workspace:*",
     "@email-kit/dialect": "workspace:*",
     "@types/culori": "^4.0.1",
     "@types/node": "catalog:",

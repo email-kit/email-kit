@@ -33,7 +33,7 @@ export async function compileWithConfig(config: ResolvedConfig): Promise<Compile
   // Every theme permutation is resolved and validated on compile (THM-10).
   const theme = loadTheme(config.theme, config.dir)
   const themeFindings = validateTheme(theme)
-  const templates = await compileProject(config)
+  const templates = await compileProject(config, theme)
   const output = buildOutput(templates, {
     locales: config.locales,
     configFile: basename(config.file),

@@ -1,12 +1,12 @@
-✗ src/email-kit/templates/order-confirmation.tsx:33:12 [syntax-error]
+✗ src/email-kit/templates/order-confirmation.tsx:34:17 [syntax-error]
   Expected `...` but found `Identifier`
 
-    31 |   component: ({ data, t, platform }) => (
-    32 |     <Card
-  > 33 |       <h1>{t("heading", { name: data.customerName })}</h1>
-       |            ^
-    34 |       <p>{t("orderLine", { order: data.orderNumber })}</p>
-    35 |       <ul>
+    32 |   component: ({ data, t, platform }) => (
+    33 |     <Card
+  > 34 |       <Heading>{t("heading", { name: data.customerName })}</Heading>
+       |                 ^
+    35 |       <Text>{t("orderLine", { order: data.orderNumber })}</Text>
+    36 |       <ul>
 
   Docs: https://github.com/email-kit/email-kit/blob/main/docs/errors.md#syntax-error
 

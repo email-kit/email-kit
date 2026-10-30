@@ -1,12 +1,12 @@
-✗ src/email-kit/templates/receipt.tsx:7:16 [invalid-id]
+✗ src/email-kit/templates/receipt.tsx:8:16 [invalid-id]
   Template id "Receipt" must be lowercase words joined by hyphens, like "order-confirmation"
 
-    5 | import { Card } from "../components/Card"
-    6 |
-  > 7 | export default defineEmail({
-      |                ^
-    8 |   id: "Receipt",
-    9 |   purpose: "transactional",
+     6 | import { Card } from "../components/Card"
+     7 |
+  >  8 | export default defineEmail({
+       |                ^
+     9 |   id: "Receipt",
+    10 |   purpose: "transactional",
 
   Docs: https://github.com/email-kit/email-kit/blob/main/docs/errors.md#invalid-id
 

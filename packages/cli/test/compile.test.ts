@@ -107,7 +107,7 @@ describe("rendering", () => {
     expect(out.preheader).toBe("Thanks for your order")
     expect(out.html).toContain("<title>Order A-1042 confirmed</title>")
     expect(out.html).toContain(
-      '<a href="https://shop.example/orders/A-1042?ref=email&amp;lang=en" title="Order A-1042">',
+      '<a href="https://shop.example/orders/A-1042?ref=email&amp;lang=en" target="_blank" rel="noopener" title="Order A-1042"',
     )
     expect(out.html).toContain("<li>Tea × 2</li>")
     expect(out.html).toContain("You saved 10%.")

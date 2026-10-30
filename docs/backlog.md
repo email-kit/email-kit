@@ -61,6 +61,15 @@ when** (acceptance).
   P1-110 checks (font stacks, weights, sizes, button height, container, radius), P1-112
   (`theme.emit` → `theme.json`) and P1-114 (`email-kit tokens`). The built-in default theme is shadcn
   neutral adjusted for email, with no findings.
+- **First components** (in progress): templates see the theme through `useTheme()`, and colours are
+  `role("ink")`. The JSX runtime writes the light value inline and tags the element with a role
+  class (`ek-c--ink`). From those classes the document writes the dark CSS: one rule list as
+  `@media (prefers-color-scheme: dark)` plus `[data-ogsc]`/`[data-ogsb]` twins, only for the roles
+  used, with the colour-scheme signals only when there are rules (P1-113, partial: no `light only`
+  opt-in and no `dark.*` checks yet). `Conditional` (P1-141, `mso.conditional-pairs` not written
+  yet), `Text`, `Heading`, `Link`, `Button` (no VML, `showUrl` or text form yet), `Divider`,
+  `Spacer` and `Section` exist (P1-124/126–129/132/133, partial). `EmailRoot`, `Layout` and
+  `Row/Column` wait on ADR 0001; the lint banning literal values (P1-120) is still to do.
 - **Phase 0 remaining:** P0-04 (needs real email clients), accepting ADRs 0002 and 0006, and
   P0-02 (publishing needs the maintainer's accounts).
 - **P0-02 prepared.** The placeholder packages and the release workflow are ready. Publishing and

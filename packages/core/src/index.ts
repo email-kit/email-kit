@@ -2,7 +2,7 @@
 // Prototype (P0-03): the API shape is not final.
 
 export { defineConfig, type EmailKitConfig } from "./config.ts"
-export { Each, If, Unless } from "./control.ts"
+export { Conditional, Each, If, Unless } from "./control.ts"
 export {
   defineEmail,
   type EmailDefinition,
@@ -32,3 +32,4 @@ export type {
   TypeStep,
   TypeStyle,
 } from "./theme.ts"
+export { type RoleColour, role, type ThemeContext, useTheme } from "./theme-context.ts"
