@@ -1,11 +1,23 @@
 /** @jsxImportSource @email-kit/core */
 // The components compiled end to end with the built-in theme: both parts, and the dark CSS.
 
-import { Callout, KeyValue, List, ListItem, OtpCode, Text } from "@email-kit/components"
+import {
+  Callout,
+  DataTable,
+  Image,
+  KeyValue,
+  LineItems,
+  List,
+  ListItem,
+  OtpCode,
+  optionalRow,
+  Text,
+} from "@email-kit/components"
 import {
   defineEmail,
   Each,
   type EmailDefinitionInput,
+  If,
   type StandardSchemaV1,
 } from "@email-kit/core"
 import { describe, expect, it } from "vitest"
@@ -16,6 +28,11 @@ interface Data {
   code: string
   orderNumber: string
   steps: { title: string }[]
+  lines: { name: string; qty: string; total: string; size?: string }[]
+  subtotal: string
+  discount?: string
+  vat: string
+  total: string
 }
 
 const schema = {
@@ -24,7 +41,7 @@ const schema = {
 
 type Schema = StandardSchemaV1<Data, Data>
 
-function compile(component: EmailDefinitionInput<Schema>["component"]) {
+function compile(component: EmailDefinitionInput<Schema>["component"], locale = "en") {
   const definition = defineEmail<Schema>({
     id: "test",
     purpose: "transactional",
@@ -33,7 +50,7 @@ function compile(component: EmailDefinitionInput<Schema>["component"]) {
     fixtures: {},
     component,
   })
-  const email = compileEmail(definition, { locale: "en", messages: {} })
+  const email = compileEmail(definition, { locale, messages: {} })
   const body = email.html.slice(email.html.indexOf("<body"))
   return { ...email, body, count: (s: string) => body.split(s).length - 1 }
 }
@@ -140,6 +157,185 @@ describe("Text in the default theme", () => {
     const email = compile(() => <Text>Hello</Text>)
     expect(email.body).toContain(
       'style="background-color:#ffffff;color:#0a0a0a" class="ek-bg--canvas ek-c--ink"',
+    )
+  })
+})
+
+describe("Image", () => {
+  const src = "https://cdn.shop.example/hero.png"
+
+  it("writes integer dimensions, display:block and styled alt text (research 01 §6.2, 02 A16)", () => {
+    const email = compile(() => (
+      <Image kind="informative" src={src} alt="A teapot" width={600} height={300} />
+    ))
+    expect(email.body).toMatch(
+      /<img src="https:\/\/cdn\.shop\.example\/hero\.png" alt="A teapot" width="600" height="300" border="0" style="display:block;border:0;outline:none;text-decoration:none;font-family:[^"]*;font-size:14px;[^"]*color:#[0-9a-f]{6}" class="ek-c--mutedInk">/,
+    )
+    // Void elements are never self-closed: Yahoo drops their class otherwise.
+    expect(email.body).not.toContain("/>")
+    expect(email.text).toContain("A teapot\n")
+  })
+
+  it("scales fluid images with width:100% and a max-width", () => {
+    const email = compile(() => (
+      <Image kind="decorative" src={src} width={600} height={300} fluid />
+    ))
+    expect(email.body).toContain('alt="" width="600" height="300"')
+    expect(email.body).toContain("display:block;width:100%;max-width:600px;height:auto;")
+    expect(email.text.trim()).toBe("")
+  })
+
+  it("links a functional image, and its text form names the action", () => {
+    const email = compile(() => (
+      <Image
+        kind="functional"
+        src={src}
+        alt="View your order"
+        href="https://shop.example/orders"
+        width={200}
+        height={40}
+        align="center"
+      />
+    ))
+    expect(email.body).toMatch(
+      /<td align="center"><a href="https:\/\/shop\.example\/orders" target="_blank" rel="noopener" style="text-decoration:none"><img /,
+    )
+    expect(email.text).toContain("View your order: https://shop.example/orders")
+  })
+
+  it.each([
+    [{ src: "http://cdn.shop.example/a.png" }, "must use https:"],
+    [{ src: "/a.png" }, "absolute https: URL"],
+    [{ src: "https://cdn.shop.example/logo.svg" }, "SVG shows blank"],
+    [{ src: "https://cdn.shop.example/a.webp" }, "WebP or AVIF"],
+    [{ src: "https://cdn.shop.example/a" }, ".png, .jpg or .gif"],
+    [{ width: 299.5 }, "width must be a whole number"],
+    [{ alt: " " }, "needs alt text"],
+  ])("rejects %o", (change, message) => {
+    const props = {
+      kind: "informative",
+      src,
+      alt: "A teapot",
+      width: 600,
+      height: 300,
+      ...change,
+    } as const
+    expect(() => compile(() => <Image {...props} />)).toThrow(
+      expect.objectContaining({ code: "invalid-image", message: expect.stringContaining(message) }),
+    )
+  })
+})
+
+describe("DataTable", () => {
+  const table: EmailDefinitionInput<Schema>["component"] = ({ data }) => (
+    <DataTable
+      caption="Your items"
+      rows={data.lines}
+      columns={[
+        { header: "Item", cell: (row) => row.name },
+        { header: "Qty", cell: (row) => row.qty, align: "end", width: 60 },
+        { header: "Total", cell: (row) => row.total, align: "end" },
+      ]}
+    />
+  )
+
+  it("is a real table: caption, column and row headers, no presentation role (02 A23)", () => {
+    const email = compile(table)
+    const html = email.body.slice(
+      email.body.indexOf(
+        '<table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse">',
+      ),
+    )
+    expect(html).toMatch(
+      /^<table [^>]*><caption style="padding:0 0 8px;text-align:left;[^"]*font-weight:700;[^"]*" class="ek-c--ink">Your items<\/caption>/,
+    )
+    expect(html.slice(0, html.indexOf("</table>"))).not.toContain("presentation")
+    expect(html).toMatch(/<th scope="col" style="[^"]*text-align:left;[^"]*"[^>]*>Item<\/th>/)
+    expect(html).toMatch(/<th scope="col" width="60" style="[^"]*text-align:right;/)
+    expect(html).toMatch(
+      /\{\{#lines\}\}<tr><th scope="row" [^>]*>\{\{name\}\}<\/th>\n?<td style="[^"]*text-align:right;/,
+    )
+  })
+
+  it("aligns to the physical sides of a right-to-left locale", () => {
+    const email = compile(table, "ar")
+    expect(email.body).toMatch(/<caption style="[^"]*text-align:right;/)
+    expect(email.body).toMatch(/<th scope="col" width="60" style="[^"]*text-align:left;/)
+  })
+
+  it("lists each row as Header: value lines in the text part", () => {
+    const email = compile(table)
+    expect(email.text).toContain(
+      "Your items\n\n{{#lines}}\nItem: {{name}}\nQty: {{qty}}\nTotal: {{total}}\n\n{{/lines}}",
+    )
+  })
+
+  it("draws header and row rules in colours the dark CSS restyles", () => {
+    const email = compile(table)
+    expect(email.body).toContain("ek-border-bottom-color--strongBorder")
+    expect(email.html).toMatch(
+      /\[data-ogsc\] \.ek-border-bottom-color--hairline \{ border-bottom-color: #[0-9a-f]{6} !important; \}/,
+    )
+  })
+
+  it("needs at least two columns", () => {
+    expect(() =>
+      compile(({ data }) => (
+        <DataTable
+          caption="x"
+          rows={data.lines}
+          columns={[{ header: "Item", cell: (row) => row.name }]}
+        />
+      )),
+    ).toThrow(expect.objectContaining({ code: "invalid-table" }))
+  })
+})
+
+describe("LineItems", () => {
+  const receipt: EmailDefinitionInput<Schema>["component"] = ({ data }) => (
+    <LineItems
+      caption="Order A-1042"
+      items={data.lines}
+      headers={{ item: "Item", qty: "Qty", lineTotal: "Total" }}
+      cells={{
+        name: (l) => l.name,
+        meta: (l) => <If when={l.size}>{(size) => size}</If>,
+        qty: (l) => l.qty,
+        lineTotal: (l) => l.total,
+      }}
+      subtotal={{ label: "Subtotal", amount: data.subtotal }}
+      discounts={[
+        optionalRow(data.discount, (discount) => ({ label: "Discount", amount: discount })),
+      ]}
+      taxes={[{ label: "VAT 20% (included)", amount: data.vat }]}
+      total={{ label: "Total", amount: data.total }}
+    />
+  )
+
+  it("puts the totals in tfoot, in order, with the total emphasised", () => {
+    const email = compile(receipt)
+    const tfoot = email.body.slice(email.body.indexOf("<tfoot>"), email.body.indexOf("</tfoot>"))
+    const labels = [...tfoot.matchAll(/<th scope="row" colspan="2" [^>]*>([^<]*)<\/th>/g)].map(
+      (m) => m[1],
+    )
+    expect(labels).toEqual(["Subtotal", "Discount", "VAT 20% (included)", "Total"])
+    expect(tfoot).toMatch(
+      /\{\{#discount\}\}<tr>.*Discount.*\{\{discount\}\}<\/td>\n?<\/tr>\n?\{\{\/discount\}\}/s,
+    )
+    expect(tfoot).toMatch(
+      /border-top-color:#[0-9a-f]{6};color:#[0-9a-f]{6}" class="ek-border-top-color--strongBorder ek-c--ink">Total</,
+    )
+  })
+
+  it("adds the meta line under the item name", () => {
+    expect(compile(receipt).body).toMatch(
+      /\{\{name\}\}<br><span style="[^"]*font-size:14px;[^"]*" class="ek-c--mutedInk">\{\{#size\}\}\{\{size\}\}\{\{\/size\}\}<\/span>/,
+    )
+  })
+
+  it("writes the totals as Label: amount lines in the text part", () => {
+    expect(compile(receipt).text).toContain(
+      "Subtotal: {{subtotal}}\n{{#discount}}\nDiscount: {{discount}}\n{{/discount}}\nVAT 20% (included): {{vat}}\nTotal: {{total}}\n",
     )
   })
 })

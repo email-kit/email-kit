@@ -70,6 +70,27 @@ export function useTheme(): ThemeContext {
   return theme
 }
 
+const DIRECTION = Symbol.for("email-kit.direction")
+const directionSlot = globalThis as { [DIRECTION]?: "ltr" | "rtl" | undefined }
+
+export function withDirection<T>(dir: "ltr" | "rtl", run: () => T): T {
+  const previous = directionSlot[DIRECTION]
+  directionSlot[DIRECTION] = dir
+  try {
+    return run()
+  } finally {
+    directionSlot[DIRECTION] = previous
+  }
+}
+
+/**
+ * The writing direction of the locale being compiled, for physical properties Word needs
+ * (`text-align:right`, not `end`). Left to right outside a compile.
+ */
+export function useDirection(): "ltr" | "rtl" {
+  return directionSlot[DIRECTION] ?? "ltr"
+}
+
 const ROLE = Symbol.for("email-kit.role")
 declare const roleBrand: unique symbol
 

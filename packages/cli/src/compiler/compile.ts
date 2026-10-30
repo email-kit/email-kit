@@ -55,13 +55,13 @@ export function compileEmail<T>(
   options: CompileOptions,
 ): CompiledEmail {
   const theme = options.theme ?? builtInTheme()
-  const ir = evaluate(definition, { ...options, theme: themeContext(theme) })
+  const dir = RTL.has(options.locale.split("-")[0] ?? "") ? "rtl" : "ltr"
+  const ir = evaluate(definition, { ...options, theme: themeContext(theme), dir })
   const subject = renderLine(ir.subject, "subject")
   const preheader = ir.preheader ? renderLine(ir.preheader, "preheader") : ""
-  const language = options.locale.split("-")[0] ?? ""
   const html = renderDocument({
     lang: options.locale,
-    dir: RTL.has(language) ? "rtl" : "ltr",
+    dir,
     subject: ir.subject,
     preheader: ir.preheader,
     body: ir.body,

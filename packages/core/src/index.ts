@@ -32,4 +32,10 @@ export type {
   TypeStep,
   TypeStyle,
 } from "./theme.ts"
-export { type RoleColour, role, type ThemeContext, useTheme } from "./theme-context.ts"
+export {
+  type RoleColour,
+  role,
+  type ThemeContext,
+  useDirection,
+  useTheme,
+} from "./theme-context.ts"

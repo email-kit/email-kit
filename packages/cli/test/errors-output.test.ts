@@ -144,9 +144,9 @@ describe("docs/errors.md", () => {
     const docs = readFileSync(join(REPO, "docs", "errors.md"), "utf8")
     const documented = new Set([...docs.matchAll(/^### ([a-z][a-z-]*)$/gm)].map((m) => m[1]))
     const raised = new Set<string>()
-    for (const dir of ["packages/core/src", "packages/cli/src"]) {
+    for (const dir of ["packages/core/src", "packages/cli/src", "packages/components/src"]) {
       for (const file of readdirSync(join(REPO, dir), { recursive: true })) {
-        if (!String(file).endsWith(".ts")) continue
+        if (!/\.tsx?$/.test(String(file))) continue
         const source = readFileSync(join(REPO, dir, String(file)), "utf8")
         const patterns = [
           /(?:EmailKitError|SourceError)\(\s*"([a-z][a-z-]*)"/g,

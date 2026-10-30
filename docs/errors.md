@@ -87,6 +87,16 @@ A test checks that every id the code can raise is listed here.
 **Why:** `<Each>`, `<If>` or `<Unless>` ran outside a compile, for example from a test that called the component directly.
 **Fix:** compile the template with `email-kit compile`, or through the compiler API.
 
+## Components
+
+### invalid-image
+**Why:** an `<Image>` prop breaks a rule clients enforce: `width` and `height` must be whole px (Word ignores CSS widths), an informative or functional image needs alt text, and a literal `src` must be an absolute `https:` URL to a PNG, JPEG or GIF. SVG shows blank in Outlook on the web and new Outlook; classic Outlook can't show WebP or AVIF.
+**Fix:** follow the message: export a PNG or JPEG, use the `https:` URL, give the alt text, or use `kind="decorative"` for an image that adds nothing.
+
+### invalid-table
+**Why:** a `<DataTable>` has fewer than two columns. NVDA with classic Outlook treats one-column tables as layout and stops announcing headers, and a single column reads better as a list.
+**Fix:** use `KeyValue` or `List`, or add the column the data needs.
+
 ## Data and placeholders
 
 ### placeholder-misuse

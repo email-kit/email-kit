@@ -78,6 +78,14 @@ when** (acceptance).
   D3). The text part numbers `<ol>` items known at compile time. The `dark.*`, `copy.code-once`
   and `auth.code-format` checks need the check engine (M1.4, P1-140/165); the output is built to
   pass them and tests pin that.
+- Then `Image` (P1-130: `kind` decides the alt rules, integer dimensions, fluid option, styled
+  alt; literal `src` must be an `https:` PNG, JPEG or GIF; no WebP/AVIF opt-in yet), `DataTable`
+  (P1-136: caption, `th scope`, ≥ 2 columns, end alignment on the physical side for the locale's
+  direction, `Label: value` text form; **no stacking below 320 px yet**, it needs component head
+  CSS) and `LineItems` (P1-137: a `DataTable` preset with a `<tfoot>` summary; `optionalRow()` for
+  optional amounts). **Open:** `copy.receipt.reconciles` needs numeric amounts beside the
+  formatted strings UI-18 asks for; to settle with the check engine. Components read the
+  direction with `useDirection()`. The text part uses an image's alt text.
 - **Phase 0 remaining:** P0-04 (needs real email clients), accepting ADRs 0002 and 0006, and
   P0-02 (publishing needs the maintainer's accounts).
 - **P0-02 prepared.** The placeholder packages and the release workflow are ready. Publishing and

@@ -82,7 +82,10 @@ function element(node: IrElement, scopes: readonly number[]): string {
       return `${inner.trim()}: ${url.join("")}`
     }
     case "img":
-      return ""
+      // The alt carries what the image says, so the parts stay equivalent; decorative is "".
+      return (node.attrs.alt ?? [])
+        .map((part) => (typeof part === "string" ? part : placeholderTag(part, scopes)))
+        .join("")
     case "p":
     case "div":
     case "td":
