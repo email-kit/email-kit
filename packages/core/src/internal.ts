@@ -7,7 +7,7 @@ import { fragment } from "./jsx-runtime.ts"
 import { createPlaceholder, type Data, withScopes } from "./placeholder.ts"
 
 export { isEmailDefinition } from "./define.ts"
-export { EmailKitError } from "./errors.ts"
+export { EmailKitError, isEmailKitError } from "./errors.ts"
 export type { Messages } from "./i18n.ts"
 export * from "./ir.ts"
 

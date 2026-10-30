@@ -9,7 +9,7 @@ import { createRequire } from "node:module"
 import { pathToFileURL } from "node:url"
 
 import type { StandardSchemaV1 } from "@email-kit/core"
-import { EmailKitError } from "@email-kit/core/internal"
+import { EmailKitError, isEmailKitError } from "@email-kit/core/internal"
 
 export type FieldType = "string" | "number" | "integer" | "boolean" | "array" | "object"
 
@@ -106,7 +106,7 @@ export async function readSchema(
     try {
       json = await toJsonSchema(schema, io, options.resolveFrom)
     } catch (error) {
-      if (error instanceof EmailKitError) throw error
+      if (isEmailKitError(error)) throw error
       issues.push({ path: "", message: `JSON Schema conversion failed: ${firstLine(error)}` })
       break
     }

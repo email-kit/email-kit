@@ -5,13 +5,16 @@ import { existsSync, readdirSync, readFileSync, statSync } from "node:fs"
 import { basename, join, relative } from "node:path"
 
 import type { Purpose } from "@email-kit/core"
-import { EmailKitError } from "@email-kit/core/internal"
+import { EmailKitError, isEmailKitError } from "@email-kit/core/internal"
 
 import { type CompiledEmail, compileEmail } from "./compile.ts"
 import type { ResolvedConfig } from "./config.ts"
 import { assertUniqueIdentifiers, type Identifiers, identifiersFor } from "./emit/identifiers.ts"
 import { loadTemplate } from "./load.ts"
+import { CompileError, type Problem, toProblem } from "./problems.ts"
 import { type Field, readSchema } from "./schema.ts"
+
+export { CompileError, type Problem } from "./problems.ts"
 
 export interface CompiledTemplate {
   readonly id: string
@@ -26,23 +29,6 @@ export interface CompiledTemplate {
   readonly emails: readonly CompiledEmail[]
   /** Every source file bundled into the template */
   readonly sources: readonly string[]
-}
-
-export interface Problem {
-  readonly file: string
-  readonly code: string
-  readonly message: string
-}
-
-/** One or more problems that stopped the compile. */
-export class CompileError extends Error {
-  readonly problems: readonly Problem[]
-
-  constructor(problems: readonly Problem[]) {
-    super(problems.map((p) => `${p.file}: ${p.message}`).join("\n"))
-    this.name = "CompileError"
-    this.problems = problems
-  }
 }
 
 export async function compileProject(config: ResolvedConfig): Promise<readonly CompiledTemplate[]> {
@@ -64,7 +50,7 @@ export async function compileProject(config: ResolvedConfig): Promise<readonly C
     try {
       templates.push(await compileTemplate(file, config))
     } catch (error) {
-      problems.push(toProblem(relative(config.dir, file), error))
+      problems.push(toProblem(error, file, config.dir))
     }
   }
 
@@ -84,7 +70,7 @@ export async function compileProject(config: ResolvedConfig): Promise<readonly C
   try {
     assertUniqueIdentifiers([...byId.keys()])
   } catch (error) {
-    problems.push(toProblem(relative(config.dir, config.templates), error))
+    problems.push(toProblem(error, config.templates, config.dir))
   }
 
   if (problems.length > 0) throw new CompileError(problems)
@@ -107,11 +93,9 @@ async function compileTemplate(file: string, config: ResolvedConfig): Promise<Co
     try {
       return compileEmail(definition, { locale, messages: readMessages(messagesFile) })
     } catch (error) {
-      if (error instanceof EmailKitError && error.code === "missing-message") {
-        throw new EmailKitError(
-          error.code,
-          `${error.message}: add it to ${relative(config.dir, messagesFile)}`,
-        )
+      if (isEmailKitError(error) && error.code === "missing-message") {
+        // Amend rather than wrap: the original stack points at the t() call in the template.
+        error.message = `${error.message}: add it to ${relative(config.dir, messagesFile)}`
       }
       throw error
     }
@@ -152,12 +136,6 @@ function readMessages(file: string): Record<string, string> {
     }
   }
   return messages as Record<string, string>
-}
-
-function toProblem(file: string, error: unknown): Problem {
-  if (error instanceof EmailKitError) return { file, code: error.code, message: error.message }
-  const message = error instanceof Error ? error.message : String(error)
-  return { file, code: "load-failed", message: message.split("\n").slice(0, 6).join("\n") }
 }
 
 function isDirectory(path: string): boolean {

@@ -1,0 +1,13 @@
+✗ src/email-kit/templates/order-confirmation.tsx:50:12 [missing-message]
+  Locale "de" has no message "view": add it to src/email-kit/messages/de/order-confirmation.json
+
+    48 |       <p>
+    49 |         <a href={data.orderUrl} title={t("viewTitle", { order: data.orderNumber })}>
+  > 50 |           {t("view")}
+       |            ^
+    51 |         </a>
+    52 |       </p>
+
+  Docs: https://github.com/email-kit/email-kit/blob/main/docs/errors.md#missing-message
+
+1 problem; nothing was written.

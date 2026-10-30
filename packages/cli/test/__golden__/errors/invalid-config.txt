@@ -1,0 +1,4 @@
+✗ [invalid-config] email-kit.config.ts has a problem:
+  • locales.list[1]: "de_DE" isn't a BCP 47 locale tag, such as "en" or "pt-BR"
+
+  Docs: https://github.com/email-kit/email-kit/blob/main/docs/errors.md#invalid-config

@@ -1,7 +1,8 @@
 // `email-kit compile --watch` (P1-087, BLD-12): recompile when a template, a component it
 // imports, a message file or the config changes. Folders are watched rather than files, because
 // editors often save by renaming over the file, which ends a file watch. Every run is a full
-// compile for now; incremental compile is P1-091.
+// compile for now; incremental compile is P1-091. On macOS a recursive watch (FSEvents) goes live
+// a moment after it is created, so a change made within milliseconds of starting can be missed.
 
 import { existsSync, type FSWatcher, watch } from "node:fs"
 import { dirname, isAbsolute, join, relative, resolve } from "node:path"

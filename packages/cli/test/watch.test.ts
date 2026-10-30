@@ -14,7 +14,8 @@ afterAll(() => rmSync(TMP, { recursive: true, force: true }))
 type Outcome = { result: CompileResult } | { error: unknown }
 
 describe("email-kit compile --watch", () => {
-  it("recompiles on changes, reports errors and recovers", async () => {
+  // Several file-system round trips in a row: more than the default 5 s under a parallel run.
+  it("recompiles on changes, reports errors and recovers", { timeout: 30_000 }, async () => {
     mkdirSync(TMP, { recursive: true })
     const dir = mkdtempSync(join(TMP, "project-"))
     cpSync(FIXTURE, dir, { recursive: true, filter: (path) => !path.includes(`${sep}compiled`) })
@@ -29,6 +30,8 @@ describe("email-kit compile --watch", () => {
       watcher = await watchProject({ cwd: dir, debounceMs: 20, onCompile: (o) => outcomes.push(o) })
       expect(outcomes).toHaveLength(1)
       expect(subject()).toBe("Order {{orderNumber}} confirmed")
+      // FSEvents (macOS) goes live a moment after the watcher is created.
+      await new Promise((resolve) => setTimeout(resolve, 300))
 
       // A message edit recompiles.
       const messages = join(emailKit, "messages", "en", "order-confirmation.json")
