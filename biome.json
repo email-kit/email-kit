@@ -12,6 +12,7 @@
       "!**/.turbo",
       "!docs/reference-docs",
       "!**/__golden__",
+      "!spikes/css-inliner/fixture.html",
       "!pnpm-lock.yaml",
       "!**/*.md"
     ]

@@ -21,6 +21,8 @@ when** (acceptance).
   recommended as the transform. Findings in `docs/spikes/`.
 - **P0-10 done.** Schema reader and portability check in `@email-kit/cli`; findings in
   `docs/spikes/p0-10-schema.md` (one decision open: refinements).
+- **P0-09 done.** Recommendation: no HTML inliner by default (inline styles at the IR level);
+  juice with `data-embed` if stylesheets are ever authored. `docs/spikes/p0-09-css-inliner.md`.
 - **P0-02 prepared.** The placeholder packages and the release workflow are ready. Publishing and
   creating the repos need the maintainer's accounts: see `docs/setup/reserve-names.md`.
 - All other tasks are `todo`.

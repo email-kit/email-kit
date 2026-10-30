@@ -1,0 +1,17 @@
+{
+  "name": "@email-kit/spike-css-inliner",
+  "version": "0.0.0",
+  "private": true,
+  "description": "P0-09 spike: juice versus @css-inline/css-inline on compiled email-kit HTML (MSO, VML, mustache-core placeholders).",
+  "type": "module",
+  "scripts": {
+    "bench": "node bench.ts"
+  },
+  "devDependencies": {
+    "@css-inline/css-inline": "^0.23.2",
+    "juice": "^12.2.1"
+  },
+  "dependencies": {
+    "@email-kit/dialect": "workspace:*"
+  }
+}

@@ -55,23 +55,23 @@
       "name": "RTL text and bidi control characters pass through",
       "profile": "html",
       "template": "{{v}}",
-      "data": { "v": "مرحبا ‮gnp.exe‬ ⁧x⁩" },
-      "expected": "مرحبا ‮gnp.exe‬ ⁧x⁩"
+      "data": { "v": "مرحبا \u202Egnp.exe\u202C \u2067x\u2069" },
+      "expected": "مرحبا \u202Egnp.exe\u202C \u2067x\u2069"
     },
     {
       "name": "emoji and ZWJ sequences pass through",
       "profile": "html",
       "template": "{{v}}",
-      "data": { "v": "👩‍💻 🇱🇰 ✓" },
-      "expected": "👩‍💻 🇱🇰 ✓"
+      "data": { "v": "👩\u200D💻 🇱🇰 ✓" },
+      "expected": "👩\u200D💻 🇱🇰 ✓"
     },
     {
       "name": "no Unicode normalisation",
       "description": "e + combining acute accent stays two code points; it is not composed to é.",
       "profile": "text",
       "template": "{{v}}",
-      "data": { "v": "Café" },
-      "expected": "Café"
+      "data": { "v": "Cafe\u0301" },
+      "expected": "Cafe\u0301"
     },
     {
       "name": "control characters pass through",
