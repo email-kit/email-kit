@@ -3,15 +3,18 @@
 // Checks see the compiled templates, the renders of the fixture sweep (CHK-06), or both. The
 // theme's tokens.* findings join as they are.
 
+import { spawnSync } from "node:child_process"
 import { relative } from "node:path"
 
 import type { CheckSetting } from "@email-kit/core"
+import { isEmailKitError } from "@email-kit/core/internal"
 import { createTemplate } from "@email-kit/dialect/module"
 
-import type { BuiltProject } from "../compiler/build.ts"
+import { type BuiltProject, outputFiles } from "../compiler/build.ts"
 import type { CompiledEmail } from "../compiler/compile.ts"
 import { modelOf } from "../compiler/emit/types.ts"
 import { fixturesWithVariants } from "../compiler/fixtures.ts"
+import { CompileError } from "../compiler/problems.ts"
 import { pluralRules } from "../i18n/plurals.ts"
 import { isPseudo } from "../i18n/pseudo.ts"
 import { CATALOGUE } from "./catalogue/index.ts"
@@ -119,8 +122,16 @@ export async function contextOf(project: BuiltProject): Promise<CheckContext> {
         used,
       }))
     }),
+    output: {
+      dir: relative(config.dir, config.out),
+      absolute: config.out,
+      expected: outputFiles(project),
+      gitignored:
+        spawnSync("git", ["check-ignore", "-q", config.out], { cwd: config.dir }).status === 0,
+    },
     templates: project.templates.map((t) => ({
       id: t.id,
+      model: t.model,
       file: relative(config.dir, t.file),
       fixtures: Object.keys(t.fixtures),
     })),
@@ -231,4 +242,54 @@ function subjectOf(problem: Problem): Finding["subject"] {
   if (email.fixture !== undefined) return { ...base, fixture: email.fixture }
   const position = problem.at === undefined ? undefined : email.parsed.position(problem.at)
   return { ...base, ...(position && { line: position.line, column: position.column }) }
+}
+
+/**
+ * A failed compile as findings (Appendix A's compiler-enforced checks): each problem with a code
+ * a check claims becomes that check's finding, with the compiler's location. Problems no check
+ * claims are returned for printing as they are.
+ */
+export function compileFindings(
+  error: unknown,
+  checks: readonly Check[] = CATALOGUE,
+): { findings: Finding[]; rest: unknown[] } {
+  const problems: {
+    code: string
+    message: string
+    file?: string
+    line?: number
+    column?: number
+  }[] =
+    error instanceof CompileError
+      ? [...error.problems]
+      : isEmailKitError(error)
+        ? [{ code: error.code, message: error.message }]
+        : []
+  if (problems.length === 0) return { findings: [], rest: [error] }
+  const findings: Finding[] = []
+  const rest: unknown[] = []
+  for (const problem of problems) {
+    const check = checks.find(
+      (c) =>
+        c.compiler?.codes.includes(problem.code) &&
+        (!c.compiler.match || c.compiler.match.test(problem.message)),
+    )
+    if (!check) {
+      rest.push(error instanceof CompileError ? new CompileError([problem as never]) : error)
+      continue
+    }
+    findings.push({
+      id: check.id,
+      level: check.level,
+      subject: {
+        ...(problem.file !== undefined && { file: problem.file }),
+        ...(problem.line !== undefined && { line: problem.line }),
+        ...(problem.column !== undefined && { column: problem.column }),
+      },
+      message: problem.message,
+      fix: check.fix,
+      docs: docsUrl(check.id),
+    })
+  }
+  return { findings, rest }
 }

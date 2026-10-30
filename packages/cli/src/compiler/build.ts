@@ -5,7 +5,7 @@ import { checkPermutations } from "../theme/check.ts"
 import { loadTheme, type Theme } from "../theme/theme.ts"
 import type { TokenFinding } from "../theme/validate.ts"
 import { loadConfig, type ResolvedConfig } from "./config.ts"
-import { buildOutput, type WriteResult, writeOutput } from "./output.ts"
+import { buildOutput, type OutputFile, type WriteResult, writeOutput } from "./output.ts"
 import { type CompiledTemplate, compileProject } from "./project.ts"
 
 export interface CompileOptions {
@@ -48,9 +48,10 @@ export async function buildProject(
 }
 
 /** Compiles with an already loaded config. */
-export async function compileWithConfig(config: ResolvedConfig): Promise<CompileResult> {
-  const { templates, theme, themeFindings } = await buildProject(config)
-  const output = buildOutput(templates, {
+/** Every file a compile writes into the output folder, for `compile` and `output.drift`. */
+export function outputFiles(project: BuiltProject): OutputFile[] {
+  const { config, templates, theme } = project
+  return buildOutput(templates, {
     locales: config.locales,
     localeFallback: config.localeFallback,
     configFile: basename(config.file),
@@ -60,7 +61,18 @@ export async function compileWithConfig(config: ResolvedConfig): Promise<Compile
     platform: config.platform,
     theme: config.theme?.emit ? theme : undefined,
   })
-  return { config, templates, files: writeOutput(config.out, output), theme, themeFindings }
+}
+
+export async function compileWithConfig(config: ResolvedConfig): Promise<CompileResult> {
+  const project = await buildProject(config)
+  const { templates, theme, themeFindings } = project
+  return {
+    config,
+    templates,
+    files: writeOutput(config.out, outputFiles(project)),
+    theme,
+    themeFindings,
+  }
 }
 
 /** One line for the terminal (CLI-03). */

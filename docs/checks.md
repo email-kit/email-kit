@@ -162,6 +162,27 @@ variant instead of the compiled templates (each render then has `fixture`), or `
 
 ## Sources
 
+### source.id-grammar
+**Default:** error
+
+**Rule:** Template ids are lowercase words joined by hyphens, and unique. Enforced when compiling: the compile fails with `invalid-id` or `duplicate-id`, which `email-kit check` reports as this check.
+
+**Fix:** Rename the template id, like "password-reset".
+
+### source.fixture-valid
+**Default:** error
+
+**Rule:** Every fixture validates against the template's schema. Enforced when compiling: the compile fails with `invalid-fixture`, which `email-kit check` reports as this check.
+
+**Fix:** Correct the fixture at the path in the message, or the schema.
+
+### source.schema-portable
+**Default:** error
+
+**Rule:** The schema stays within the portable JSON Schema subset (R4). Enforced when compiling: the compile fails with `schema-not-portable` or `unsupported-schema` or `missing-converter`, which `email-kit check` reports as this check.
+
+**Fix:** Use the types and constraints every target language can check; the message names the field.
+
 ### source.no-literal-colour
 **Default:** error
 
@@ -255,6 +276,62 @@ variant instead of the compiled templates (each render then has `fixture`), or `
 
 **Fix:** Keep the OfficeDocumentSettings block email-kit writes; it stops Word scaling on high-DPI screens.
 
+### html.wrapper-aria
+**Default:** warning
+
+**Rule:** The wrapper has role="article" and an aria-label; aria-roledescription only when localised.
+
+**Fix:** Keep email-kit's document wrapper: screen readers announce the email by its label.
+
+### html.meta
+**Default:** error
+
+**Rule:** The head starts with the charset meta and has viewport, x-apple-disable-message-reformatting and format-detection.
+
+**Fix:** Keep email-kit's document head: these stop clients rescaling the email and turning numbers into links.
+
+### html.body-bare
+**Default:** warning
+
+**Rule:** <body> has no presentational attributes or styles beyond margin and padding 0.
+
+**Fix:** Gmail, Outlook on the web and Yahoo replace <body>: put backgrounds and spacing on the wrapper.
+
+### html.no-external
+**Default:** error
+
+**Rule:** No external stylesheets or @import.
+
+**Fix:** Most clients block them, and they add a tracking request: email-kit writes styles inline and in the head.
+
+### html.no-svg
+**Default:** error
+
+**Rule:** No inline <svg> and no SVG references.
+
+**Fix:** Use a PNG: SVG shows blank in Outlook on the web and new Outlook, and Gmail rasterises it.
+
+### html.no-comments
+**Default:** error
+
+**Rule:** No HTML comments longer than 120 characters, except MSO conditionals.
+
+**Fix:** Remove the comment: it ships to every reader, counts toward Gmail's clip, and may leak internal notes.
+
+### html.no-unresolved
+**Default:** error
+
+**Rule:** No leftover markers, and every placeholder names a field of the schema.
+
+**Fix:** A placeholder that names no field renders empty: check the template against its schema.
+
+### html.hidden-text
+**Default:** warning
+
+**Rule:** Hidden styling is used only on the preheader.
+
+**Fix:** Hidden text in the body looks like spam to filters and confuses screen readers: remove it or show it.
+
 ## CSS
 
 ### css.no-double-brace
@@ -298,6 +375,69 @@ variant instead of the compiled templates (each render then has `fixture`), or `
 **Rule:** All `<style>` blocks together stay under 16,384 bytes (a warning from 12 KB).
 
 **Fix:** Gmail ignores styles past about 16 KB. Move rules inline or drop unused ones.
+
+### css.colour-hex
+**Default:** error
+
+**Rule:** Every colour, in CSS and in attributes, is #rrggbb or transparent.
+
+**Fix:** Write six-digit hex: three-digit hex, names and functions break in some clients. Theme roles are hex already.
+
+### css.no-alpha
+**Default:** warning
+
+**Rule:** No rgba(), hsla(), 8-digit hex or opacity.
+
+**Fix:** Clients that ignore alpha show the colour solid or not at all: flatten it against its background (the theme does).
+
+### css.banned-layout
+**Default:** error
+
+**Rule:** No flex, grid, float, position, calc(), clamp(), min(), max(), :has() or @supports.
+
+**Fix:** Classic Outlook and many webmail clients drop these: lay out with tables, as email-kit's components do.
+
+### css.media-allowlist
+**Default:** warning
+
+**Rule:** Media queries use only width, orientation, resolution and prefers-color-scheme.
+
+**Fix:** Other features are unsupported or rewritten by email clients; keep the query to these.
+
+### css.inline-parse
+**Default:** error
+
+**Rule:** Every inline style parses cleanly.
+
+**Fix:** Gmail, Outlook on the web and Office 365 drop a whole style attribute with a stray character: fix the declaration.
+
+### css.gradient-fallback
+**Default:** error
+
+**Rule:** An element with a background image or gradient also has a solid background colour.
+
+**Fix:** Add background-color (or bgcolor): Outlook and images-off show the colour, and text on it stays readable.
+
+### css.units
+**Default:** warning
+
+**Rule:** No rem, vw or vh in inline styles.
+
+**Fix:** Use px: several clients ignore relative units inline.
+
+### css.hide-mso
+**Default:** warning
+
+**Rule:** display:none outside MSO blocks comes with mso-hide:all.
+
+**Fix:** Classic Outlook ignores display:none on some elements: add mso-hide:all.
+
+### css.line-height-px
+**Default:** error
+
+**Rule:** Text cells set a px line height with mso-line-height-rule:exactly.
+
+**Fix:** Use Text, Heading or the font() helper: Word's default line height differs from every other client's.
 
 ## Images
 
@@ -384,6 +524,27 @@ variant instead of the compiled templates (each render then has `fixture`), or `
 
 ## Internationalisation
 
+### i18n.missing-keys
+**Default:** error
+
+**Rule:** Every locale has every message key a template uses. Enforced when compiling: the compile fails with `missing-message`, which `email-kit check` reports as this check.
+
+**Fix:** Add the key to the locale's messages file the message names.
+
+### i18n.plural-categories
+**Default:** error
+
+**Rule:** Plural messages cover every CLDR category of the locale. Enforced when compiling: the compile fails with `invalid-plural`, which `email-kit check` reports as this check.
+
+**Fix:** Add the categories the message lists for that locale.
+
+### i18n.fallback
+**Default:** error
+
+**Rule:** The locale fallback chain resolves to a compiled locale. Enforced when compiling: the compile fails with `invalid-config`, which `email-kit check` reports as this check.
+
+**Fix:** Point locales.fallback at a locale in locales.list.
+
 ### i18n.expansion
 **Default:** error
 
@@ -412,6 +573,145 @@ variant instead of the compiled templates (each render then has `fixture`), or `
 
 **Fix:** Use email-kit's components, which do this, or add dir="rtl" and text-align to the element: Orange strips dir from tables and cells, and Outlook mishandles inherited direction.
 
+## Text part
+
+### text.present
+**Default:** error
+
+**Rule:** The text part has at least 80 characters of its own copy.
+
+**Fix:** Every email needs a real text part: spam filters score a missing or token one, and some readers only see it.
+
+### text.no-markup
+**Default:** error
+
+**Rule:** The text part has no HTML tags.
+
+**Fix:** Text-part copy comes from the same messages as the HTML: remove markup from the message.
+
+### text.no-entities
+**Default:** error
+
+**Rule:** The text part has no HTML entities.
+
+**Fix:** Write the character itself (é, ’, &): entities show up literally in plain text.
+
+### text.wrap-78
+**Default:** warning
+
+**Rule:** Text-part lines are at most 78 characters, except lines with a URL.
+
+**Fix:** Shorten the copy or split the paragraph: RFC 5322 recommends 78, and some clients wrap long lines badly.
+
+### text.urls-full
+**Default:** error
+
+**Rule:** Links are absolute URLs, so the text part can show them.
+
+**Fix:** Use https:// URLs (or a url field): a relative link can't be followed from plain text, or from a forward.
+
+### text.links-match
+**Default:** error
+
+**Rule:** Every HTML link appears in the text part, and every URL in the text part is a link in the HTML.
+
+**Fix:** Write links with Link or Button, which put them in both parts; don't paste URLs into copy.
+
+### text.parity
+**Default:** warning
+
+**Rule:** The text part carries the words of the HTML (at least 80% of them).
+
+**Fix:** Spam filters compare the parts (MPART_ALT_DIFF): keep the same copy in both.
+
+### text.preheader-first
+**Default:** warning
+
+**Rule:** The text part starts with the preheader.
+
+**Fix:** Keep email-kit's text part: clients preview the first line of text when there's no HTML.
+
+### text.no-preheader-padding
+**Default:** error
+
+**Rule:** The text part has none of the preheader's filler characters.
+
+**Fix:** The filler pads the HTML preview only; in plain text it shows as junk.
+
+### text.no-decorative-runs
+**Default:** warning
+
+**Rule:** No long runs of =, -, * or _ beyond heading underlines.
+
+**Fix:** Screen readers read every character: drop the decoration.
+
+## Preheader
+
+### preheader.first
+**Default:** error
+
+**Rule:** The first text in the wrapper is the hidden preheader.
+
+**Fix:** Set the preheader in defineEmail(): clients preview the first text they find.
+
+### preheader.not-subject
+**Default:** error
+
+**Rule:** The preheader isn't the subject again.
+
+**Fix:** Use the preheader to add something: the inbox shows both side by side.
+
+### preheader.length
+**Default:** warning
+
+**Rule:** The preheader has 1–90 visible characters. Runs on the renders of every fixture and generated variant.
+
+**Fix:** Without one, clients preview the first body text; past about 90 characters it's cut.
+
+### preheader.padding
+**Default:** warning
+
+**Rule:** The hidden preheader is padded with filler, so body text doesn't leak into the preview.
+
+**Fix:** Keep email-kit's preheader block: the filler pushes the body text out of the preview.
+
+### preheader.no-boilerplate
+**Default:** error
+
+**Rule:** The preheader has no "view in browser" or "trouble viewing" text.
+
+**Fix:** Say what the email is about: boilerplate wastes the preview and reads as spam.
+
+## Subject
+
+### subject.length
+**Default:** warning
+
+**Rule:** The subject is at most 60 characters. Runs on the renders of every fixture and generated variant.
+
+**Fix:** Phones show about 30–40 characters: put the key words first and cut the rest.
+
+### subject.no-fake-reply
+**Default:** error
+
+**Rule:** The subject doesn't start with Re: or Fwd:.
+
+**Fix:** A fake reply prefix is deceptive and a spam signal: describe the email instead.
+
+### subject.no-secret
+**Default:** error
+
+**Rule:** No secret field (a code or token) in the subject or the preheader.
+
+**Fix:** Subjects show on lock screens and in provider logs: put the code in the body only (research 04 §5.1).
+
+### subject.generic
+**Default:** warning
+
+**Rule:** The subject isn't generic ("Update", "Notification", "Important").
+
+**Fix:** Say what happened: generic subjects get ignored and look like spam.
+
 ## Copy
 
 ### copy.placeholder-fallbacks
@@ -429,3 +729,47 @@ variant instead of the compiled templates (each render then has `fixture`), or `
 **Rule:** The HTML part of the largest render, plus 5 KB for the provider, stays under Gmail's 102 KB clip (a warning from 90 KB). Runs on the renders of every fixture and generated variant.
 
 **Fix:** Gmail hides everything past the clip behind “View entire message”, footers and tracking included. Trim the content, or cap long lists.
+
+## Output
+
+### output.identifiers
+**Default:** error
+
+**Rule:** The identifiers derived from template ids are unique and not reserved in target languages. Enforced when compiling: the compile fails with `identifier-collision`, which `email-kit check` reports as this check.
+
+**Fix:** Rename one of the templates the message names.
+
+### output.drift
+**Default:** error
+
+**Rule:** The committed output equals a fresh compile.
+
+**Fix:** Run `email-kit compile` and commit the result: the module your app imports is out of date.
+
+### output.manifest
+**Default:** error
+
+**Rule:** The manifest lists exactly the compiled templates and locales, and its hashes match the files.
+
+**Fix:** Don't edit compiled files by hand: change the template or messages and run `email-kit compile`.
+
+### output.module-matches
+**Default:** error
+
+**Rule:** The templates inside the generated module equal the .html and .txt files beside it.
+
+**Fix:** Run `email-kit compile`: the module and the files must come from the same compile.
+
+### output.no-orphans
+**Default:** error
+
+**Rule:** Every compiled template in the output folder has a source template.
+
+**Fix:** Delete the folder, or restore its template: the module may still export a template that no longer exists.
+
+### output.gitignored
+**Default:** warning
+
+**Rule:** The output folder is committed, not gitignored.
+
+**Fix:** Commit the output so deploys don't need a compile step, or compile in your build and set this check off with that reason.

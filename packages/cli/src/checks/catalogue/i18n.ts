@@ -6,28 +6,13 @@ import type { Element } from "domhandler"
 import { attr } from "../parse.ts"
 import { type Node, walk } from "../source.ts"
 import type { Check } from "../types.ts"
-import { eachEmail, inlineStyles } from "./util.ts"
+import { eachEmail, inlineStyles, ownText, TEXT_CELLS } from "./util.ts"
 
 const CURRENCY = "$€£¥₹₩₽¢₺₦₱₫₪"
 const SYMBOL_ARGUMENT = new RegExp(
   `[${CURRENCY}]\\s?\\{[A-Za-z_]\\w*\\}|\\{[A-Za-z_]\\w*\\}\\s?[${CURRENCY}]`,
 )
 const DATE_PARTS = /\{[A-Za-z_]\w*\}\s*[/.-]\s*\{[A-Za-z_]\w*\}\s*[/.-]\s*\{[A-Za-z_]\w*\}/
-const TEXT_CELLS = new Set(["p", "h1", "h2", "h3", "h4", "h5", "h6", "li", "td", "th", "caption"])
-
-/**
- * Visible text directly inside the element: not whitespace, the &nbsp; of a spacer cell, or the
- * section tags (`{{#x}}`, `{{/x}}`) of an <If> or <Each>, which are structure. `{{name}}` is text.
- */
-function ownText(element: Element): boolean {
-  return element.children.some(
-    (child) =>
-      child.type === "text" &&
-      /[^\s\u00a0]/.test(
-        (child as unknown as { data: string }).data.replace(/\{\{[#^/][^}]*\}\}/g, ""),
-      ),
-  )
-}
 
 export const I18N: readonly Check[] = [
   {

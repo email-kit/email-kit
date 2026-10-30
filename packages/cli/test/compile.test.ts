@@ -147,3 +147,30 @@ describe("rendering", () => {
     ).toThrow(expect.objectContaining({ code: "missing-value" }))
   })
 })
+
+describe("text part wrapping", () => {
+  it("wraps long copy at 78 columns, and leaves lines with sections or URLs whole", async () => {
+    const { renderTextPart } = await import("../src/compiler/text.ts")
+    const long = { kind: "text" as const, value: `${"word ".repeat(30).trim()}` }
+    const wrapped = renderTextPart({ kind: "element", tag: "p", attrs: {}, children: [long] }, "")
+    expect(wrapped.split("\n").every((line) => line.length <= 78)).toBe(true)
+    const section = {
+      kind: "section" as const,
+      inverted: false,
+      path: ["_ek", "plural", "n", "one"],
+      scope: 0,
+      opens: 1,
+      children: [long],
+    }
+    const plural = renderTextPart(
+      {
+        kind: "element",
+        tag: "p",
+        attrs: {},
+        children: [{ kind: "text", value: "Lasts " }, section],
+      },
+      "",
+    )
+    expect(plural.split("\n")).toHaveLength(2)
+  })
+})

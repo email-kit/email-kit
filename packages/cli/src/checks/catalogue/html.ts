@@ -1,9 +1,11 @@
 // A.3 Document (`html.*`): the skeleton every email needs (research 01 §2).
 
+import type { Element } from "domhandler"
 import { isRtl } from "../../compiler/compile.ts"
+import type { Field } from "../../compiler/schema.ts"
 import { ancestors, attr } from "../parse.ts"
 import type { Check } from "../types.ts"
-import { eachEmail, text } from "./util.ts"
+import { declarations, eachEmail, inlineStyles, text } from "./util.ts"
 
 const EMBEDS = new Set(["form", "input", "script", "iframe", "object", "embed", "video", "svg"])
 
@@ -210,4 +212,223 @@ export const HTML: readonly Check[] = [
         report,
       ),
   },
+  {
+    id: "html.wrapper-aria",
+    level: "warn",
+    rule: 'The wrapper has role="article" and an aria-label; aria-roledescription only when localised.',
+    fix: "Keep email-kit's document wrapper: screen readers announce the email by its label.",
+    run: (context, report) =>
+      eachEmail(
+        context,
+        (email, problem) => {
+          const wrapper = email.parsed.elements.find(
+            (e) => !e.mso && attr(e.node, "role") === "article",
+          )
+          if (!wrapper) return problem('No role="article" wrapper')
+          if (!attr(wrapper.node, "aria-label")?.trim())
+            problem("The wrapper has no aria-label", wrapper.offset)
+          const roleDescription = attr(wrapper.node, "aria-roledescription")
+          if (roleDescription === "email" && !email.locale.startsWith("en")) {
+            problem(`aria-roledescription is English ("email") in ${email.locale}`, wrapper.offset)
+          }
+        },
+        report,
+      ),
+  },
+  {
+    id: "html.meta",
+    level: "error",
+    rule: "The head starts with the charset meta and has viewport, x-apple-disable-message-reformatting and format-detection.",
+    fix: "Keep email-kit's document head: these stop clients rescaling the email and turning numbers into links.",
+    run: (context, report) =>
+      eachEmail(
+        context,
+        (email, problem) => {
+          const head = email.parsed.elements.find((e) => !e.mso && e.node.name === "head")
+          if (!head) return problem("There is no <head>")
+          const metas = head.node.children.filter((c) => c.type === "tag") as Element[]
+          if (!(metas[0]?.name === "meta" && attr(metas[0], "charset")))
+            problem("The first element in <head> isn't <meta charset>", head.offset)
+          for (const name of [
+            "viewport",
+            "x-apple-disable-message-reformatting",
+            "format-detection",
+          ]) {
+            if (!metas.some((m) => m.name === "meta" && attr(m, "name") === name))
+              problem(`No <meta name="${name}">`, head.offset)
+          }
+        },
+        report,
+      ),
+  },
+  {
+    id: "html.body-bare",
+    level: "warn",
+    rule: "<body> has no presentational attributes or styles beyond margin and padding 0.",
+    fix: "Gmail, Outlook on the web and Yahoo replace <body>: put backgrounds and spacing on the wrapper.",
+    run: (context, report) =>
+      eachEmail(
+        context,
+        (email, problem) => {
+          const body = email.parsed.elements.find((e) => !e.mso && e.node.name === "body")
+          if (!body) return
+          for (const name of Object.keys(body.node.attribs)) {
+            if (!["xml:lang", "lang", "dir", "style"].includes(name))
+              problem(`<body> has ${name}`, body.offset)
+          }
+          const style = (attr(body.node, "style") ?? "")
+            .split(";")
+            .map((d) => d.replace(/\s/g, ""))
+            .filter(Boolean)
+          const extra = style.filter((d) => !/^(margin|padding):0(px)?$/.test(d))
+          if (extra.length > 0) problem(`<body> styles ${extra.join("; ")}`, body.offset)
+        },
+        report,
+      ),
+  },
+  {
+    id: "html.no-external",
+    level: "error",
+    rule: "No external stylesheets or @import.",
+    fix: "Most clients block them, and they add a tracking request: email-kit writes styles inline and in the head.",
+    run: (context, report) =>
+      eachEmail(
+        context,
+        (email, problem) => {
+          for (const { node, offset } of email.parsed.elements) {
+            if (node.name === "link" && /stylesheet/i.test(attr(node, "rel") ?? ""))
+              problem('A <link rel="stylesheet">', offset)
+          }
+          for (const style of email.parsed.styles) {
+            style.node.walkAtRules("import", (rule) => {
+              problem(`@import ${rule.params}`, style.offset + (rule.source?.start?.offset ?? 0))
+            })
+          }
+        },
+        report,
+      ),
+  },
+  {
+    id: "html.no-svg",
+    level: "error",
+    rule: "No inline <svg> and no SVG references.",
+    fix: "Use a PNG: SVG shows blank in Outlook on the web and new Outlook, and Gmail rasterises it.",
+    run: (context, report) =>
+      eachEmail(
+        context,
+        (email, problem) => {
+          for (const { node, offset } of email.parsed.elements) {
+            if (node.name === "svg") problem("An inline <svg>", offset)
+            for (const name of ["src", "href", "background"]) {
+              const value = attr(node, name) ?? ""
+              if (/\.svg(\?|#|$)|^data:image\/svg/i.test(value) && node.name !== "a")
+                problem(`${name}="${value}" is an SVG`, offset)
+            }
+          }
+          for (const { decl, offset } of declarations(email.parsed.styles)) {
+            if (/url\([^)]*\.svg|image\/svg/i.test(decl.value))
+              problem(`\`${decl.prop}\` loads an SVG`, offset)
+          }
+        },
+        report,
+      ),
+  },
+  {
+    id: "html.no-comments",
+    level: "error",
+    rule: "No HTML comments longer than 120 characters, except MSO conditionals.",
+    fix: "Remove the comment: it ships to every reader, counts toward Gmail's clip, and may leak internal notes.",
+    run: (context, report) =>
+      eachEmail(
+        context,
+        (email, problem) => {
+          for (const { node, offset } of email.parsed.comments) {
+            const conditional = /^\[if [^\]]+\]|^<!\[endif\]|^\[endif\]/.test(node.trim())
+            if (!conditional && node.length > 120)
+              problem(`A ${node.length}-character comment`, offset)
+          }
+        },
+        report,
+      ),
+  },
+  {
+    id: "html.no-unresolved",
+    level: "error",
+    rule: "No leftover markers, and every placeholder names a field of the schema.",
+    fix: "A placeholder that names no field renders empty: check the template against its schema.",
+    run: (context, report) =>
+      eachEmail(
+        context,
+        (email, problem) => {
+          const marker = email.html.indexOf("[object Object]")
+          if (marker >= 0) problem("[object Object] in the output", marker)
+          const model = context.templates.find((t) => t.id === email.template)?.model
+          if (!model) return
+          for (const name of unresolved(email.html, model))
+            problem(`{{${name}}} names no field of the schema`)
+        },
+        report,
+      ),
+  },
+  {
+    id: "html.hidden-text",
+    level: "warn",
+    rule: "Hidden styling is used only on the preheader.",
+    fix: "Hidden text in the body looks like spam to filters and confuses screen readers: remove it or show it.",
+    run: (context, report) =>
+      eachEmail(
+        context,
+        (email, problem) => {
+          let preheader = false
+          for (const { element, offset, mso, props } of inlineStyles(email.parsed.elements)) {
+            if (mso) continue
+            const hidden =
+              props.get("display") === "none" ||
+              props.get("visibility") === "hidden" ||
+              /^0(px)?$/.test(props.get("font-size") ?? "") ||
+              props.get("opacity") === "0"
+            if (!hidden) continue
+            if (!preheader && attr(element, "aria-hidden") === "true") {
+              preheader = true
+              continue
+            }
+            problem(`A hidden <${element.name}>`, offset)
+          }
+        },
+        report,
+      ),
+  },
 ]
+
+// Placeholders that resolve to no schema field, following sections the way mustache-core does.
+function unresolved(html: string, model: Field): string[] {
+  const scopes: (Field | undefined)[] = [model]
+  const missing: string[] = []
+  const resolve = (name: string): Field | undefined | "none" => {
+    if (name === "." || name.startsWith("_ek.") || name === "_ek") return undefined
+    const segments = name.split(".")
+    for (let i = scopes.length - 1; i >= 0; i--) {
+      const scope = scopes[i]
+      let field = scope?.properties?.find((p) => p.name === segments[0])?.field
+      if (!field) continue
+      for (const segment of segments.slice(1))
+        field = field?.properties?.find((p) => p.name === segment)?.field
+      return field ?? "none"
+    }
+    return "none"
+  }
+  for (const match of html.matchAll(/\{\{\{?\s*([#^/]?)\s*([^}]+?)\s*\}?\}\}/g)) {
+    const [, sigil, name] = match as unknown as [string, string, string]
+    if (sigil === "/") {
+      scopes.pop()
+      continue
+    }
+    const field = resolve(name)
+    if (field === "none") missing.push(name)
+    if (sigil === "#" || sigil === "^") {
+      const f = field === "none" ? undefined : field
+      scopes.push(f?.type === "array" ? f.items : f?.type === "object" ? f : undefined)
+    }
+  }
+  return [...new Set(missing)]
+}

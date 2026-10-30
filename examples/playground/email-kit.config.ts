@@ -31,5 +31,9 @@ export default defineConfig({
     source: "theme/globals.css",
   },
   customChecks: [helpLink],
-  // checks: { "playground.help-link": { level: "off", reason: "…" } },
+  checks: {
+    // Generated output is gitignored here: every script compiles first.
+    "output.gitignored": { level: "off", reason: "The playground compiles before every command" },
+    // "playground.help-link": { level: "off", reason: "…" },
+  },
 })

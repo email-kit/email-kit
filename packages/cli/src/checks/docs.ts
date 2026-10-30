@@ -14,8 +14,12 @@ const FAMILIES: readonly [string, string][] = [
   ["dark", "Dark mode"],
   ["a11y", "Accessibility"],
   ["i18n", "Internationalisation"],
+  ["text", "Text part"],
+  ["preheader", "Preheader"],
+  ["subject", "Subject"],
   ["copy", "Copy"],
   ["size", "Size"],
+  ["output", "Output"],
 ]
 
 export function checksMarkdown(): string {
@@ -23,7 +27,7 @@ export function checksMarkdown(): string {
     "Adjust the colour or the role in the theme; `email-kit tokens` lists every pair."
   const entries = [
     ...TOKEN_CHECKS.map((check) => ({ ...check, fix: tokenFix })),
-    ...CATALOGUE.map(({ id, level, rule, fix, outlookClassic, on }) => ({
+    ...CATALOGUE.map(({ id, level, rule, fix, outlookClassic, on, compiler }) => ({
       id,
       level,
       rule: [
@@ -31,6 +35,11 @@ export function checksMarkdown(): string {
         ...(outlookClassic ? ["Runs when classic Outlook is a target."] : []),
         ...(on === "render" ? ["Runs on the renders of every fixture and generated variant."] : []),
         ...(on === "both" ? ["Also runs on the renders, for values that come from data."] : []),
+        ...(compiler
+          ? [
+              `Enforced when compiling: the compile fails with ${compiler.codes.map((c) => `\`${c}\``).join(" or ")}, which \`email-kit check\` reports as this check.`,
+            ]
+          : []),
       ].join(" "),
       fix,
     })),

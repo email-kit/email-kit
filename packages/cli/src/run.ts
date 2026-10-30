@@ -5,7 +5,7 @@ import { cac } from "cac"
 
 import { CATALOGUE } from "./checks/catalogue/index.ts"
 import { fromCustom } from "./checks/custom.ts"
-import { contextOf, runChecks } from "./checks/engine.ts"
+import { compileFindings, contextOf, runChecks } from "./checks/engine.ts"
 import { formatGithub, formatHuman, formatJson } from "./checks/report.ts"
 import { buildProject, compile, describeResult, summarize } from "./compiler/build.ts"
 import { loadConfig } from "./compiler/config.ts"
@@ -168,7 +168,10 @@ async function checkCommand(options: CheckFlags, io: Io): Promise<number> {
     if (output) io.out(output)
     return findings.some((finding) => finding.level === "error") ? 1 : 0
   } catch (error) {
-    io.err(formatError(error, io))
+    // A compile that fails on a compiler-enforced check is reported as that check's findings.
+    const { findings, rest } = compileFindings(error)
+    if (findings.length > 0) io.out(REPORTERS[name as keyof typeof REPORTERS](findings))
+    for (const other of rest) io.err(formatError(other, io))
     return 1
   }
 }

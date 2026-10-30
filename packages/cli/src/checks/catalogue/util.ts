@@ -68,3 +68,57 @@ export function text(element: Element): string {
   }
   return out
 }
+
+/** Visible text directly inside the element: not whitespace, the &nbsp; of a spacer cell, or the
+ * section tags (`{{#x}}`, `{{/x}}`) of an <If> or <Each>, which are structure. */
+export function ownText(element: Element): boolean {
+  return element.children.some(
+    (child) =>
+      child.type === "text" &&
+      /[^\s\u00a0]/.test(
+        (child as unknown as { data: string }).data.replace(/\{\{[#^/][^}]*\}\}/g, ""),
+      ),
+  )
+}
+
+export const TEXT_CELLS: ReadonlySet<string> = new Set([
+  "p",
+  "h1",
+  "h2",
+  "h3",
+  "h4",
+  "h5",
+  "h6",
+  "li",
+  "td",
+  "th",
+  "caption",
+])
+
+/** The words a reader sees in the HTML body: not head, styles, Word-only or hidden content. */
+export function visibleText(email: CheckedEmail): string {
+  const out: string[] = []
+  const walk = (node: {
+    type: string
+    children?: unknown[]
+    data?: string
+    name?: string
+    attribs?: Record<string, string>
+  }) => {
+    if (node.type === "text") out.push(node.data ?? "")
+    if (node.type !== "tag" && node.type !== "root") return
+    if (node.name === "head" || node.name === "style" || node.name === "script") return
+    if (/display\s*:\s*none/i.test(node.attribs?.style ?? "")) return
+    for (const child of (node.children ?? []) as (typeof node)[]) walk(child)
+  }
+  walk(email.parsed.document as never)
+  return out.join(" ").replace(/\s+/g, " ").trim()
+}
+
+/** Mustache tags out, whitespace collapsed: the copy a template writes itself. */
+export function withoutTags(text: string): string {
+  return text
+    .replace(/\{\{[^}]*\}\}\}?/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+}

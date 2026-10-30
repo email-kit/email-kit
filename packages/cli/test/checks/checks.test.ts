@@ -15,7 +15,7 @@ import { contextOf, docsUrl, runChecks } from "../../src/checks/engine.ts"
 import { parseEmail } from "../../src/checks/parse.ts"
 import { formatGithub, formatHuman, formatJson } from "../../src/checks/report.ts"
 import { sourceFile } from "../../src/checks/source.ts"
-import type { CheckContext, Finding } from "../../src/checks/types.ts"
+import type { CheckContext, CheckedEmail, Finding } from "../../src/checks/types.ts"
 import { type BuiltProject, buildProject } from "../../src/compiler/build.ts"
 import { loadConfig, resolveConfig } from "../../src/compiler/config.ts"
 import { run } from "../../src/run.ts"
@@ -35,21 +35,53 @@ beforeAll(async () => {
 
 /** The fixture's English email, changed by `edit`, as the only email to check. */
 function mutated(edit: (html: string) => string): CheckContext {
+  return changed((email) => ({ html: edit(email.html) }))
+}
+
+type Parts = Pick<CheckedEmail, "html" | "text" | "subject" | "preheader">
+
+/** The fixture's English email with some of its parts changed, as the only email to check. */
+function changed(edit: (email: Parts) => Partial<Parts>): CheckContext {
   const email = context.emails.find((e) => e.locale === "en")
   if (!email) throw new Error("no en email")
-  const html = edit(email.html)
-  if (html === email.html) throw new Error("the edit changed nothing")
-  return { ...context, emails: [{ ...email, html, parsed: parseEmail(html) }], themeFindings: [] }
+  const next = { ...email, ...edit(email) }
+  if ((["html", "text", "subject", "preheader"] as const).every((k) => next[k] === email[k])) {
+    throw new Error("the edit changed nothing")
+  }
+  return { ...context, emails: [{ ...next, parsed: parseEmail(next.html) }], themeFindings: [] }
 }
+
+/** Replaces the subject everywhere it shows: the subject line, <title> and the wrapper label. */
+const subject = (to: (s: string) => string) => (email: Parts) => ({
+  subject: to(email.subject),
+  html: email.html.replaceAll(email.subject, to(email.subject)),
+})
+
+/** Replaces the preheader everywhere it shows: the line, the hidden block and the text part. */
+const preheader = (to: string) => (email: Parts) => ({
+  preheader: to,
+  html: email.html.replace(email.preheader, to),
+  text: email.text.replace(email.preheader, to),
+})
+
+/** The catalogue without output.*, for contexts a test makes up (it has its own tests). */
+const WITHOUT_OUTPUT = CATALOGUE.filter((c) => !c.id.startsWith("output."))
 
 const ids = (findings: readonly Finding[]) => [...new Set(findings.map((f) => f.id))].sort()
 const once = (search: string, replace: string) => (html: string) => {
   if (!html.includes(search)) throw new Error(`not found: ${search}`)
   return html.replace(search, replace)
 }
-const inBody = (markup: string) =>
-  once('<div style="display:none', `${markup}\n<div style="display:none`)
+/** Adds markup to the body, after the hidden preheader (which must stay first). */
+const inBody = (markup: string) => (html: string) => {
+  const preheader = /aria-hidden="true">[\s\S]*?<\/div>\n/.exec(html)
+  if (!preheader) throw new Error("no preheader")
+  const at = preheader.index + preheader[0].length
+  return `${html.slice(0, at)}${markup}\n${html.slice(at)}`
+}
 const inStyle = (css: string) => once("</style>\n</head>", `${css}\n</style>\n</head>`)
+/** A text cell's styles that pass css.line-height-px. */
+const CELL = "margin:0;line-height:20px;mso-line-height-rule:exactly"
 
 describe("the fixture's real output", () => {
   it("passes every check (only theme notes remain)", () => {
@@ -60,7 +92,8 @@ describe("the fixture's real output", () => {
 })
 
 describe("each check, with one rule broken", () => {
-  const cases: [string, (html: string) => string][] = [
+  // [check, edit, other checks the same edit trips by design]
+  const cases: [string, (html: string) => string, string[]?][] = [
     ["html.doctype", once("<!DOCTYPE html>\n", "")],
     ["html.lang-dir", once('lang="en" dir="ltr" style=', 'lang="en" dir="rtl" style=')],
     ["html.title", once("<title>Order", "<title>Your order")],
@@ -76,13 +109,17 @@ describe("each check, with one rule broken", () => {
       once("color-scheme: light dark; }", "color-scheme: light dark !IMPORTANT; }"),
     ],
     ["css.no-nesting", inStyle(".a { .b { color: #000000; } }")],
-    ["css.no-modern-colour", inStyle(".a { color: oklch(0.5 0.1 200); }")],
+    ["css.no-modern-colour", inStyle(".a { color: oklch(0.5 0.1 200); }"), ["css.colour-hex"]],
     ["css.no-custom-props", inStyle(".a { --ink: #000000; }")],
     ["css.style-size", inStyle(`/* ${"x".repeat(17_000)} */`)],
     ["img.alt", inBody('<img src="https://x.test/a.png" width="1" height="1">')],
     ["img.dimensions", inBody('<img src="https://x.test/a.png" alt="" width="50%" height="1">')],
     ["img.https", inBody('<img src="http://x.test/a.png" alt="" width="1" height="1">')],
-    ["img.format", inBody('<img src="https://x.test/logo.svg" alt="" width="1" height="1">')],
+    [
+      "img.format",
+      inBody('<img src="https://x.test/logo.svg" alt="" width="1" height="1">'),
+      ["html.no-svg"],
+    ],
     [
       "img.fluid-width",
       inBody('<img src="https://x.test/a.png" alt="" width="1" height="1" style="max-width:100%">'),
@@ -107,19 +144,99 @@ describe("each check, with one rule broken", () => {
       "a11y.layout-table-role",
       once('<table role="presentation" width="100%"><tbody>', '<table width="100%"><tbody>'),
     ],
-    ["a11y.data-table", inBody("<table><tr><th>Item</th></tr></table>")],
+    ["a11y.data-table", inBody("<table><tr><th>Item</th></tr></table>"), ["css.line-height-px"]],
+    ["html.wrapper-aria", (h) => h.replace(/ aria-label="[^"]*"/, "")],
+    ["html.meta", (h) => h.replace(/<meta name="format-detection"[^>]*>\n/, "")],
+    [
+      "html.body-bare",
+      once('<body xml:lang="en" style', '<body xml:lang="en" bgcolor="#ffffff" style'),
+    ],
+    ["html.no-external", inStyle("@import url(https://x.test/a.css);")],
+    ["html.no-svg", inBody("<svg></svg>"), ["html.no-forms-embeds"]],
+    ["html.no-comments", inBody(`<!-- ${"internal note ".repeat(10)} -->`)],
+    ["html.no-unresolved", inBody(`<p style="${CELL}">{{customerNam}}</p>`)],
+    ["html.hidden-text", inBody(`<p style="display:none;mso-hide:all;${CELL}">Secret</p>`)],
+    ["css.colour-hex", inStyle(".a { color: #fff; }")],
+    ["css.no-alpha", inStyle(".a { opacity: 0.5; }")],
+    ["css.banned-layout", inStyle(".a { display: flex; }")],
+    ["css.media-allowlist", inStyle("@media (hover: hover) { .a { margin: 0; } }")],
+    ["css.inline-parse", inBody('<div style="margin:0;color`red"></div>')],
+    [
+      "css.gradient-fallback",
+      inBody('<div style="background-image:url(https://x.test/a.png)"></div>'),
+    ],
+    ["css.units", inBody('<div style="padding:1rem"></div>')],
+    ["css.hide-mso", inBody('<div style="display:none"></div>'), ["html.hidden-text"]],
+    ["css.line-height-px", inBody("<p>Plain</p>")],
+  ]
+  // The same, for checks of the text part, the subject and the preheader.
+  const parts: [string, (email: Parts) => Partial<Parts>, string[]?][] = [
+    // A stub text part breaks the rest of the text part's rules too.
+    [
+      "text.present",
+      () => ({ text: "Short." }),
+      ["text.links-match", "text.parity", "text.preheader-first"],
+    ],
+    ["text.no-markup", (e) => ({ text: `${e.text}<b>bold</b>\n` })],
+    ["text.no-entities", (e) => ({ text: `${e.text}Caf&eacute;\n` })],
+    ["text.wrap-78", (e) => ({ text: `${e.text}${"word ".repeat(20)}\n` })],
+    [
+      "text.urls-full",
+      (e) => ({
+        html: inBody(`<a href="/relative">Go</a>`)(e.html),
+        text: `${e.text}Go: /relative\n`,
+      }),
+    ],
+    ["text.links-match", (e) => ({ text: `${e.text}https://unlinked.test/page\n` })],
+    [
+      "text.parity",
+      (e) => ({
+        text: `${e.preheader}\n\n${"lorem ipsum dolor\n".repeat(10)}\n{{orderUrl}}\n{{_ek.context.siteUrl}}\n`,
+      }),
+    ],
+    ["text.preheader-first", (e) => ({ text: e.text.slice(e.preheader.length).trimStart() })],
+    ["text.no-preheader-padding", (e) => ({ text: `${e.text}\u200c\n` })],
+    ["text.no-decorative-runs", (e) => ({ text: `${e.text}\n*****\n` })],
+    [
+      "preheader.first",
+      (e) => ({ html: e.html.replace(/<div style="display:none[^>]*>[\s\S]*?<\/div>\n/, "") }),
+      ["preheader.padding"],
+    ],
+    ["preheader.not-subject", (e) => subject(() => e.preheader)(e)],
+    ["preheader.padding", (e) => ({ html: e.html.replaceAll("&#8199;&#65279;&#847;", "") })],
+    ["preheader.no-boilerplate", preheader("View this email in your browser")],
+    ["subject.no-fake-reply", subject((s) => `Re: ${s}`)],
+    ["subject.generic", subject(() => "Update")],
   ]
 
-  it("covers every output check", () => {
-    // Source, render-only and pseudo-locale checks have their own tests (sweep, pseudo).
-    const output = CATALOGUE.filter(
-      (c) => !c.id.startsWith("source.") && !c.id.startsWith("i18n.") && c.on !== "render",
-    )
-    expect(cases.map(([id]) => id).sort()).toEqual(output.map((c) => c.id).sort())
+  it.each(parts)("%s", (id, edit, also = []) => {
+    expect(ids(runChecks(changed(edit)))).toEqual([id, ...also].sort())
   })
 
-  it.each(cases)("%s", (id, edit) => {
-    expect(ids(runChecks(mutated(edit)))).toEqual([id])
+  it("subject.no-secret: a secret field in the subject", () => {
+    const template = context.templates.find((t) => t.id === "order-confirmation")
+    const model = template && {
+      ...template.model,
+      properties: (template.model.properties ?? []).map((p) =>
+        p.name === "orderNumber" ? { ...p, field: { ...p.field, secret: true as const } } : p,
+      ),
+    }
+    if (!template || !model) throw new Error("no template")
+    const edited = { ...mutated((h) => `${h} `), templates: [{ ...template, model }] }
+    expect(ids(runChecks(edited))).toEqual(["subject.no-secret"])
+  })
+
+  it("covers every check of the compiled output", () => {
+    // Source, render-only, pseudo-locale, output-folder and compiler checks have their own tests.
+    const covered = [...cases, ...parts].map(([id]) => id).concat("subject.no-secret")
+    const output = CATALOGUE.filter(
+      (c) => !/^(source|i18n|output)\./.test(c.id) && c.on !== "render" && !c.compiler,
+    )
+    expect(covered.sort()).toEqual(output.map((c) => c.id).sort())
+  })
+
+  it.each(cases)("%s", (id, edit, also = []) => {
+    expect(ids(runChecks(mutated(edit)))).toEqual([id, ...also].sort())
   })
 
   it("points at the line and column, in the compiled file", () => {
@@ -153,7 +270,7 @@ describe("each check, with one rule broken", () => {
 
   it("leaves data-driven image URLs to the fixture sweep", () => {
     expect(
-      ids(runChecks(mutated(inBody('<img src="{{heroUrl}}" alt="" width="1" height="1">')))),
+      ids(runChecks(mutated(inBody('<img src="{{orderUrl}}" alt="" width="1" height="1">')))),
     ).toEqual([])
   })
 })
@@ -259,13 +376,24 @@ describe("source checks (UI-01)", () => {
   })
 
   it("requires a fixture per template", () => {
-    const findings = runChecks({
-      ...context,
-      emails: [],
-      sources: [],
-      themeFindings: [],
-      templates: [{ id: "welcome", file: "src/email-kit/templates/welcome.tsx", fixtures: [] }],
-    })
+    const findings = runChecks(
+      {
+        ...context,
+        emails: [],
+        sources: [],
+        themeFindings: [],
+        templates: [
+          {
+            id: "welcome",
+            file: "src/email-kit/templates/welcome.tsx",
+            fixtures: [],
+            model: { type: "object", nullable: false, properties: [] },
+          },
+        ],
+      },
+      {},
+      WITHOUT_OUTPUT,
+    )
     expect(findings.map((f) => [f.id, f.subject])).toEqual([
       [
         "source.fixture-exists",

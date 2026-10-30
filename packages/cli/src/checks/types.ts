@@ -2,6 +2,8 @@
 // the rule, and the usual fix; a finding says where (template, locale, file:line:col), what, how
 // to fix it, and where the docs are.
 
+import type { OutputFile } from "../compiler/output.ts"
+import type { Field } from "../compiler/schema.ts"
 import type { Theme } from "../theme/theme.ts"
 import type { TokenFinding } from "../theme/validate.ts"
 import type { ParsedEmail } from "./parse.ts"
@@ -47,6 +49,8 @@ export interface CheckedEmail {
 /** A template as the source checks see it. */
 export interface CheckedTemplate {
   readonly id: string
+  /** The schema's portable model */
+  readonly model: Field
   /** Relative to the project folder */
   readonly file: string
   readonly fixtures: readonly string[]
@@ -75,6 +79,14 @@ export interface CheckContext {
     readonly message: string
   }[]
   readonly templates: readonly CheckedTemplate[]
+  /** The output folder: what a fresh compile writes there, and whether git ignores it */
+  readonly output: {
+    /** Relative to the project folder */
+    readonly dir: string
+    readonly absolute: string
+    readonly expected: readonly OutputFile[]
+    readonly gitignored: boolean
+  }
   /** The project's own source files the templates bundle (templates and user components) */
   readonly sources: readonly SourceFile[]
   readonly theme: Theme
@@ -116,5 +128,10 @@ export interface Check {
   readonly on?: "template" | "render" | "both"
   /** A docs page other than docs/checks.md, for team checks */
   readonly docs?: string
+  /**
+   * Enforced by the compiler: a compile that fails with one of these error codes is reported as
+   * this check by `email-kit check`. `run` has nothing left to find.
+   */
+  readonly compiler?: { readonly codes: readonly string[]; readonly match?: RegExp }
   run(context: CheckContext, report: (problem: Problem) => void): void
 }

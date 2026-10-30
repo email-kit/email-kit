@@ -1,5 +1,5 @@
-// IR → the plain-text part, from the same tree as the HTML (TXT-01). Prototype (P0-03): wrapping
-// at 78 columns, tables as `Label: value` and per-component text renderers arrive with P1-080+.
+// IR → the plain-text part, from the same tree as the HTML (TXT-01). Lines wrap at 78 columns
+// (RFC 5322's recommendation), except lines with a URL, which stay whole so it stays clickable.
 
 import { EmailKitError, type IrElement, type IrNode } from "@email-kit/core/internal"
 
@@ -8,7 +8,7 @@ import { placeholderTag, sectionTags } from "./tags.ts"
 /** The text part: the preheader as its first line, then the body (BLD-07). */
 export function renderTextPart(body: IrNode, preheader: string): string {
   const text = (preheader ? `${preheader}\n\n` : "") + renderText(body)
-  return guard(`${text.replace(/\n{3,}/g, "\n\n").trim()}\n`)
+  return guard(`${wrap(text.replace(/\n{3,}/g, "\n\n").trim())}\n`)
 }
 
 /** A single line of text, such as the subject. */
@@ -98,6 +98,36 @@ function element(node: IrElement, scopes: readonly number[]): string {
     default:
       return inner
   }
+}
+
+const WIDTH = 78
+
+/**
+ * Each line over 78 characters, at spaces; list items keep their indent. Lines with a URL stay
+ * whole, and so do lines with sections (a plural, an <If>): their rendered width isn't known
+ * here, and a break inside a branch would show up mid-sentence.
+ */
+function wrap(text: string): string {
+  return text
+    .split("\n")
+    .map((line) => {
+      if (line.length <= WIDTH || /:\/\/|\{\{[#^/]|\{\{[^}]*\}\}\s*$/.test(line)) return line
+      const indent = line.startsWith("- ") ? "  " : ""
+      const lines: string[] = []
+      let current = ""
+      for (const word of line.split(" ")) {
+        const next = current ? `${current} ${word}` : word
+        if (next.length > WIDTH && current) {
+          lines.push(current)
+          current = `${indent}${word}`
+        } else {
+          current = next
+        }
+      }
+      lines.push(current)
+      return lines.join("\n")
+    })
+    .join("\n")
 }
 
 function join(children: readonly IrNode[], scopes: readonly number[]): string {

@@ -7,6 +7,7 @@ import { fileURLToPath } from "node:url"
 import { afterAll, beforeAll, describe, expect, it } from "vitest"
 import { z } from "zod"
 
+import { CATALOGUE } from "../../src/checks/catalogue/index.ts"
 import { contextOf, runChecks } from "../../src/checks/engine.ts"
 import { parseEmail } from "../../src/checks/parse.ts"
 import type { CheckContext, CheckedEmail, Finding } from "../../src/checks/types.ts"
@@ -166,7 +167,7 @@ describe("checks on renders", () => {
     locale: "en",
     file: "out/welcome/en.html",
     subject: "Welcome",
-    preheader: "",
+    preheader: "Your account is ready",
     html,
     text: "",
     parsed: parseEmail(html),
@@ -179,6 +180,7 @@ describe("checks on renders", () => {
     pseudo: [],
     pseudoErrors: [],
     messages: [],
+    output: { dir: "out", absolute: "/nowhere", expected: [], gitignored: true },
     templates: [],
     sources: [],
     theme: undefined as never,
@@ -186,6 +188,13 @@ describe("checks on renders", () => {
     outlookClassic: true,
     themeFile: undefined,
   })
+  // Contexts made up here have no output folder: leave output.* to its own tests.
+  const runRendered = (context: CheckContext) =>
+    runChecks(
+      context,
+      {},
+      CATALOGUE.filter((c) => !c.id.startsWith("output.")),
+    )
   const ids = (findings: Finding[]) =>
     findings.map((f) => `${f.id} ${f.level} ${f.subject.fixture}`)
 
@@ -196,7 +205,7 @@ describe("checks on renders", () => {
       locale: "de",
       fixture: "generated long",
     })
-    expect(ids(runChecks(only([small, big, near])))).toEqual([
+    expect(ids(runRendered(only([small, big, near])))).toEqual([
       "size.gmail error generated long",
       "size.gmail warn generated long",
     ])
@@ -207,8 +216,19 @@ describe("checks on renders", () => {
     ["Order  confirmed", "two spaces in a row"],
     ["Your plan ()", "empty brackets"],
   ])("copy.placeholder-fallbacks: %s", (text, what) => {
-    const [finding] = runChecks(only([email("<p></p>", { text })]))
+    const [finding] = runRendered(only([email("<p></p>", { text })]))
     expect(finding?.message).toContain(what)
+  })
+
+  it("preheader.length and subject.length: on renders of the project's own fixtures only", () => {
+    const long = email("<p></p>", { subject: "S".repeat(61), preheader: "P".repeat(91) })
+    const none = email("<p></p>", { preheader: "", locale: "de" })
+    const generated = email("<p></p>", { subject: "S".repeat(200), fixture: "generated long" })
+    expect(runRendered(only([long, none, generated])).map((f) => `${f.id}: ${f.message}`)).toEqual([
+      "preheader.length: The preheader is 91 characters",
+      "preheader.length: There's no preheader",
+      "subject.length: The subject is 61 characters",
+    ])
   })
 
   it("checks data-driven image URLs once rendered", () => {
@@ -218,7 +238,7 @@ describe("checks on renders", () => {
         fixture: "generated long",
       },
     )
-    const [finding] = runChecks(only([rendered]))
+    const [finding] = runRendered(only([rendered]))
     expect([finding?.id, finding?.subject.fixture, finding?.subject.line]).toEqual([
       "img.format",
       "generated long",

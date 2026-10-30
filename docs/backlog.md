@@ -291,6 +291,20 @@ emails carry `dir` and alignment). The components now add `dir="rtl"` and right 
 cells in RTL emails only (LTR output unchanged; one-time codes stay `dir="ltr"`); the ar-XB build
 checks every project. Check findings now keep distinct locations of the same message.
 
+**Closing M1.4, slice 1 (100 of 175 phase-1 ids):** the compiler-enforced ids
+(`source.id-grammar`, `source.fixture-valid`, `source.schema-portable`, `i18n.missing-keys`,
+`i18n.plural-categories`, `i18n.fallback`, `output.identifiers`) are catalogue entries that name
+the compile error; `email-kit check` reports a failed compile as their findings, with the
+location. New: `output.drift`, `output.manifest`, `output.module-matches`, `output.no-orphans`,
+`output.gitignored` (the first three skip a gitignored folder, a local build); eight more
+`html.*`; nine more `css.*`; ten `text.*` (`text.code-unbroken` comes with `auth.*`); five
+`preheader.*`; four `subject.*` (lengths on renders of the project's own fixtures). The text part
+now wraps at 78 columns (URL lines stay whole). The examples turn `output.gitignored` off with
+reasons. Left: `a11y.*`, `layout.*`, `button.*`, `font.*`, `mso.*`, `img.*`, `dark.*`,
+`size.*`, `tokens.*` (slice 2); `link.*`, `auth.*`, `copy.*`, `source.*` (slice 3); `legal.*`,
+`source.layout`, `size.unsubscribe-above-clip` (need Layout/Footer, ADR 0001); `source.raw-allowlisted`
+(needs `<Raw>`); `minify.preserve-mso` (needs a minifier).
+
 | ID | Task | Reqs | Pri | Dep | Done when |
 |---|---|---|---|---|---|
 | P1-150 | Locale config (default, list, fallback chain, pseudo-locale toggles) | CFG-03 | MUST | P1-004 | Typed and validated |
