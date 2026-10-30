@@ -41,11 +41,13 @@
     "check:package": "publint --strict"
   },
   "dependencies": {
+    "@clack/prompts": "^1.8.1",
     "@email-kit/core": "workspace:*",
     "cac": "^7.1.0",
     "culori": "^4.0.2",
     "domhandler": "^5.0.3",
     "htmlparser2": "^10.1.0",
+    "jsonc-parser": "^3.3.1",
     "postcss": "^8.5.32",
     "rolldown": "catalog:"
   },

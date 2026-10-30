@@ -496,6 +496,24 @@ that call the handlers directly; it runs in the repo pipeline. Verified first in
 the per-template `@jsxImportSource` pragma (Next type-checks every `.tsx` as React) and wiring
 compile into the scripts.
 
+**First slice:** `email-kit init` (**P1-200** to **P1-207**, **P1-209**, **P1-210**) and `email-kit new`
+(**P1-211**). init finds the nearest package.json; detects the package manager, tsconfig (JSONC),
+the code root in INIT-02's order and the host; picks the import per ADR 0004 (`@/email-kit` for
+bundler hosts, `#email-kit` → `.mjs` (G) for tsc builds, → a `.ts` re-export (C) for Node type
+stripping, otherwise relative) and records it as `importPath` (CFG-09); creates the config and
+`<code root>/email-kit/` (index, welcome template with the JSX pragma, messages); asks before each
+change to an existing file (devDependencies, scripts with prefix fallbacks, `imports`, tsconfig
+`jsx` only if missing and the exact `@/email-kit` path only if `@/*` doesn't cover it, edited
+without touching any other character, `.gitattributes`, prettier/eslint ignores); offers a shadcn
+theme it finds; refuses a foreign config, never writes into a foreign folder (falls back to
+`email-templates`, `emails`), recognises its own by the manifest; `--yes`, `--dir`, `--config`,
+`--force`, `--no-install`; no terminal and no `--yes` → stop. Then the first compile and the next
+steps. `create-email-kit` runs it. Tests cover Next.js with and without `src/`, a tsc project and
+Node type stripping (both run `#email-kit` with plain node), conflicts, consent and `--dir`; checked
+by hand on a fresh create-next-app. Not yet: the `email-kit:dev` script and `dev` (with the studio,
+P1-212), the workspace `exports` offer (P1-208, SHOULD), ADR 0004's option B (build-output-only
+deploys), and a valibot or arktype welcome template.
+
 | ID | Task | Reqs | Pri | Dep | Done when |
 |---|---|---|---|---|---|
 | P1-200 | `create-email-kit` starter and `email-kit init` on the nearest `package.json` project | INIT-01 | MUST | P1-087 | Both entry points run `init` |

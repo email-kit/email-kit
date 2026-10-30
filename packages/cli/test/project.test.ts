@@ -354,7 +354,7 @@ describe("config validation", () => {
     ).toThrow(
       [
         "has 6 problems:",
-        "  • templets: unknown option (known: root, templates, messages, out, module, perTemplateEntries, validate, platform, theme, locales, checks, customChecks)",
+        "  • templets: unknown option (known: root, templates, messages, out, module, perTemplateEntries, validate, platform, theme, locales, checks, customChecks, importPath)",
         "  • out: must not overlap the templates folder (src/email-kit/templates)",
         '  • locales.list[0]: "en_US" isn\'t a BCP 47 locale tag, such as "en" or "pt-BR"',
         '  • locales.list[1]: write "pt-br" as "pt-BR"',

@@ -46,6 +46,8 @@ export interface ResolvedConfig {
   readonly checks: Readonly<Record<string, CheckSetting>>
   /** Team checks from defineCheck() */
   readonly customChecks: readonly CustomCheck[]
+  /** How the app imports the emails (CFG-09); a relative path when init didn't record one */
+  readonly importPath: string | undefined
   /** Where loaded modules are bundled to, inside the project so packages resolve */
   readonly cacheDir: string
 }
@@ -59,7 +61,7 @@ export const CONFIG_FILES: readonly string[] = [
 
 const KEYS = new Set([
   ...["root", "templates", "messages", "out", "module", "perTemplateEntries", "validate"],
-  ...["platform", "theme", "locales", "checks", "customChecks"],
+  ...["platform", "theme", "locales", "checks", "customChecks", "importPath"],
 ])
 
 export async function loadConfig(options: {
@@ -138,6 +140,12 @@ export function resolveConfig(
   if (typeof perTemplateEntries !== "boolean") {
     problems.push("perTemplateEntries: must be true or false")
   }
+  if (
+    config.importPath !== undefined &&
+    (typeof config.importPath !== "string" || !config.importPath)
+  ) {
+    problems.push('importPath: must be how your app imports the emails, such as "@/email-kit"')
+  }
   const validate = config.validate ?? true
   if (typeof validate !== "boolean") problems.push("validate: must be true or false")
   const platform = readPlatform(config.platform, problems)
@@ -174,6 +182,7 @@ export function resolveConfig(
     theme: config.theme as ThemeConfig | undefined,
     checks,
     customChecks,
+    importPath: typeof config.importPath === "string" ? config.importPath : undefined,
     cacheDir,
   }
 }

@@ -1,5 +1,5 @@
-// The `email-kit` command runner (CLI-01, CLI-07, CLI-08): `compile` (alias `generate`), `check`
-// and `tokens`; init, new and dev arrive with their milestones.
+// The `email-kit` command runner (CLI-01, CLI-07, CLI-08): `init`, `new`, `compile` (alias
+// `generate`), `check` and `tokens`; `dev` arrives with the studio.
 
 import { cac } from "cac"
 
@@ -11,6 +11,9 @@ import { buildProject, compile, describeResult, summarize } from "./compiler/bui
 import { loadConfig } from "./compiler/config.ts"
 import { formatError } from "./compiler/problems.ts"
 import { watchProject } from "./compiler/watch.ts"
+import { init, type Prompter } from "./init/index.ts"
+import { newTemplate } from "./init/new.ts"
+import { terminalPrompter } from "./init/prompts.ts"
 import { checkPermutations } from "./theme/check.ts"
 import { formatTokens } from "./theme/report.ts"
 import { loadTheme } from "./theme/theme.ts"
@@ -22,6 +25,8 @@ export interface Io {
   readonly cwd: string
   /** ANSI colours in error output */
   readonly color?: boolean
+  /** Answers for init's questions; a terminal prompt when left out */
+  readonly prompter?: Prompter
   out(text: string): void
   err(text: string): void
 }
@@ -40,6 +45,57 @@ export async function run(args: readonly string[], io: Io): Promise<number> {
     .option("--verbose", "Also print each template's sizes per locale, and the files that changed")
     .action((options: CompileFlags) => {
       pending = compileCommand(options, io)
+    })
+  cli
+    .command("init", "Add email-kit to this project: a config, a folder and a welcome template")
+    .option("--yes", "Accept every default without asking (for CI)")
+    .option(
+      "--dir <path>",
+      "Put the email-kit folder in this code root instead of the detected one",
+    )
+    .option("--config <path>", "Name the config file something other than email-kit.config.ts")
+    .option("--force", "Overwrite an existing config")
+    .option("--no-install", "Don't run the package manager after adding the dependencies")
+    .action(
+      (options: {
+        yes?: boolean
+        dir?: string
+        config?: string
+        force?: boolean
+        install?: boolean
+      }) => {
+        pending = (async () => {
+          try {
+            return await init(
+              { cwd: io.cwd, ...options },
+              {
+                out: io.out,
+                err: io.err,
+                prompter: io.prompter ?? terminalPrompter,
+                ...(io.color !== undefined && { color: io.color }),
+              },
+            )
+          } catch (error) {
+            io.err(formatError(error, io))
+            return 1
+          }
+        })()
+      },
+    )
+  cli
+    .command("new <id>", "Add a template, with its messages in every locale and a fixture")
+    .option("--config <path>", "Use this config file instead of ./email-kit.config.ts")
+    .action((id: string, options: { config?: string }) => {
+      pending = newTemplate(id, { cwd: io.cwd, config: options.config }).then(
+        (text) => {
+          io.out(text)
+          return 0
+        },
+        (error: unknown) => {
+          io.err(formatError(error, io))
+          return 1
+        },
+      )
     })
   cli
     .command("check", "Compile in memory and run the checks; exits 1 on any error")

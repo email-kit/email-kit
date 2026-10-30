@@ -32,6 +32,11 @@ directly, and `pnpm build` runs the production build.
 
 ## Doing the same in your app
 
+`email-kit init` does steps 1 to 3 for you: run it in your app (`npx @email-kit/cli init`, or
+`pnpm exec email-kit init` with the packages linked from a clone). It detects Next.js, puts the
+folder next to your code, uses your `@/*` alias, asks before each change to an existing file, and
+compiles once. `email-kit new <id>` adds templates. By hand:
+
 1. Add `@email-kit/core`, `@email-kit/components` and `zod`, and `@email-kit/cli` as a dev
    dependency.
 2. Copy `email-kit.config.ts` and a template. **Start every template with

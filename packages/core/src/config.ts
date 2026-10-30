@@ -45,6 +45,11 @@ export interface EmailKitConfig {
    * `{ "img.fluid-width": { level: "off", reason: "Hero images are fixed width by design" } }`
    */
   readonly checks?: Readonly<Record<string, CheckSetting>>
+  /**
+   * How your app imports the emails, recorded by `email-kit init` (CFG-09): `@/email-kit`,
+   * `#email-kit` or a relative path. `email-kit new` prints its examples with it.
+   */
+  readonly importPath?: string
   /** Team checks (CHK-08), made with defineCheck() */
   readonly customChecks?: readonly CustomCheck[]
   readonly locales?: {

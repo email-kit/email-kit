@@ -1,7 +1,7 @@
 {
   "name": "create-email-kit",
   "version": "0.0.0",
-  "description": "Set up email-kit in your backend project: npm create email-kit",
+  "description": "Set up email-kit in your backend project: npm create email-kit (runs email-kit init)",
   "keywords": [
     "email",
     "email-templates",
@@ -39,6 +39,9 @@
     "typecheck": "tsc -p tsconfig.json",
     "test": "vitest run",
     "check:package": "publint --strict"
+  },
+  "dependencies": {
+    "@email-kit/cli": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "catalog:",

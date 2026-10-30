@@ -9,6 +9,20 @@ Every error email-kit reports has an id, shown in brackets:
 Each id below says why it happens and how to fix it. The CLI links to these entries (CLI-06).
 A test checks that every id the code can raise is listed here.
 
+## Setup (`email-kit init`)
+
+### no-package-json
+**Why:** `init` works on the nearest folder with a `package.json`, and there's none from here up.
+**Fix:** run it inside the project that sends email, such as `apps/api` in a monorepo.
+
+### init-needs-answers
+**Why:** `init` asks before it changes files, and there's no terminal to ask in (CI, a script).
+**Fix:** run `email-kit init --yes` to accept the defaults; `--dir`, `--config` and `--no-install` set the rest.
+
+### init-cancelled
+**Why:** a question was cancelled (Ctrl+C). Files created before it stay; nothing after it was changed.
+**Fix:** run `email-kit init` again: it says "already set up" if the config was written, and `email-kit new` adds templates.
+
 ## Config
 
 ### config-not-found
