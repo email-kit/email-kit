@@ -36,12 +36,13 @@
   },
   "scripts": {
     "build": "tsdown",
-    "typecheck": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json && tsc -p test/generated.tsconfig.json",
     "test": "vitest run",
     "check:package": "publint --strict"
   },
   "dependencies": {
     "@email-kit/core": "workspace:*",
+    "cac": "^7.1.0",
     "rolldown": "catalog:"
   },
   "devDependencies": {

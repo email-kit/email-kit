@@ -4,6 +4,10 @@
   "tasks": {
     "test": {
       "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/conformance/**"]
+    },
+    "build": {
+      "inputs": ["$TURBO_DEFAULT$"],
+      "outputs": ["dist/**"]
     }
   }
 }

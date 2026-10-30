@@ -1,0 +1,28 @@
+{
+  "//": "The generated module under the strictest settings a host might use, with no Node types and an ES2020 lib.",
+  "compilerOptions": {
+    "target": "es2020",
+    "lib": ["es2020"],
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "types": [],
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noImplicitReturns": true,
+    "noImplicitOverride": true,
+    "noFallthroughCasesInSwitch": true,
+    "noPropertyAccessFromIndexSignature": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "allowUnreachableCode": false,
+    "verbatimModuleSyntax": true,
+    "erasableSyntaxOnly": true,
+    "isolatedModules": true,
+    "isolatedDeclarations": true,
+    "declaration": true,
+    "allowImportingTsExtensions": true,
+    "noEmit": true
+  },
+  "files": ["generated.check.ts", "fixtures/project/src/email-kit/compiled/index.ts"]
+}

@@ -3,7 +3,8 @@ import process from "node:process"
 
 import { run } from "./run.ts"
 
-const { code, output } = run(process.argv.slice(2))
-if (code === 0) console.log(output)
-else console.error(output)
-process.exitCode = code
+process.exitCode = await run(process.argv.slice(2), {
+  cwd: process.cwd(),
+  out: (text) => console.log(text),
+  err: (text) => console.error(text),
+})

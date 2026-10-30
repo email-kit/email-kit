@@ -1,21 +1,63 @@
-import { describe, expect, it } from "vitest"
+import { cpSync, mkdirSync, mkdtempSync, rmSync } from "node:fs"
+import { join, sep } from "node:path"
+import { fileURLToPath } from "node:url"
+
+import { afterAll, describe, expect, it, vi } from "vitest"
 
 import { run, VERSION } from "../src/run.ts"
 
+const TMP = fileURLToPath(new URL(".tmp/run-test/", import.meta.url))
+afterAll(() => rmSync(TMP, { recursive: true, force: true }))
+
+function capture(cwd = process.cwd()) {
+  const out: string[] = []
+  const err: string[] = []
+  return { io: { cwd, out: (t: string) => out.push(t), err: (t: string) => err.push(t) }, out, err }
+}
+
 describe("email-kit CLI", () => {
-  it("prints the version", () => {
-    expect(run(["--version"])).toEqual({ code: 0, output: VERSION })
+  it("prints the version", async () => {
+    const info = vi.spyOn(console, "info").mockImplementation(() => {})
+    const { io } = capture()
+    expect(await run(["--version"], io)).toBe(0)
+    expect(info.mock.calls[0]?.[0]).toContain(`email-kit/${VERSION}`)
+    info.mockRestore()
   })
 
-  it("prints help with no arguments", () => {
-    const result = run([])
-    expect(result.code).toBe(0)
-    expect(result.output).toContain("Usage:")
+  it("prints help with no arguments", async () => {
+    const info = vi.spyOn(console, "info").mockImplementation(() => {})
+    const { io } = capture()
+    expect(await run([], io)).toBe(0)
+    expect(String(info.mock.calls[0]?.[0])).toContain("compile")
+    info.mockRestore()
   })
 
-  it("fails on an unknown command", () => {
-    const result = run(["compile"])
-    expect(result.code).toBe(1)
-    expect(result.output).toContain('Unknown command "compile"')
+  it("fails on an unknown command", async () => {
+    const { io, err } = capture()
+    expect(await run(["deploy"], io)).toBe(1)
+    expect(err[0]).toContain('Unknown command "deploy"')
+  })
+
+  it("compiles a project, also as `generate`", async () => {
+    mkdirSync(TMP, { recursive: true })
+    const dir = mkdtempSync(join(TMP, "cli-"))
+    cpSync(fileURLToPath(new URL("fixtures/project/", import.meta.url)), dir, {
+      recursive: true,
+      filter: (path) => !path.includes(`${sep}compiled`),
+    })
+    const first = capture(dir)
+    expect(await run(["compile"], first.io)).toBe(0)
+    expect(first.out[0]).toMatch(/^Compiled 1 template × 2 locales into src\/email-kit\/compiled/)
+
+    const quiet = capture(dir)
+    expect(await run(["generate", "--quiet"], quiet.io)).toBe(0)
+    expect(quiet.out).toEqual([])
+  })
+
+  it("reports a missing config with exit code 1", async () => {
+    mkdirSync(TMP, { recursive: true })
+    const { io, err } = capture(mkdtempSync(join(TMP, "none-")))
+    expect(await run(["compile"], io)).toBe(1)
+    expect(err[0]).toMatch(/^✗ \[config-not-found\] No email-kit.config.ts/)
   })
 })

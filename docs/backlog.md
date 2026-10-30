@@ -30,6 +30,12 @@ when** (acceptance).
 - **P0-06 done; P0-12 partly.** ADRs 0003 (plurals), 0004 (aliases) and 0005 (no inliner)
   accepted on 2026-10-30; 0002 and 0006 proposed; 0001 waits for P0-04. Refinements: allowed as
   TS-only checks.
+- **M1.1 started (2026-10-30): `email-kit compile` works end to end.** Done or partly done:
+  P1-004/005/006 (config load and validation; loaded with the rolldown loader, not jiti), P1-050/051
+  (the renderer passes the suite), P1-055, P1-070 (manifest without a signature), P1-071/072/073,
+  P1-074 (generated `index.ts`, checked under the strictest host settings on TS 5.9 and 7.0),
+  P1-078, P1-079, P1-085, P1-087 (no `--watch` yet), P1-090. Fixture project with committed output in
+  `packages/cli/test/fixtures/project/`.
 - **Phase 0 remaining:** P0-04 (needs real email clients), accepting ADRs 0002 and 0006, and
   P0-02 (publishing needs the maintainer's accounts).
 - **P0-02 prepared.** The placeholder packages and the release workflow are ready. Publishing and

@@ -20,3 +20,6 @@ docs/reference-docs
 
 # leftovers of spike runs that stopped early
 spikes/*/.work-*
+
+# temporary projects created by tests
+**/test/.tmp/

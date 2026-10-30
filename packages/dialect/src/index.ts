@@ -1,8 +1,11 @@
 // mustache-core@1 reference renderer. The spec is docs/spec/mustache-core.md; the conformance
 // suite in conformance/mustache-core/ is the authority on behaviour.
 //
-// This file is self-contained on purpose: no imports and only standard ECMAScript, because the
-// compiler inlines its source into every generated module (OUT-05). Keep it small (RUN-01).
+// This file is self-contained on purpose: no imports and only standard ECMAScript up to ES2020,
+// because the compiler inlines its source into every generated module (OUT-05), which compiles
+// under the host's tsconfig. Keep it small (RUN-01). Everything below the marker is inlined.
+
+// --- inlined into generated modules from here ---
 
 /** The dialect id recorded in manifests (R7, DLG-06). */
 export const DIALECT = "mustache-core@1" as const
@@ -190,10 +193,10 @@ function lookup(stack: readonly unknown[], name: string): unknown {
   const [first = "", ...rest] = name.split(".")
   for (let i = stack.length - 1; i >= 0; i--) {
     const context = stack[i]
-    if (isObject(context) && Object.hasOwn(context, first)) {
+    if (isObject(context) && hasOwn(context, first)) {
       let value = context[first]
       for (const key of rest) {
-        if (!isObject(value) || !Object.hasOwn(value, key)) return undefined
+        if (!isObject(value) || !hasOwn(value, key)) return undefined
         value = value[key]
       }
       return value
@@ -221,6 +224,12 @@ function toText(value: unknown, name: string): string {
 function finite(value: number, name: string): number {
   if (!Number.isFinite(value)) fail("invalid-number", `"${name}" is ${value}`)
   return value
+}
+
+// Not Object.hasOwn: generated modules compile under the host's tsconfig, which may predate ES2022.
+function hasOwn(object: object, key: string): boolean {
+  // biome-ignore lint/suspicious/noPrototypeBuiltins: Object.hasOwn needs lib ES2022 in the host
+  return Object.prototype.hasOwnProperty.call(object, key)
 }
 
 function isObject(value: unknown): value is Record<string, unknown> {

@@ -1,0 +1,20 @@
+Danke für Ihre Bestellung
+
+Danke, {{customerName}}!
+====================
+
+Ihre Bestellung {{orderNumber}} ist bestätigt.
+
+{{#items}}
+- {{name}} × {{qty}}
+{{/items}}
+
+{{#discount}}
+Sie haben {{discount}} gespart.
+
+{{/discount}}
+{{^discount}}
+Diesmal kein Rabatt.
+
+{{/discount}}
+Bestellung ansehen: {{orderUrl}}

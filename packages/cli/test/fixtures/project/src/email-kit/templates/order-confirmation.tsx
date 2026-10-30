@@ -2,7 +2,7 @@
 import { defineEmail, Each, If, Unless } from "@email-kit/core"
 import { z } from "zod"
 
-import { Card } from "./components/Card"
+import { Card } from "../components/Card"
 
 export default defineEmail({
   id: "order-confirmation",

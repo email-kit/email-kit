@@ -11,6 +11,10 @@
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     },
+    "./source": {
+      "types": "./dist/source.d.ts",
+      "default": "./dist/source.js"
+    },
     "./package.json": "./package.json"
   },
   "files": [
@@ -20,7 +24,7 @@
     "node": ">=22.12"
   },
   "scripts": {
-    "build": "tsdown",
+    "build": "tsdown && node scripts/embed-source.mjs",
     "typecheck": "tsc -p tsconfig.json",
     "test": "vitest run"
   },

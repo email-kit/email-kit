@@ -1,0 +1,20 @@
+Thanks for your order
+
+Thanks, {{customerName}}!
+=====================
+
+Your order {{orderNumber}} is confirmed.
+
+{{#items}}
+- {{name}} × {{qty}}
+{{/items}}
+
+{{#discount}}
+You saved {{discount}}.
+
+{{/discount}}
+{{^discount}}
+No discount this time.
+
+{{/discount}}
+View your order: {{orderUrl}}

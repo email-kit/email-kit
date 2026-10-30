@@ -12,6 +12,8 @@
       "!**/.turbo",
       "!docs/reference-docs",
       "!**/__golden__",
+      "!**/test/.tmp",
+      "!packages/cli/test/fixtures/project/src/email-kit/compiled",
       "!spikes/css-inliner/fixture.html",
       "!pnpm-lock.yaml",
       "!**/*.md"

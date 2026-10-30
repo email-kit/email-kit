@@ -1,6 +1,7 @@
 // @email-kit/core: defineEmail, control flow and the types for writing templates.
 // Prototype (P0-03): the API shape is not final.
 
+export { defineConfig, type EmailKitConfig } from "./config.ts"
 export { Each, If, Unless } from "./control.ts"
 export {
   defineEmail,

@@ -1,6 +1,6 @@
-// Loads a TSX template with email-kit's own JSX settings, whatever the host tsconfig says
-// (JSX-03). rolldown bundles the template with its local imports; packages stay external. See
-// spikes/jsx-transform/RESULTS.md for why rolldown (P0-11).
+// Loads TS and TSX files (templates, the config) with email-kit's own JSX settings, whatever the
+// host tsconfig says (JSX-03). rolldown bundles a file with its local imports; packages stay
+// external. Why rolldown: docs/spikes/p0-11-jsx-transform.md and ADR 0006.
 
 import { createHash } from "node:crypto"
 import { mkdir, writeFile } from "node:fs/promises"
@@ -19,6 +19,12 @@ export interface LoadOptions {
    * settings in it are always overridden.
    */
   readonly tsconfig?: string | boolean
+}
+
+export interface LoadedModule {
+  readonly exports: Readonly<Record<string, unknown>>
+  /** Every source file bundled into the module, for watch mode. */
+  readonly files: readonly string[]
 }
 
 export interface LoadedTemplate {
@@ -49,6 +55,18 @@ const externals: Plugin = {
 }
 
 export async function loadTemplate(file: string, options: LoadOptions): Promise<LoadedTemplate> {
+  const { exports, files } = await loadModule(file, options)
+  if (!isEmailDefinition(exports.default)) {
+    throw new EmailKitError(
+      "no-definition",
+      `${file} must have \`export default defineEmail({ … })\``,
+    )
+  }
+  return { definition: exports.default, files }
+}
+
+/** Bundles and imports a TS or TSX file. */
+export async function loadModule(file: string, options: LoadOptions): Promise<LoadedModule> {
   const bundle = await rolldown({
     input: file,
     platform: "node",
@@ -64,14 +82,8 @@ export async function loadTemplate(file: string, options: LoadOptions): Promise<
     const bundled = join(options.cacheDir, `${hash}.mjs`)
     await mkdir(options.cacheDir, { recursive: true })
     await writeFile(bundled, chunk.code)
-    const module = (await import(pathToFileURL(bundled).href)) as { default?: unknown }
-    if (!isEmailDefinition(module.default)) {
-      throw new EmailKitError(
-        "no-definition",
-        `${file} must have \`export default defineEmail({ … })\``,
-      )
-    }
-    return { definition: module.default, files: chunk.moduleIds.filter((id) => SOURCE.test(id)) }
+    const exports = (await import(pathToFileURL(bundled).href)) as Record<string, unknown>
+    return { exports, files: chunk.moduleIds.filter((id) => SOURCE.test(id)) }
   } finally {
     await bundle.close()
   }
