@@ -1,7 +1,7 @@
 // Compiler-facing API: not for template authors, and not covered by semver until v1.
 
 import type { EmailDefinition } from "./define.ts"
-import { createTranslate, type Messages } from "./i18n.ts"
+import { createTranslate, type Messages, type PluralSupport } from "./i18n.ts"
 import type { IrNode } from "./ir.ts"
 import { fragment } from "./jsx-runtime.ts"
 import { createPlaceholder, type Data, withScopes } from "./placeholder.ts"
@@ -10,7 +10,7 @@ import { type ThemeContext, withDirection, withTheme } from "./theme-context.ts"
 
 export { isEmailDefinition } from "./define.ts"
 export { EmailKitError, isEmailKitError } from "./errors.ts"
-export type { Messages } from "./i18n.ts"
+export { type Messages, type PluralSupport, selectKey } from "./i18n.ts"
 export * from "./ir.ts"
 export {
   PLATFORM_KEYS,
@@ -32,6 +32,8 @@ export interface EvaluateOptions {
   readonly platform?: PlatformValues
   /** The resolved theme components read with useTheme() */
   readonly theme?: ThemeContext
+  /** The locale's CLDR plural rules, for {n, plural, …} (ADR 0003) */
+  readonly plurals?: PluralSupport
   /** The locale's writing direction, read with useDirection(). Default: `ltr` */
   readonly dir?: "ltr" | "rtl"
 }
@@ -45,7 +47,7 @@ export function evaluate<T>(
     withTheme(options.theme, () =>
       withScopes(() => {
         const data = createPlaceholder(0) as Data<T>
-        const t = createTranslate(options.locale, options.messages)
+        const t = createTranslate(options.locale, options.messages, options.plurals)
         const platform = createPlatform(options.platform ?? { constants: {}, runtime: [] })
         return {
           subject: fragment(definition.subject(data, t, platform)),

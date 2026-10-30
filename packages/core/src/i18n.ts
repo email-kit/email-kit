@@ -1,10 +1,13 @@
-// Compile-time message lookup (I18N-02). Prototype (P0-03): simple `{name}` arguments only. ICU
-// MessageFormat (plural, select, quoting) and typed keys arrive with P1-151 and P1-159.
+// Compile-time message lookup (I18N-02): ICU MessageFormat 1 arguments, `plural` and `select`.
+// A plural or select over a data field becomes sections on keys the generated module prepares
+// before rendering (ADR 0003): `{{#_ek.plural.count.one}}…`, `{{#_ek.select.plan.v_pro}}…`.
+// Literal values are resolved here. Other argument types (number, date) are refused: values
+// arrive formatted by the caller (R5). Typed keys arrive with P1-159.
 
 import { EmailKitError } from "./errors.ts"
-import type { IrNode } from "./ir.ts"
+import type { IrNode, IrSection } from "./ir.ts"
 import { fragment, toNodes } from "./jsx-runtime.ts"
-import type { Placeholder } from "./placeholder.ts"
+import { openScope, type Placeholder, placeholderInfo } from "./placeholder.ts"
 
 /** A message resolved for one locale: text with placeholders. */
 export type Message = IrNode
@@ -15,47 +18,271 @@ export type Translate = (key: string, params?: Readonly<Record<string, MessagePa
 
 export type Messages = Readonly<Record<string, string>>
 
-const ARGUMENT = /^[A-Za-z_][A-Za-z0-9_]*$/
+/** The locale's CLDR plural rules, from the compiler. */
+export interface PluralSupport {
+  /** The categories the locale uses, such as ["one", "other"] */
+  readonly categories: readonly string[]
+  category(n: number): string
+}
 
-export function createTranslate(locale: string, messages: Messages): Translate {
+const CATEGORIES = new Set(["zero", "one", "two", "few", "many", "other"])
+const NAME = /^[A-Za-z_][A-Za-z0-9_]*$/
+
+/** The section key for a select value; the generated module encodes values the same way. */
+export function selectKey(value: string): string {
+  return `v_${value.replace(/[^A-Za-z0-9]/gu, (c) => `_${(c.codePointAt(0) as number).toString(16)}_`)}`
+}
+
+// ICU MessageFormat 1 (the subset email copy needs), parsed into parts.
+type Part =
+  | { readonly kind: "text"; readonly value: string }
+  | { readonly kind: "argument"; readonly name: string }
+  | { readonly kind: "pound" }
+  | {
+      readonly kind: "plural" | "select"
+      readonly name: string
+      readonly cases: ReadonlyMap<string, readonly Part[]>
+    }
+
+type Choice = Extract<Part, { kind: "plural" | "select" }>
+
+function parse(source: string, where: string): Part[] {
+  let pos = 0
+  const fail = (message: string): never => {
+    throw new EmailKitError("invalid-message", `${where}: ${message} (at character ${pos + 1})`)
+  }
+  const space = () => {
+    while (/\s/.test(source[pos] ?? "")) pos++
+  }
+  const word = () => {
+    const match = /^[^\s{},]+/.exec(source.slice(pos))
+    if (!match) fail("expected a name")
+    pos += (match as RegExpExecArray)[0].length
+    return (match as RegExpExecArray)[0]
+  }
+  const message = (inPlural: boolean, depth: number): Part[] => {
+    const parts: Part[] = []
+    let text = ""
+    const flush = () => {
+      if (text) parts.push({ kind: "text", value: text })
+      text = ""
+    }
+    while (pos < source.length) {
+      const c = source[pos] as string
+      if (c === "'") {
+        // '' is a quote; '{…' quotes up to the next lone quote (ICU's apostrophe mode).
+        if (source[pos + 1] === "'") {
+          text += "'"
+          pos += 2
+        } else if (/[{}#|]/.test(source[pos + 1] ?? "")) {
+          pos++
+          while (pos < source.length) {
+            if (source[pos] === "'" && source[pos + 1] === "'") {
+              text += "'"
+              pos += 2
+            } else if (source[pos] === "'") {
+              pos++
+              break
+            } else text += source[pos++]
+          }
+        } else {
+          text += "'"
+          pos++
+        }
+      } else if (c === "{") {
+        flush()
+        parts.push(argument(depth))
+      } else if (c === "}") {
+        if (depth === 0) fail('an unbalanced "}"')
+        break
+      } else if (c === "#" && inPlural) {
+        flush()
+        parts.push({ kind: "pound" })
+        pos++
+      } else {
+        text += c
+        pos++
+      }
+    }
+    flush()
+    return parts
+  }
+  const argument = (depth: number): Part => {
+    pos++ // {
+    space()
+    const name = word()
+    if (!NAME.test(name)) fail(`"${name}" isn't an argument name: use letters, digits and _`)
+    space()
+    if (source[pos] === "}") {
+      pos++
+      return { kind: "argument", name }
+    }
+    if (source[pos] !== ",") fail(`expected "," or "}" after {${name}`)
+    pos++
+    space()
+    const type = word()
+    space()
+    if (type !== "plural" && type !== "select") {
+      throw new EmailKitError(
+        "unsupported-message",
+        `${where} uses {${name}, ${type}}. Pass ${type === "number" || type === "date" || type === "time" ? `the ${type}` : "the value"} formatted by your backend (Intl.NumberFormat, Intl.DateTimeFormat) as a string argument instead.`,
+      )
+    }
+    if (source[pos] !== ",") fail(`expected "," after {${name}, ${type}`)
+    pos++
+    space()
+    if (source.startsWith("offset:", pos)) {
+      throw new EmailKitError(
+        "unsupported-message",
+        `${where} uses a plural offset, which email-kit doesn't support`,
+      )
+    }
+    const cases = new Map<string, readonly Part[]>()
+    while (pos < source.length && source[pos] !== "}") {
+      const key = word()
+      space()
+      if (source[pos] !== "{") fail(`expected "{" after the case "${key}"`)
+      pos++
+      if (cases.has(key)) fail(`the case "${key}" appears twice`)
+      cases.set(key, message(type === "plural", depth + 1))
+      if (source[pos] !== "}") fail(`the case "${key}" isn't closed`)
+      pos++
+      space()
+    }
+    if (source[pos] !== "}") fail(`{${name}, ${type}, …} isn't closed`)
+    pos++
+    if (!cases.has("other")) {
+      throw new EmailKitError(
+        "invalid-message",
+        `${where}: {${name}, ${type}} needs an "other" case`,
+      )
+    }
+    return { kind: type, name, cases }
+  }
+  const parts = message(false, 0)
+  if (pos < source.length) fail('an unbalanced "}"')
+  return parts
+}
+
+export function createTranslate(
+  locale: string,
+  messages: Messages,
+  plurals?: PluralSupport,
+): Translate {
   return (key, params = {}) => {
     if (!Object.hasOwn(messages, key)) {
       throw new EmailKitError("missing-message", `Locale "${locale}" has no message "${key}"`)
     }
-    const source = messages[key] as string
     const where = `Message "${key}" in locale "${locale}"`
-    const nodes: IrNode[] = []
     const used = new Set<string>()
-    let pos = 0
-    for (const match of source.matchAll(/\{([^{}]*)\}|[{}]/g)) {
-      if (match.index > pos) nodes.push({ kind: "text", value: source.slice(pos, match.index) })
-      pos = match.index + match[0].length
-      const argument = match[1]?.trim()
-      if (argument === undefined && /^\{\s*[A-Za-z_]\w*\s*,/.test(source.slice(match.index))) {
-        throw new EmailKitError(
-          "unsupported-message",
-          `${where} uses an ICU {argument, type, …} form. The prototype supports only {name}.`,
-        )
+    const param = (name: string): MessageParam => {
+      if (!Object.hasOwn(params, name)) {
+        throw new EmailKitError("missing-message-param", `${where} needs the parameter "${name}"`)
       }
-      if (argument === undefined) {
-        throw new EmailKitError("invalid-message", `${where} has an unbalanced "${match[0]}"`)
-      }
-      if (!ARGUMENT.test(argument)) {
-        throw new EmailKitError(
-          "unsupported-message",
-          `${where} uses "{${argument}}". The prototype supports only simple {name} arguments.`,
-        )
-      }
-      if (!Object.hasOwn(params, argument)) {
-        throw new EmailKitError(
-          "missing-message-param",
-          `${where} needs the parameter "${argument}"`,
-        )
-      }
-      used.add(argument)
-      toNodes(params[argument], nodes)
+      used.add(name)
+      return params[name] as MessageParam
     }
-    if (pos < source.length) nodes.push({ kind: "text", value: source.slice(pos) })
+
+    const render = (parts: readonly Part[], pound: MessageParam | undefined): IrNode[] => {
+      const nodes: IrNode[] = []
+      for (const part of parts) {
+        if (part.kind === "text") nodes.push({ kind: "text", value: part.value })
+        else if (part.kind === "argument") toNodes(param(part.name), nodes)
+        else if (part.kind === "pound") toNodes(pound, nodes)
+        else if (part.kind === "plural") nodes.push(...plural(part, param(part.name)))
+        else nodes.push(...select(part, param(part.name)))
+      }
+      return nodes
+    }
+
+    const plural = (part: Choice, value: MessageParam): IrNode[] => {
+      const rules = plurals ?? { categories: ["other"], category: () => "other" }
+      const exact: number[] = []
+      for (const name of part.cases.keys()) {
+        if (name.startsWith("=")) {
+          const n = Number(name.slice(1))
+          if (!/^=\d+$/.test(name) || !Number.isSafeInteger(n)) {
+            throw new EmailKitError(
+              "invalid-plural",
+              `${where}: "${name}" must be = and a whole number, such as =0`,
+            )
+          }
+          exact.push(n)
+        } else if (!CATEGORIES.has(name)) {
+          throw new EmailKitError(
+            "invalid-plural",
+            `${where}: "${name}" isn't a plural category (zero, one, two, few, many, other) or =N`,
+          )
+        } else if (!rules.categories.includes(name)) {
+          throw new EmailKitError(
+            "invalid-plural",
+            `${where}: "${locale}" never uses the category "${name}" (it uses ${rules.categories.join(", ")})${name === "zero" ? "; use =0 for exactly zero" : ""}`,
+          )
+        }
+      }
+      // ADR 0003: every category the locale uses is required, so no number falls through.
+      const missing = rules.categories.filter((c) => !part.cases.has(c))
+      if (missing.length > 0) {
+        throw new EmailKitError(
+          "invalid-plural",
+          `${where}: {${part.name}, plural} needs ${missing.join(", ")} too; "${locale}" uses ${rules.categories.join(", ")}${missing.includes("one") && exact.includes(1) ? ' (=1 only matches exactly 1; "one" covers more numbers in some languages)' : ""}`,
+        )
+      }
+      if (typeof value === "number") {
+        const chosen = part.cases.get(`=${value}`) ?? part.cases.get(rules.category(value)) ?? []
+        return render(chosen, String(value))
+      }
+      const info = placeholderInfo(value)
+      if (!info)
+        throw new EmailKitError(
+          "invalid-plural",
+          `${where}: {${part.name}, plural} needs a number from data, or a number`,
+        )
+      if (info.path.length === 0) {
+        throw new EmailKitError(
+          "invalid-plural",
+          `${where}: {${part.name}, plural} needs a named field; a list item value ({{.}}) can't carry plural data`,
+        )
+      }
+      const at = (name: string) => ["_ek", "plural", ...info.path, name]
+      const categories = rules.categories.map((c) =>
+        branch(at(c), info.scope, false, render(part.cases.get(c) ?? [], value)),
+      )
+      // Exact matches win over categories (ICU): the categories render only when none matches.
+      let rest: IrNode[] = categories
+      for (const n of [...exact].reverse())
+        rest = [branch(at(`exact_${n}`), info.scope, true, rest)]
+      return [
+        ...exact.map((n) =>
+          branch(at(`exact_${n}`), info.scope, false, render(part.cases.get(`=${n}`) ?? [], value)),
+        ),
+        ...rest,
+      ]
+    }
+
+    const select = (part: Choice, value: MessageParam): IrNode[] => {
+      const keys = [...part.cases.keys()].filter((k) => k !== "other")
+      if (typeof value === "string")
+        return render(part.cases.get(value) ?? part.cases.get("other") ?? [], undefined)
+      const info = placeholderInfo(value)
+      if (!info || info.path.length === 0) {
+        throw new EmailKitError(
+          "invalid-select",
+          `${where}: {${part.name}, select} needs a named field from data, or a string`,
+        )
+      }
+      const at = (k: string) => ["_ek", "select", ...info.path, selectKey(k)]
+      let other: IrNode[] = render(part.cases.get("other") ?? [], undefined)
+      for (const k of [...keys].reverse()) other = [branch(at(k), info.scope, true, other)]
+      return [
+        ...keys.map((k) =>
+          branch(at(k), info.scope, false, render(part.cases.get(k) ?? [], undefined)),
+        ),
+        ...other,
+      ]
+    }
+
+    const nodes = render(parse(messages[key] as string, where), undefined)
     const unused = Object.keys(params).filter((name) => !used.has(name))
     if (unused.length > 0) {
       throw new EmailKitError(
@@ -65,4 +292,13 @@ export function createTranslate(locale: string, messages: Messages): Translate {
     }
     return fragment(nodes)
   }
+}
+
+function branch(
+  path: readonly string[],
+  scope: number,
+  inverted: boolean,
+  children: IrNode[],
+): IrSection {
+  return { kind: "section", inverted, path, scope, opens: openScope(), children }
 }

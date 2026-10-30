@@ -108,6 +108,7 @@ async function compileTemplate(
         locale,
         messages: readMessages(messagesFile),
         platform: config.platform,
+        ...(schema.model && { model: schema.model }),
         ...(theme && { theme }),
       })
     } catch (error) {

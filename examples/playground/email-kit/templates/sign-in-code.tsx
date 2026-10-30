@@ -11,7 +11,7 @@ export default defineEmail({
   purpose: "transactional",
   schema: z.object({
     code: z.string().regex(/^\d{6}$/),
-    minutes: z.number().int().min(5).max(30),
+    minutes: z.number().int().min(1).max(30),
     device: z.string().min(1).optional(),
   }),
   subject: (_data, t, platform) => t("subject", { product: platform.productName }),

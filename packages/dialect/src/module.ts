@@ -249,6 +249,78 @@ function project(model: Model, value: unknown): unknown {
   return out
 }
 
+/** The section key for a select value: `v_` and the value, other characters as `_<hex>_`. */
+function selectKey(value: string): string {
+  return `v_${value.replace(/[^A-Za-z0-9]/gu, (c) => `_${(c.codePointAt(0) as number).toString(16)}_`)}`
+}
+
+type Tree = Record<string, unknown>
+
+// The reserved key render() adds (§15). A constant, so strict consumers' noPropertyAccessFromIndexSignature
+// accepts the access and formatters leave it bracketed.
+const EK = "_ek"
+
+/**
+ * Data preparation (ADR 0003): every object gets `_ek.plural`, each number field's category and
+ * `exact_N` for whole numbers, and `_ek.select`, each enum field's value as a key. An object's
+ * own fields go over its parents' entries, the way mustache-core resolves names, so a message in
+ * a list item still finds the fields outside it.
+ */
+function prepare(
+  model: Model,
+  value: unknown,
+  category: (n: number) => string,
+  inherited: { readonly plural: Tree; readonly select: Tree } = { plural: {}, select: {} },
+): void {
+  if (model.type === "array") {
+    if (Array.isArray(value))
+      for (const item of value) prepare(model.items as Model, item, category, inherited)
+    return
+  }
+  if (model.type !== "object" || !isRecord(value)) return
+  const plural: Tree = { ...inherited.plural }
+  const select: Tree = { ...inherited.select }
+  collect(model, value, plural, select, category)
+  if (Object.keys(plural).length > 0 || Object.keys(select).length > 0)
+    value[EK] = { plural, select }
+  const properties = model.properties ?? {}
+  for (const key of Object.keys(properties)) {
+    prepare(properties[key] as Model, value[key], category, { plural, select })
+  }
+}
+
+// The entries for an object's fields, down through nested objects but not into lists.
+function collect(
+  model: Model,
+  value: Record<string, unknown>,
+  plural: Tree,
+  select: Tree,
+  category: (n: number) => string,
+): void {
+  const properties = model.properties ?? {}
+  for (const key of Object.keys(properties)) {
+    const field = properties[key] as Model
+    const v = value[key]
+    if (
+      (field.type === "number" || field.type === "integer") &&
+      typeof v === "number" &&
+      Number.isFinite(v)
+    ) {
+      const entry: Tree = { [category(v)]: true }
+      if (Number.isSafeInteger(v) && v >= 0) entry[`exact_${v}`] = true
+      plural[key] = entry
+    } else if (field.type === "string" && field.enum && typeof v === "string") {
+      select[key] = { [selectKey(v)]: true }
+    } else if (field.type === "object" && isRecord(v)) {
+      const p: Tree = isRecord(plural[key]) ? { ...(plural[key] as Tree) } : {}
+      const s: Tree = isRecord(select[key]) ? { ...(select[key] as Tree) } : {}
+      collect(field, v, p, s, category)
+      plural[key] = p
+      select[key] = s
+    }
+  }
+}
+
 /**
  * Checks the values passed to createEmails() (RUN-04): every runtime key is a non-empty string.
  * Only the declared keys are kept.
@@ -282,6 +354,7 @@ function createTemplate(
   templates: Readonly<Record<string, TemplateParts>>,
   context: Readonly<Record<string, string>>,
   checkData: boolean,
+  plurals: Readonly<Record<string, (n: number) => string>>,
 ): RuntimeTemplate {
   return {
     meta: { id, purpose, locales },
@@ -303,7 +376,10 @@ function createTemplate(
       const locale = resolveLocale(options.locale, locales)
       const parts = templates[locale] as TemplateParts
       const projected = project(model, data)
-      const values = isRecord(projected) ? { ...projected, _ek: { context } } : projected
+      prepare(model, projected, plurals[locale] ?? (() => "other"))
+      const values = isRecord(projected)
+        ? { ...projected, [EK]: { ...(isRecord(projected[EK]) ? projected[EK] : {}), context } }
+        : projected
       const subject = fill(parts.subject, values, "text")
       if (/[\r\n]/.test(subject)) {
         throw new EmailRenderError(
@@ -327,9 +403,11 @@ export {
   type DataIssue,
   EmailRenderError,
   type Model,
+  prepare,
   project,
   readContext,
   resolveLocale,
+  selectKey,
   type TemplateParts,
   validate,
 }

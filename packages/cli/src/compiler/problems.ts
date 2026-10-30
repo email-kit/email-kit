@@ -85,7 +85,8 @@ function locate(error: unknown, projectDir: string): Location | undefined {
   for (const line of stack.split("\n").slice(1)) {
     const match = /at (?:.*? \()?(.+?):(\d+):(\d+)\)?\s*$/.exec(line)
     if (!match) continue
-    let file = match[1] as string
+    // `at async file:///…` names no function: the path follows the keyword.
+    let file = (match[1] as string).replace(/^async /, "")
     if (file.startsWith("file://")) file = fileURLToPath(file)
     const frame = { file, line: Number(match[2]), column: Number(match[3]) }
     const source = file.endsWith(".mjs") ? (original(frame) ?? frame) : frame

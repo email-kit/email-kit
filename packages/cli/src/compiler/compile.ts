@@ -9,9 +9,11 @@ import {
   type ThemeContext,
 } from "@email-kit/core/internal"
 import { parse } from "@email-kit/dialect"
+import { pluralRules } from "../i18n/plurals.ts"
 import { loadTheme, type Theme } from "../theme/theme.ts"
-
+import { checkDerived } from "./derived.ts"
 import { renderDocument } from "./document.ts"
+import type { Field } from "./schema.ts"
 import { renderLine, renderTextPart } from "./text.ts"
 
 export interface CompiledEmail {
@@ -33,6 +35,8 @@ export interface CompileOptions {
   readonly platform?: PlatformValues
   /** The resolved theme; the built-in default when left out */
   readonly theme?: Theme
+  /** The schema's model, to check plural and select arguments against */
+  readonly model?: Field
 }
 
 /** What components see through useTheme(): the light palette and the other tokens. */
@@ -61,7 +65,12 @@ export function compileEmail<T>(
 ): CompiledEmail {
   const theme = options.theme ?? builtInTheme()
   const dir = isRtl(options.locale) ? "rtl" : "ltr"
-  const ir = evaluate(definition, { ...options, theme: themeContext(theme), dir })
+  const plurals = pluralRules(options.locale)
+  const ir = evaluate(definition, { ...options, theme: themeContext(theme), dir, plurals })
+  if (options.model) {
+    const parts = [ir.subject, ...(ir.preheader ? [ir.preheader] : []), ir.body]
+    checkDerived(parts, options.model, `${definition.id} (${options.locale})`)
+  }
   const subject = renderLine(ir.subject, "subject")
   const preheader = ir.preheader ? renderLine(ir.preheader, "preheader") : ""
   const html = renderDocument({

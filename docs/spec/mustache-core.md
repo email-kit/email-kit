@@ -277,3 +277,37 @@ For output that is identical byte for byte, use an email-kit runtime.
 | `'` escape | `&#39;` | What mustache.js writes; decimal is understood by every HTML parser, including old email clients |
 | Escaped characters | Only `& < > " '` | Enough for HTML text and quoted attributes. A smaller table is easier to match exactly in every language |
 | Not supported | Comments, partials, delimiters, `&`, lambdas | R1 and R2: no code and no runtime composition, and less for each runtime to implement |
+
+## 15. Data preparation in generated modules
+
+mustache-core itself has no logic. A generated module's `render(data, { locale })` prepares the
+data before filling the templates (ADR 0003, P1-040). A runtime in another language must produce
+the same prepared data, byte for byte in what the templates can see.
+
+1. **Project** the data onto the schema's model: unknown keys go; a missing optional key becomes
+   `null`.
+2. **Prepare** every object, depth first. For an object, start from a copy of its parent's
+   entries (empty at the root), then for each of its fields, through nested objects but not into
+   lists:
+   - a number field: `plural.<path>` = `{ <category>: true }`, with the category from the
+     locale's CLDR rules (the CLDR version is in the manifest as `cldr`), plus
+     `exact_<n>: true` when the value is a non-negative safe integer;
+   - a string field with an `enum`: `select.<path>` = `{ <key>: true }`, where the key is `v_`
+     followed by the value with every character outside `A–Z a–z 0–9` written as `_<hex code
+     point>_` (`pro-plus` → `v_pro_2d_plus`).
+   If any entries result, set the object's `_ek` to `{ plural, select }`. An object's own entries
+   replace its parent's of the same name, the same way a field shadows an outer one in name
+   resolution (§6). Lists are prepared item by item, each item inheriting the list owner's entries.
+3. **Add the context** at the root: `_ek.context` holds the values passed to `createEmails()`.
+
+`_ek` is reserved: schemas can't declare it, and projection drops it from the data.
+
+Templates read these keys with sections. A message `{count, plural, =0 {…} one {…} other {…}}`
+compiles to `{{#_ek.plural.count.exact_0}}…{{/…}}`, then the category sections inside inverted
+sections of the exact matches; a `select` compiles to a section per case and the `other` case
+inside inverted sections of the others. In a list item, `_ek` resolves to the item's own entry,
+which is why every object inherits its parents' entries.
+
+A CLDR category function takes a double `n` and uses the operands of UTS #35 computed from its
+shortest round-trip decimal form: `i` the integer part, `v` and `f` the fraction digits and their
+value, `w` and `t` the same without trailing zeros, `c` and `e` zero.

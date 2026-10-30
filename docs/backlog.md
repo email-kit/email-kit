@@ -247,6 +247,20 @@ when** (acceptance).
 
 ### M1.3 i18n (v0.3)
 
+**Status (first slice):** **P1-156** plurals per ADR 0003, and `select`: messages are parsed as
+ICU MessageFormat 1 (arguments, `plural` with categories and `=N`, `select`, `#`, apostrophe
+quoting; `number`/`date` and plural offsets refused with advice). CLDR 47 plural rules from
+`cldr-core` are compiled into one function per locale, cross-checked against `Intl.PluralRules`
+for every locale, embedded in the generated module and recorded in the manifest (`cldr`). A
+plural over a field compiles to `_ek.plural.<field>.<category>` sections (exact matches first);
+a select over an enum field to `_ek.select.<field>.<key>` sections. The generated `render()`
+prepares those keys on every object, inheriting parents' entries so lists see outer fields
+(spec §15). Compile errors: a missing or impossible category (ADR 0003: every category the
+locale uses is required), `other` missing, a plural over a non-number, a select over a free
+string or with a case that isn't a value. Literal numbers and strings resolve at compile time.
+Not yet: conformance cases for `(locale, n) → category` (the test cross-checks Intl instead),
+`selectordinal`, and the i18n.* checks as check-engine findings.
+
 | ID | Task | Reqs | Pri | Dep | Done when |
 |---|---|---|---|---|---|
 | P1-150 | Locale config (default, list, fallback chain, pseudo-locale toggles) | CFG-03 | MUST | P1-004 | Typed and validated |

@@ -205,6 +205,7 @@ describe("createTemplate", () => {
       },
       {},
       checkData,
+      {},
     )
 
   it("renders every part with the right profile and falls back by locale", () => {
@@ -294,6 +295,7 @@ describe("runtime context (RUN-04)", () => {
     },
     readContext(["siteUrl"], { siteUrl: "https://shop.example", ignored: "x" }),
     true,
+    {},
   )
 
   it("fills context placeholders", () => {

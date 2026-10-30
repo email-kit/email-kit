@@ -16,6 +16,8 @@ import { dirname, join, sep } from "node:path"
 
 import type { PlatformValues } from "@email-kit/core/internal"
 import { DIALECT } from "@email-kit/dialect"
+
+import { CLDR_VERSION } from "../i18n/plurals.ts"
 import type { Theme } from "../theme/theme.ts"
 
 import { VERSION } from "../version.ts"
@@ -126,6 +128,7 @@ export function buildOutput(
       schemaVersion: 1,
       emailKit: VERSION,
       dialect: DIALECT,
+      cldr: CLDR_VERSION,
       profiles: { subject: "text", preheader: "text", html: "html", text: "text" },
       locales: options.locales,
       // Constants are written into the templates; runtime keys are passed to createEmails().

@@ -11,6 +11,7 @@ import { createTemplate } from "@email-kit/dialect/module"
 import type { BuiltProject } from "../compiler/build.ts"
 import { modelOf } from "../compiler/emit/types.ts"
 import { fixturesWithVariants } from "../compiler/fixtures.ts"
+import { pluralRules } from "../i18n/plurals.ts"
 import { CATALOGUE } from "./catalogue/index.ts"
 import { parseEmail } from "./parse.ts"
 import { type SourceFile, sourceFile } from "./source.ts"
@@ -64,6 +65,7 @@ export async function contextOf(project: BuiltProject): Promise<CheckContext> {
       parts,
       values,
       false,
+      Object.fromEntries(config.locales.map((locale) => [locale, pluralRules(locale).category])),
     )
     const fixtures = await fixturesWithVariants(template.schema, template.model, template.fixtures)
     for (const fixture of fixtures) {

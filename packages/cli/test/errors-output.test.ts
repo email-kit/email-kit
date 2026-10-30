@@ -15,10 +15,11 @@ import { join, sep } from "node:path"
 import { fileURLToPath } from "node:url"
 import { stripVTControlCharacters } from "node:util"
 
+import { EmailKitError } from "@email-kit/core/internal"
 import { afterAll, describe, expect, it } from "vitest"
 
 import { compile } from "../src/compiler/build.ts"
-import { formatError } from "../src/compiler/problems.ts"
+import { formatError, toProblem } from "../src/compiler/problems.ts"
 
 const FIXTURE = fileURLToPath(new URL("fixtures/project/", import.meta.url))
 const TMP = fileURLToPath(new URL(".tmp/errors-test/", import.meta.url))
@@ -136,6 +137,30 @@ describe("error output", () => {
     const plain = formatError(error, { cwd: dir })
     expect(stripVTControlCharacters(plain)).toBe(plain)
     expect(formatError(error, { cwd: dir, color: true })).toContain("\u001b[31m✗\u001b[39m")
+  })
+})
+
+describe("locations", () => {
+  it("skips email-kit's own async frames and falls back to the template file", () => {
+    const error = new EmailKitError(
+      "invalid-fixture",
+      "sign-in-code: a fixture doesn't match the schema",
+    )
+    error.stack = [
+      "EmailKitError: sign-in-code: a fixture doesn't match the schema",
+      "    at validateFixtures (file:///opt/email-kit/cli/dist/cli.js:4840:11)",
+      "    at async file:///opt/email-kit/cli/dist/cli.js:4848:22",
+    ].join("\n")
+    const problem = toProblem(
+      error,
+      "/work/shop/email-kit/templates/sign-in-code.tsx",
+      "/work/shop",
+    )
+    expect(problem).toEqual({
+      code: "invalid-fixture",
+      message: "sign-in-code: a fixture doesn't match the schema",
+      file: "email-kit/templates/sign-in-code.tsx",
+    })
   })
 })
 

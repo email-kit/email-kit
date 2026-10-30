@@ -149,6 +149,14 @@ A test checks that every id the code can raise is listed here.
 **Why:** a message has an unbalanced `{` or `}`.
 **Fix:** balance the braces.
 
+### invalid-plural
+**Why:** a `{n, plural, …}` message can't be compiled for a locale. It lacks a category the locale uses (ADR 0003 requires them all, so no number falls through), names one the locale never uses (English has no `zero`; write `=0` for exactly zero), has an `=N` that isn't a whole number, or gets something other than a number field from data or a literal number.
+**Fix:** add the categories the message names for that locale, such as `one` and `other` in English or `zero`, `one`, `two`, `few`, `many` and `other` in Arabic, or pass a number field.
+
+### invalid-select
+**Why:** a `{x, select, …}` message gets a field without fixed values, or has a case that isn't one of the field's values. The generated module can only prepare the branch for values the schema lists.
+**Fix:** make the field an enum (`z.enum(["free", "pro"])`) and name its values as cases, plus `other`.
+
 ### invalid-messages
 **Why:** a message file isn't valid JSON, or isn't a flat object of `"key": "message"` strings.
 **Fix:** correct the file named in the error.

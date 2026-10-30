@@ -182,7 +182,8 @@ describe("messages", () => {
     ["missing-message", {}, undefined],
     ["missing-message-param", { key: "Hi {name}" }, {}],
     ["unused-message-param", { key: "Hi" }, { name: "Ada" }],
-    ["unsupported-message", { key: "{n, plural, one {# item} other {# items}}" }, { n: "1" }],
+    ["unsupported-message", { key: "{n, number}" }, { n: "1" }],
+    ["invalid-plural", { key: "{n, plural, one {# item} other {# items}}" }, { n: "1" }],
     ["invalid-message", { key: "a } b" }, {}],
   ])("rejects %s", (code, messages, params) => {
     expect(run(messages, params)).toThrow(expect.objectContaining({ code }))

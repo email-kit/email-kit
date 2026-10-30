@@ -6,6 +6,7 @@
 import type { Purpose } from "@email-kit/core"
 import { source as runtimeSource } from "@email-kit/dialect/source"
 
+import { CLDR_VERSION, pluralRules } from "../../i18n/plurals.ts"
 import type { CompiledTemplate } from "../project.ts"
 import { dataInterface, modelOf } from "./types.ts"
 
@@ -75,6 +76,7 @@ export function generateModule(
       `      TEMPLATES.${t.identifiers.property},\n` +
       "      values,\n" +
       `      ${options.validate},\n` +
+      "      PLURALS,\n" +
       `    ) as EmailTemplate<${JSON.stringify(t.id)}, ${t.identifiers.typeName}>,`,
   )
 
@@ -155,6 +157,11 @@ export { type DataIssue, DIALECT, EmailRenderError, MustacheCoreError }
 ${runtimeSource}
 const TEMPLATES = {
 ${parts.join("\n")}
+}
+
+/** CLDR ${CLDR_VERSION} plural rules per locale (ADR 0003): the category of a number. */
+const PLURALS: Readonly<Record<string, (n: number) => string>> = {
+${options.locales.map((locale) => `  ${JSON.stringify(locale)}: ${pluralRules(locale).source.replace(/\n/g, "\n  ")},`).join("\n")}
 }
 
 /**
