@@ -1,9 +1,11 @@
-// The `email-kit` command runner (CLI-01, CLI-07, CLI-08). M1.1 has `compile` (alias `generate`);
-// init, new, check, dev and tokens arrive with their milestones.
+// The `email-kit` command runner (CLI-01, CLI-07, CLI-08): `compile` (alias `generate`), `check`
+// and `tokens`; init, new and dev arrive with their milestones.
 
 import { cac } from "cac"
 
-import { compile, describeResult, summarize } from "./compiler/build.ts"
+import { contextOf, runChecks } from "./checks/engine.ts"
+import { formatGithub, formatHuman, formatJson } from "./checks/report.ts"
+import { buildProject, compile, describeResult, summarize } from "./compiler/build.ts"
 import { loadConfig } from "./compiler/config.ts"
 import { formatError } from "./compiler/problems.ts"
 import { watchProject } from "./compiler/watch.ts"
@@ -38,6 +40,14 @@ export async function run(args: readonly string[], io: Io): Promise<number> {
       pending = compileCommand(options, io)
     })
   cli
+    .command("check", "Compile in memory and run the checks; exits 1 on any error")
+    .option("--config <path>", "Use this config file instead of ./email-kit.config.ts")
+    .option("--json", "Print the findings as JSON (versioned schema)")
+    .option("--reporter <name>", "human, json or github (annotations for GitHub Actions)")
+    .action((options: CheckFlags) => {
+      pending = checkCommand(options, io)
+    })
+  cli
     .command(
       "tokens",
       "Print the theme's colour roles per mode with contrast ratios, and its findings",
@@ -70,6 +80,38 @@ interface CompileFlags {
   readonly watch?: boolean
   readonly quiet?: boolean
   readonly verbose?: boolean
+}
+
+interface CheckFlags {
+  readonly config?: string
+  readonly json?: boolean
+  readonly reporter?: string
+}
+
+const REPORTERS = { human: formatHuman, json: formatJson, github: formatGithub } as const
+
+// P1-169, CLI-04: exits 1 on any error, 0 with warnings and notes only.
+async function checkCommand(options: CheckFlags, io: Io): Promise<number> {
+  const name = options.json ? "json" : (options.reporter ?? "human")
+  if (!(name in REPORTERS)) {
+    io.err(`✗ Unknown reporter "${name}" (known: ${Object.keys(REPORTERS).join(", ")})`)
+    return 1
+  }
+  if (options.json && options.reporter && options.reporter !== "json") {
+    io.err("✗ --json and --reporter can't be used together")
+    return 1
+  }
+  try {
+    const config = await loadConfig({ cwd: io.cwd, config: options.config })
+    const project = await buildProject(config)
+    const findings = runChecks(contextOf(project), config.checks)
+    const output = REPORTERS[name as keyof typeof REPORTERS](findings)
+    if (output) io.out(output)
+    return findings.some((finding) => finding.level === "error") ? 1 : 0
+  } catch (error) {
+    io.err(formatError(error, io))
+    return 1
+  }
 }
 
 // P1-114, CLI-09: exits 1 when a tokens.* check fails at error level.

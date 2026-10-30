@@ -39,12 +39,23 @@ export interface EmailKitConfig {
   readonly platform?: Readonly<Partial<Record<PlatformKey, string | { readonly runtime: true }>>>
   /** The theme: colours from shadcn CSS or DTCG tokens, roles, type, radius, layout (CFG-04) */
   readonly theme?: ThemeConfig
+  /**
+   * Per-check levels (CFG-06), each with the reason a reviewer will read:
+   * `{ "img.fluid-width": { level: "off", reason: "Hero images are fixed width by design" } }`
+   */
+  readonly checks?: Readonly<Record<string, CheckSetting>>
   readonly locales?: {
     /** The locale render() falls back to. Default: `"en"`. */
     readonly default: string
     /** Every locale to compile. Default: only the default locale. */
     readonly list?: readonly string[]
   }
+}
+
+/** A check's level for this project, and why it differs from the default. */
+export interface CheckSetting {
+  readonly level: "off" | "info" | "warn" | "error"
+  readonly reason: string
 }
 
 /** Declares the email-kit config with types. Use it as the default export of email-kit.config.ts. */

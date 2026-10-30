@@ -20,7 +20,7 @@ export interface CompileResult {
   readonly templates: readonly CompiledTemplate[]
   readonly files: WriteResult
   readonly theme: Theme
-  /** tokens.* findings; `email-kit tokens` lists them, `check` will gate on them (M1.4) */
+  /** tokens.* findings; `email-kit tokens` lists them and `email-kit check` gates on them */
   readonly themeFindings: readonly TokenFinding[]
 }
 
@@ -28,12 +28,25 @@ export async function compile(options: CompileOptions): Promise<CompileResult> {
   return compileWithConfig(await loadConfig(options))
 }
 
-/** Compiles with an already loaded config. */
-export async function compileWithConfig(config: ResolvedConfig): Promise<CompileResult> {
+/** A project compiled in memory: what `compile` writes and what `check` inspects. */
+export interface BuiltProject {
+  readonly config: ResolvedConfig
+  readonly templates: readonly CompiledTemplate[]
+  readonly theme: Theme
+  readonly themeFindings: readonly TokenFinding[]
+}
+
+export async function buildProject(config: ResolvedConfig): Promise<BuiltProject> {
   // Every theme permutation is resolved and validated on compile (THM-10).
   const theme = loadTheme(config.theme, config.dir)
   const themeFindings = checkPermutations(theme, config.theme, config.dir)
   const templates = await compileProject(config, theme)
+  return { config, templates, theme, themeFindings }
+}
+
+/** Compiles with an already loaded config. */
+export async function compileWithConfig(config: ResolvedConfig): Promise<CompileResult> {
+  const { templates, theme, themeFindings } = await buildProject(config)
   const output = buildOutput(templates, {
     locales: config.locales,
     configFile: basename(config.file),

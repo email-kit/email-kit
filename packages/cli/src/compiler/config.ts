@@ -4,7 +4,7 @@
 import { existsSync, statSync } from "node:fs"
 import { dirname, isAbsolute, join, relative, resolve } from "node:path"
 
-import type { ThemeConfig } from "@email-kit/core"
+import type { CheckSetting, ThemeConfig } from "@email-kit/core"
 import {
   EmailKitError,
   PLATFORM_KEYS,
@@ -12,7 +12,9 @@ import {
   type PlatformValues,
 } from "@email-kit/core/internal"
 
+import { CATALOGUE } from "../checks/catalogue/index.ts"
 import { ROLES } from "../theme/roles.ts"
+import { TOKEN_CHECKS } from "../theme/validate.ts"
 
 import { loadModule } from "./load.ts"
 
@@ -37,6 +39,8 @@ export interface ResolvedConfig {
   readonly platform: PlatformValues
   /** The theme config, resolved by loadTheme() */
   readonly theme: ThemeConfig | undefined
+  /** Per-check levels, each with its reason */
+  readonly checks: Readonly<Record<string, CheckSetting>>
   /** Where loaded modules are bundled to, inside the project so packages resolve */
   readonly cacheDir: string
 }
@@ -50,7 +54,7 @@ export const CONFIG_FILES: readonly string[] = [
 
 const KEYS = new Set([
   ...["root", "templates", "messages", "out", "module", "perTemplateEntries", "validate"],
-  ...["platform", "theme", "locales"],
+  ...["platform", "theme", "locales", "checks"],
 ])
 
 export async function loadConfig(options: {
@@ -133,6 +137,7 @@ export function resolveConfig(
   if (typeof validate !== "boolean") problems.push("validate: must be true or false")
   const platform = readPlatform(config.platform, problems)
   checkTheme(config.theme, problems)
+  const checks = readChecks(config.checks, problems)
   const locales = readLocales(config.locales, problems)
   if (problems.length > 0) {
     throw new EmailKitError(
@@ -154,6 +159,7 @@ export function resolveConfig(
     validate: validate !== false,
     platform,
     theme: config.theme as ThemeConfig | undefined,
+    checks,
     cacheDir,
   }
 }
@@ -239,6 +245,61 @@ function checkTheme(value: unknown, problems: string[]): void {
   if (container !== undefined && typeof container !== "number") {
     problems.push("theme.layout.container: must be a number of px")
   }
+}
+
+const LEVELS = ["off", "info", "warn", "error"]
+
+// CFG-06: a known id, a level, and a reason that isn't empty.
+function readChecks(value: unknown, problems: string[]): Record<string, CheckSetting> {
+  if (value === undefined) return {}
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    problems.push(
+      'checks: must be an object like { "img.fluid-width": { level: "off", reason: "…" } }',
+    )
+    return {}
+  }
+  const known: string[] = [...CATALOGUE, ...TOKEN_CHECKS].map((check) => check.id)
+  const out: Record<string, CheckSetting> = {}
+  for (const [id, setting] of Object.entries(value)) {
+    if (!known.includes(id)) {
+      const near = known.find((k) => distance(k, id) <= 2)
+      problems.push(`checks.${id}: unknown check${near ? ` (did you mean ${near}?)` : ""}`)
+      continue
+    }
+    const { level, reason, ...rest } = (
+      typeof setting === "object" && setting !== null ? setting : {}
+    ) as Record<string, unknown>
+    for (const key of Object.keys(rest))
+      problems.push(`checks.${id}.${key}: unknown option (known: level, reason)`)
+    if (typeof level !== "string" || !LEVELS.includes(level)) {
+      problems.push(`checks.${id}.level: must be one of ${LEVELS.map((l) => `"${l}"`).join(", ")}`)
+    } else if (typeof reason !== "string" || !reason.trim()) {
+      problems.push(
+        `checks.${id}.reason: say why this check is set to "${level}"; reviewers read it`,
+      )
+    } else {
+      out[id] = { level: level as CheckSetting["level"], reason }
+    }
+  }
+  return out
+}
+
+function distance(a: string, b: string): number {
+  const row = Array.from({ length: b.length + 1 }, (_, i) => i)
+  for (let i = 1; i <= a.length; i++) {
+    let previous = row[0] as number
+    row[0] = i
+    for (let j = 1; j <= b.length; j++) {
+      const next = row[j] as number
+      row[j] = Math.min(
+        next + 1,
+        (row[j - 1] as number) + 1,
+        previous + (a[i - 1] === b[j - 1] ? 0 : 1),
+      )
+      previous = next
+    }
+  }
+  return row[b.length] as number
 }
 
 function readLocales(value: unknown, problems: string[]): string[] {

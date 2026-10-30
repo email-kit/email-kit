@@ -44,6 +44,8 @@
     "@email-kit/core": "workspace:*",
     "cac": "^7.1.0",
     "culori": "^4.0.2",
+    "domhandler": "^5.0.3",
+    "htmlparser2": "^10.1.0",
     "postcss": "^8.5.32",
     "rolldown": "catalog:"
   },

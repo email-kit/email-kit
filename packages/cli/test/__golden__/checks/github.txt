@@ -1,0 +1,3 @@
+::error file=out/welcome/en.html,line=12,col=5,title=img.alt::An <img> has no alt; readers announce its file name%0AFix: Describe what the image says, or use alt="" for decoration.%0ADocs: https://github.com/email-kit/email-kit/blob/main/docs/checks.md#imgalt
+::warning file=out/welcome/en.html,line=20,col=1,title=img.fluid-width::An <img> has max-width:100%25 without width:100%25%0AFix: Give width:100%25 too.%0ADocs: https://github.com/email-kit/email-kit/blob/main/docs/checks.md#imgfluid-width
+::notice file=app/globals.css,title=tokens.gmail-fill::The primary fill #e5e5e5 is light, 50%25: a, b%0AFix: Adjust the colour.%0ADocs: https://github.com/email-kit/email-kit/blob/main/docs/checks.md#tokensgmail-fill

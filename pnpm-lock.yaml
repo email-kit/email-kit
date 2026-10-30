@@ -226,6 +226,12 @@ importers:
       culori:
         specifier: ^4.0.2
         version: 4.0.2
+      domhandler:
+        specifier: ^5.0.3
+        version: 5.0.3
+      htmlparser2:
+        specifier: ^10.1.0
+        version: 10.1.0
       postcss:
         specifier: ^8.5.32
         version: 8.5.32

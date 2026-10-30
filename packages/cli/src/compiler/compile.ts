@@ -50,12 +50,17 @@ function builtInTheme(): Theme {
 
 const RTL = new Set(["ar", "dv", "fa", "he", "ps", "ur", "yi"])
 
+/** Whether the locale's language is written right to left. */
+export function isRtl(locale: string): boolean {
+  return RTL.has(locale.split("-")[0] ?? "")
+}
+
 export function compileEmail<T>(
   definition: EmailDefinition<T>,
   options: CompileOptions,
 ): CompiledEmail {
   const theme = options.theme ?? builtInTheme()
-  const dir = RTL.has(options.locale.split("-")[0] ?? "") ? "rtl" : "ltr"
+  const dir = isRtl(options.locale) ? "rtl" : "ltr"
   const ir = evaluate(definition, { ...options, theme: themeContext(theme), dir })
   const subject = renderLine(ir.subject, "subject")
   const preheader = ir.preheader ? renderLine(ir.preheader, "preheader") : ""

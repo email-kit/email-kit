@@ -262,6 +262,24 @@ when** (acceptance).
 
 ### M1.4 Check engine and catalogue (v0.4)
 
+**Status (first slice):** `email-kit check [--json] [--reporter human|json|github]` compiles in
+memory (nothing written) and runs the engine (P1-140) over every template × locale and the theme.
+Findings have the CHK-04 shape (P1-162) with `file:line:col` in the compiled file and a docs
+link; per-id `checks` config with a required reason and did-you-mean ids (P1-160); human, JSON
+(version 1) and GitHub reporters (P1-161); exit 1 on errors only (P1-169). The parser
+(P1-165) is htmlparser2 with offsets plus postcss, and parses the HTML inside `[if mso]`
+comments. `docs/checks.md` is generated from the catalogue and kept current by a test (P1-168).
+MSO checks run only for a classic Outlook target (part of P1-163). Implemented so far: the 17
+`tokens.*` ids, `html.doctype`, `html.lang-dir`, `html.title`, `html.xmlns`,
+`html.no-forms-embeds`, `html.no-body-style`, `html.data-detectors`, `html.mso-font`,
+`html.dpi-noscript`, `css.no-double-brace`, `css.important-lowercase`, `css.no-nesting`,
+`css.no-modern-colour`, `css.no-custom-props`, `css.style-size`, `img.alt`, `img.dimensions`,
+`img.https`, `img.format`, `img.fluid-width`, `dark.scheme-declared`, `dark.ogsc-twin`,
+`dark.light-only-css-twin`, `dark.no-blend-hack`, `a11y.layout-table-role`, `a11y.data-table`.
+Each passes on the fixture's real output and fires alone when its rule is broken. Not yet: the
+fixture sweep (P1-164; data-driven values are skipped), custom checks (P1-166), source checks
+(`source.*`, including the literal-colour lint for P1-120), the rest of the catalogue.
+
 | ID | Task | Reqs | Pri | Dep | Done when |
 |---|---|---|---|---|---|
 | P1-140 | Check engine core (context over output, sources, theme, messages and fixtures), shared by the CLI, the studio and CI | CHK-01 | MUST | P1-074 | The API runs registered checks |

@@ -1,0 +1,17 @@
+welcome (en)
+  ✗ img.alt  out/welcome/en.html:12:5
+    An <img> has no alt; readers announce its file name
+    Fix: Describe what the image says, or use alt="" for decoration.
+    Docs: https://github.com/email-kit/email-kit/blob/main/docs/checks.md#imgalt
+  ! img.fluid-width  out/welcome/en.html:20:1
+    An <img> has max-width:100% without width:100%
+    Fix: Give width:100% too.
+    Docs: https://github.com/email-kit/email-kit/blob/main/docs/checks.md#imgfluid-width
+
+Theme
+  i tokens.gmail-fill  app/globals.css
+    The primary fill #e5e5e5 is light, 50%: a, b
+    Fix: Adjust the colour.
+    Docs: https://github.com/email-kit/email-kit/blob/main/docs/checks.md#tokensgmail-fill
+
+1 error, 1 warning, 1 note
