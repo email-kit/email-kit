@@ -24,3 +24,11 @@ export type {
 } from "./placeholder.ts"
 export type { Platform, PlatformKey, PlatformText } from "./platform.ts"
 export type { StandardSchemaV1 } from "./standard-schema.ts"
+export type {
+  FontStackName,
+  ThemeConfig,
+  ThemeRole,
+  ThemeVariables,
+  TypeStep,
+  TypeStyle,
+} from "./theme.ts"

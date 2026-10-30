@@ -4,12 +4,15 @@
 import { existsSync, statSync } from "node:fs"
 import { dirname, isAbsolute, join, relative, resolve } from "node:path"
 
+import type { ThemeConfig } from "@email-kit/core"
 import {
   EmailKitError,
   PLATFORM_KEYS,
   type PlatformKey,
   type PlatformValues,
 } from "@email-kit/core/internal"
+
+import { ROLES } from "../theme/roles.ts"
 
 import { loadModule } from "./load.ts"
 
@@ -32,6 +35,8 @@ export interface ResolvedConfig {
   readonly validate: boolean
   /** Platform values: compile-time constants and the keys passed at send time */
   readonly platform: PlatformValues
+  /** The theme config, resolved by loadTheme() */
+  readonly theme: ThemeConfig | undefined
   /** Where loaded modules are bundled to, inside the project so packages resolve */
   readonly cacheDir: string
 }
@@ -45,7 +50,7 @@ export const CONFIG_FILES: readonly string[] = [
 
 const KEYS = new Set([
   ...["root", "templates", "messages", "out", "module", "perTemplateEntries", "validate"],
-  ...["platform", "locales"],
+  ...["platform", "theme", "locales"],
 ])
 
 export async function loadConfig(options: {
@@ -127,6 +132,7 @@ export function resolveConfig(
   const validate = config.validate ?? true
   if (typeof validate !== "boolean") problems.push("validate: must be true or false")
   const platform = readPlatform(config.platform, problems)
+  checkTheme(config.theme, problems)
   const locales = readLocales(config.locales, problems)
   if (problems.length > 0) {
     throw new EmailKitError(
@@ -147,6 +153,7 @@ export function resolveConfig(
     perTemplateEntries: perTemplateEntries === true,
     validate: validate !== false,
     platform,
+    theme: config.theme as ThemeConfig | undefined,
     cacheDir,
   }
 }
@@ -180,6 +187,38 @@ function readPlatform(value: unknown, problems: string[]): PlatformValues {
     }
   }
   return { constants, runtime: runtime.sort() }
+}
+
+const THEME_KEYS = new Set(["source", "roles", "typography", "radius", "layout", "dark", "emit"])
+
+// The shape and the names; values (colours, files) are checked when the theme is loaded.
+function checkTheme(value: unknown, problems: string[]): void {
+  if (value === undefined) return
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    problems.push('theme: must be an object like { source: "app/globals.css" }')
+    return
+  }
+  const theme = value as Record<string, unknown>
+  for (const key of Object.keys(theme)) {
+    if (!THEME_KEYS.has(key))
+      problems.push(`theme.${key}: unknown option (known: ${[...THEME_KEYS].join(", ")})`)
+  }
+  for (const role of Object.keys((theme.roles as object | undefined) ?? {})) {
+    if (!(ROLES as readonly string[]).includes(role)) {
+      const near = ROLES.find((r) => r.toLowerCase() === role.toLowerCase())
+      problems.push(`theme.roles.${role}: unknown role${near ? ` (did you mean ${near}?)` : ""}`)
+    }
+  }
+  if (theme.dark !== undefined && theme.dark !== "authored" && theme.dark !== "none") {
+    problems.push('theme.dark: must be "authored" or "none"')
+  }
+  if (theme.radius !== undefined && (typeof theme.radius !== "number" || theme.radius < 0)) {
+    problems.push("theme.radius: must be a number of px")
+  }
+  const container = (theme.layout as { container?: unknown } | undefined)?.container
+  if (container !== undefined && typeof container !== "number") {
+    problems.push("theme.layout.container: must be a number of px")
+  }
 }
 
 function readLocales(value: unknown, problems: string[]): string[] {

@@ -45,7 +45,11 @@ export async function watchProject(options: WatchOptions): Promise<Watcher> {
       folders = [config.templates, config.messages]
       files.add(config.file)
       const result = await compileWithConfig(config)
-      files = new Set([config.file, ...result.templates.flatMap((t) => t.sources)])
+      files = new Set([
+        config.file,
+        ...result.theme.files,
+        ...result.templates.flatMap((t) => t.sources),
+      ])
       options.onCompile({ result })
     } catch (error) {
       options.onCompile({ error })

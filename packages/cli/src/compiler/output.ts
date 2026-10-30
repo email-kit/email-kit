@@ -16,6 +16,7 @@ import { dirname, join, sep } from "node:path"
 
 import type { PlatformValues } from "@email-kit/core/internal"
 import { DIALECT } from "@email-kit/dialect"
+import type { Theme } from "../theme/theme.ts"
 
 import { VERSION } from "../version.ts"
 import { toJavaScript } from "./emit/javascript.ts"
@@ -50,6 +51,8 @@ export function buildOutput(
     readonly perTemplateEntries: boolean
     readonly validate: boolean
     readonly platform: PlatformValues
+    /** Write theme.json (THM-12) */
+    readonly theme?: Theme | undefined
   },
 ): OutputFile[] {
   const files: OutputFile[] = []
@@ -103,6 +106,17 @@ export function buildOutput(
   writeModule("", templates)
   if (options.perTemplateEntries) {
     for (const template of templates) writeModule(`${template.id}/`, [template])
+  }
+  if (options.theme) {
+    const { files: _files, roles, ...theme } = options.theme
+    files.push({
+      path: "theme.json",
+      content: json({
+        $comment: GENERATED,
+        ...theme,
+        roles: { light: roles.light, ...(roles.dark && { dark: roles.dark }) },
+      }),
+    })
   }
   const owned = [...files.map((file) => file.path), "manifest.json"].sort()
   files.push({

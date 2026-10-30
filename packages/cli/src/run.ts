@@ -4,8 +4,12 @@
 import { cac } from "cac"
 
 import { compile, describeResult, summarize } from "./compiler/build.ts"
+import { loadConfig } from "./compiler/config.ts"
 import { formatError } from "./compiler/problems.ts"
 import { watchProject } from "./compiler/watch.ts"
+import { formatTokens } from "./theme/report.ts"
+import { loadTheme } from "./theme/theme.ts"
+import { validateTheme } from "./theme/validate.ts"
 import { VERSION } from "./version.ts"
 
 export { VERSION }
@@ -33,6 +37,15 @@ export async function run(args: readonly string[], io: Io): Promise<number> {
     .action((options: CompileFlags) => {
       pending = compileCommand(options, io)
     })
+  cli
+    .command(
+      "tokens",
+      "Print the theme's colour roles per mode with contrast ratios, and its findings",
+    )
+    .option("--config <path>", "Use this config file instead of ./email-kit.config.ts")
+    .action((options: { config?: string }) => {
+      pending = tokensCommand(options, io)
+    })
   cli.help()
   cli.version(VERSION)
 
@@ -57,6 +70,20 @@ interface CompileFlags {
   readonly watch?: boolean
   readonly quiet?: boolean
   readonly verbose?: boolean
+}
+
+// P1-114, CLI-09: exits 1 when a tokens.* check fails at error level.
+async function tokensCommand(options: { config?: string }, io: Io): Promise<number> {
+  try {
+    const config = await loadConfig({ cwd: io.cwd, config: options.config })
+    const theme = loadTheme(config.theme, config.dir)
+    const findings = validateTheme(theme)
+    io.out(formatTokens(theme, findings))
+    return findings.some((finding) => finding.level === "error") ? 1 : 0
+  } catch (error) {
+    io.err(formatError(error, io))
+    return 1
+  }
 }
 
 async function compileCommand(options: CompileFlags, io: Io): Promise<number> {

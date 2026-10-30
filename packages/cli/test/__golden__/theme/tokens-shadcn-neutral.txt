@@ -1,0 +1,76 @@
+Theme: app.css (dark: authored)
+
+Role                       Light     Dark      Contrast
+pageGround                 #f5f5f5  #0a0a0a
+canvas                     #ffffff  #171717  1.09 / 1.10 on pageGround
+card                       #ffffff  #171717  1.00 / 1.00 on canvas
+muted                      #f5f5f5  #262626  1.09 / 1.18 on canvas
+codeSurface                #f5f5f5  #262626  1.09 / 1.18 on canvas
+inverse                    #0a0a0a  #fafafa  19.80 / 17.18 on canvas
+ink                        #0a0a0a  #fafafa  19.80 / 17.18 on canvas
+mutedInk                   #707070  #a1a1a1  4.95 / 6.94 on canvas
+subtleInk                  #707070  #a1a1a1  4.95 / 6.94 on canvas
+inverseInk                 #ffffff  #0a0a0a  19.80 / 18.97 on inverse
+link                       #171717  #e5e5e5  17.93 / 14.23 on canvas
+hairline                   #e5e5e5  #2e2e2e  1.26 / 1.32 on canvas
+divider                    #e5e5e5  #2e2e2e  1.26 / 1.32 on canvas
+strongBorder               #0a0a0a  #fafafa  19.80 / 17.18 on canvas
+brand                      #171717  #e5e5e5  17.93 / 14.23 on canvas
+onBrand                    #fafafa  #171717  17.18 / 14.23 on brand
+brandInk                   #171717  #e5e5e5  17.93 / 14.23 on canvas
+action.primary.fill        #171717  #e5e5e5  17.93 / 14.23 on canvas
+action.primary.label       #fafafa  #171717  17.18 / 14.23 on action.primary.fill
+action.primary.border      #171717  #e5e5e5  17.93 / 14.23 on canvas
+action.secondary.fill      #f5f5f5  #262626  1.09 / 1.18 on canvas
+action.secondary.label     #171717  #fafafa  16.44 / 14.50 on action.secondary.fill
+action.secondary.border    #e5e5e5  #2e2e2e  1.26 / 1.32 on canvas
+action.destructive.fill    #e7000b  #ff6467  4.77 / 6.21 on canvas
+action.destructive.label   #ffffff  #0a0a0a  4.77 / 6.85 on action.destructive.fill
+action.destructive.border  #e7000b  #ff6467  4.77 / 6.21 on canvas
+status.info.surface        #eff6ff  #172554  1.09 / 1.22 on canvas
+status.info.ink            #1d4ed8  #93c5fd  6.16 / 8.15 on status.info.surface
+status.info.border         #bfdbfe  #1e40af  1.31 / 1.68 on status.info.surface
+status.info.fill           #1d4ed8  #60a5fa  6.70 / 7.05 on canvas
+status.info.onFill         #ffffff  #0a0a0a  6.70 / 7.79 on status.info.fill
+status.success.surface     #f0fdf4  #052e16  1.05 / 1.20 on canvas
+status.success.ink         #15803d  #86efac  4.79 / 10.62 on status.success.surface
+status.success.border      #bbf7d0  #166534  1.16 / 2.09 on status.success.surface
+status.success.fill        #166534  #4ade80  7.13 / 10.29 on canvas
+status.success.onFill      #ffffff  #0a0a0a  7.13 / 11.36 on status.success.fill
+status.warning.surface     #fffbeb  #451a03  1.04 / 1.20 on canvas
+status.warning.ink         #b45309  #fcd34d  4.84 / 10.39 on status.warning.surface
+status.warning.border      #fde68a  #92400e  1.20 / 2.11 on status.warning.surface
+status.warning.fill        #92400e  #fbbf24  7.09 / 10.74 on canvas
+status.warning.onFill      #ffffff  #0a0a0a  7.09 / 11.86 on status.warning.fill
+status.error.surface       #fef2f2  #450a0a  1.09 / 1.11 on canvas
+status.error.ink           #b91c1c  #fca5a5  5.91 / 8.51 on status.error.surface
+status.error.border        #fecaca  #991b1b  1.32 / 1.94 on status.error.surface
+status.error.fill          #e7000b  #ff6467  4.77 / 6.21 on canvas
+status.error.onFill        #ffffff  #0a0a0a  4.77 / 6.85 on status.error.fill
+
+Notes
+  light computed: action.destructive.label is #ffffff, the more readable of ink and inverseInk on action.destructive.fill
+  light computed: status.info.onFill is #ffffff, the more readable of ink and inverseInk on status.info.fill
+  light computed: status.success.onFill is #ffffff, the more readable of ink and inverseInk on status.success.fill
+  light computed: status.warning.onFill is #ffffff, the more readable of ink and inverseInk on status.warning.fill
+  light computed: status.error.onFill is #ffffff, the more readable of ink and inverseInk on status.error.fill
+  light adjusted: mutedInk #737373 is 4.35:1 on the light canvas or page ground; adjusted to #707070, the nearest lightness that reaches 4.5:1 (override the role to choose another)
+  light adjusted: subtleInk #737373 is 4.35:1 on the light canvas or page ground; adjusted to #707070, the nearest lightness that reaches 4.5:1 (override the role to choose another)
+  dark flattened: hairline oklch(1 0 0 / 10%) is translucent: flattened over canvas (#171717) to #2e2e2e
+  dark flattened: divider oklch(1 0 0 / 10%) is translucent: flattened over canvas (#171717) to #2e2e2e
+  dark flattened: action.secondary.border oklch(1 0 0 / 10%) is translucent: flattened over canvas (#171717) to #2e2e2e
+  dark computed: action.destructive.label is #0a0a0a, the more readable of ink and inverseInk on action.destructive.fill
+  dark computed: status.info.onFill is #0a0a0a, the more readable of ink and inverseInk on status.info.fill
+  dark computed: status.success.onFill is #0a0a0a, the more readable of ink and inverseInk on status.success.fill
+  dark computed: status.warning.onFill is #0a0a0a, the more readable of ink and inverseInk on status.warning.fill
+  dark computed: status.error.onFill is #0a0a0a, the more readable of ink and inverseInk on status.error.fill
+
+Findings
+  ! tokens.action-contrast (light): The secondary button's fill #f5f5f5 and border #e5e5e5 reach only 1.26:1 on canvas #ffffff; one needs 3:1
+  i tokens.gmail-fill (light): The secondary fill #f5f5f5 is light (YIQ 245 > 205): Gmail Android may darken it
+  ! tokens.midtone (light): action.destructive.fill #e7000b has L* 48, inside the 40–65 band that forced dark mode can't separate
+  ! tokens.midtone (light): status.error.fill #e7000b has L* 48, inside the 40–65 band that forced dark mode can't separate
+  i tokens.gmail-fill (dark): The primary fill #e5e5e5 is light (YIQ 229 > 205): Gmail Android may darken it
+  ! tokens.action-contrast (dark): The secondary button's fill #262626 and border #2e2e2e reach only 1.32:1 on canvas #171717; one needs 3:1
+
+0 errors, 4 warnings, 2 notes

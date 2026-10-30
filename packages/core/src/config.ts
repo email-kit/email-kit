@@ -1,8 +1,8 @@
 // The typed project config in email-kit.config.ts (CFG-01). Paths are relative to the config
-// file. M1.1 covers paths, locales, the module format and platform values; theme, targets and
-// checks arrive with their milestones.
+// file. Targets and checks arrive with their milestones.
 
 import type { PlatformKey } from "./platform.ts"
+import type { ThemeConfig } from "./theme.ts"
 
 export interface EmailKitConfig {
   /**
@@ -37,6 +37,8 @@ export interface EmailKitConfig {
    * `{ runtime: true }` means the backend passes it at send time: `createEmails({ siteUrl })`.
    */
   readonly platform?: Readonly<Partial<Record<PlatformKey, string | { readonly runtime: true }>>>
+  /** The theme: colours from shadcn CSS or DTCG tokens, roles, type, radius, layout (CFG-04) */
+  readonly theme?: ThemeConfig
   readonly locales?: {
     /** The locale render() falls back to. Default: `"en"`. */
     readonly default: string

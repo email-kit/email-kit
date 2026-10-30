@@ -55,8 +55,12 @@ when** (acceptance).
   P1-102 in part (shadcn CSS: `:root`/`.dark`, `@layer base`, `var()` chains, bare HSL),
   P1-104 (the THM-04 roles with the §12.5 shadcn mapping and status defaults), P1-111 (muted ink
   moved to the nearest passing lightness: shadcn's #737373 is 4.35:1 on its own page ground),
-  and the colour checks of P1-110. Next: config (P1-100), DTCG and TS inputs, typography, spacing,
-  radius, `email-kit tokens`, `theme.json`.
+  and the colour checks of P1-110. Then: P1-100 (`theme` config, checked names with suggestions),
+  P1-102 (DTCG token files per mode and inline variables; **resolver files still to do**),
+  P1-105/106 and the button/OTP part of P1-107, P1-108 (`dark: authored | none`), the rest of the
+  P1-110 checks (font stacks, weights, sizes, button height, container, radius), P1-112
+  (`theme.emit` → `theme.json`) and P1-114 (`email-kit tokens`). The built-in default theme is shadcn
+  neutral adjusted for email, with no findings.
 - **Phase 0 remaining:** P0-04 (needs real email clients), accepting ADRs 0002 and 0006, and
   P0-02 (publishing needs the maintainer's accounts).
 - **P0-02 prepared.** The placeholder packages and the release workflow are ready. Publishing and

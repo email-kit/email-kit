@@ -3,14 +3,95 @@
 
 import { channels, contrast, type Hex, lightness, yiq } from "./colour.ts"
 import type { Mode, ResolvedRoles, Role, RoleColours } from "./roles.ts"
+import type { Theme } from "./theme.ts"
 
 export type Level = "error" | "warning" | "info"
 
 export interface TokenFinding {
   readonly id: `tokens.${string}`
   readonly level: Level
-  readonly mode: Mode
+  /** For colour findings */
+  readonly mode?: Mode
   readonly message: string
+}
+
+const GENERIC = new Set(["serif", "sans-serif", "monospace", "cursive", "fantasy", "system-ui"])
+
+/** Every tokens.* check on a resolved theme: colours per mode, then type, buttons, layout, radius. */
+export function validateTheme(theme: Theme): TokenFinding[] {
+  const findings = validateRoles(theme.roles)
+  const add = (id: TokenFinding["id"], level: Level, message: string) =>
+    findings.push({ id, level, message })
+
+  for (const [name, stack] of Object.entries(theme.typography.stacks)) {
+    const last = stack.families.at(-1) ?? ""
+    if (!GENERIC.has(last)) {
+      add(
+        "tokens.font-stack",
+        "error",
+        `The ${name} stack ends in "${last}"; end it with a generic family such as sans-serif`,
+      )
+    }
+    if (
+      stack.families.every(
+        (family) => GENERIC.has(family) || family.startsWith("ui-") || family.startsWith("-"),
+      )
+    ) {
+      add(
+        "tokens.font-stack",
+        "error",
+        `The ${name} stack has no named family for Outlook to fall back to (such as Arial)`,
+      )
+    }
+  }
+  for (const [step, type] of Object.entries(theme.typography.scale)) {
+    if (type.weight !== 400 && type.weight !== 700) {
+      add(
+        "tokens.weights",
+        "warning",
+        `${step} has weight ${type.weight}; fallback fonts and Outlook render only 400 and 700`,
+      )
+    }
+    if (type.sizePx < 13) {
+      add(
+        "tokens.min-size",
+        "error",
+        `${step} is ${type.sizePx}px; text is never smaller than 13px (iOS Mail enlarges it)`,
+      )
+    } else if (type.sizePx < 14) {
+      add("tokens.min-size", "warning", `${step} is ${type.sizePx}px; keep text at 14px or more`)
+    }
+    if (!Number.isFinite(type.letterSpacingPx)) {
+      add("tokens.letter-spacing", "warning", `${step} letter-spacing must be a number of px`)
+    }
+  }
+  for (const [size, button] of Object.entries(theme.components.button)) {
+    // What renders is the label's line height plus padding: min-height isn't reliable in email
+    // (Outlook ignores it), so the computed height must reach 44 as well as the token.
+    const height = theme.typography.scale[button.font].lineHeightPx + 2 * button.padY
+    // `sm` is only for secondary actions (PRD A.1), so it may be smaller.
+    if (size !== "sm" && Math.min(height, button.minHeight) < 44) {
+      add(
+        "tokens.button-height",
+        "error",
+        `The ${size} button is ${Math.min(height, button.minHeight)}px tall; touch targets need 44px`,
+      )
+    }
+  }
+  const { container } = theme.layout
+  if (container < 480 || container > 640) {
+    add(
+      "tokens.container",
+      "warning",
+      `The container is ${container}px; keep it within 480–640px (600 is standard)`,
+    )
+  }
+  for (const [name, value] of Object.entries(theme.radius)) {
+    if (!Number.isFinite(value) || value < 0) {
+      add("tokens.radius", "error", `The ${name} radius ${value} isn't a px value`)
+    }
+  }
+  return findings
 }
 
 const TEXT = 4.5

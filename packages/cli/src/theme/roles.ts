@@ -2,35 +2,16 @@
 // things with. Each role is resolved per mode from the theme's tokens (shadcn variable names), in
 // order, so a translucent value is flattened over the surface it actually sits on.
 
+import type { ThemeRole } from "@email-kit/core"
 import { EmailKitError } from "@email-kit/core/internal"
 
 import { converter } from "culori"
 
 import { contrast, type Hex, toHex } from "./colour.ts"
 
-const ACTIONS = ["primary", "secondary", "destructive"] as const
 const STATUSES = ["info", "success", "warning", "error"] as const
 
-export type Role =
-  | "pageGround"
-  | "canvas"
-  | "card"
-  | "muted"
-  | "codeSurface"
-  | "inverse"
-  | "ink"
-  | "mutedInk"
-  | "subtleInk"
-  | "inverseInk"
-  | "link"
-  | "hairline"
-  | "divider"
-  | "strongBorder"
-  | "brand"
-  | "onBrand"
-  | "brandInk"
-  | `action.${(typeof ACTIONS)[number]}.${"fill" | "label" | "border"}`
-  | `status.${(typeof STATUSES)[number]}.${"ink" | "surface" | "border" | "fill" | "onFill"}`
+export type Role = ThemeRole
 
 export type Mode = "light" | "dark"
 
@@ -228,7 +209,12 @@ function resolveMode(
   for (const spec of SPECS) {
     const over = spec.over ? out[spec.over] : undefined
     const override = overrides[spec.role]
-    const overridden = typeof override === "string" ? override : override?.[mode]
+    const overridden = reference(
+      typeof override === "string" ? override : override?.[mode],
+      values,
+      spec.role,
+      mode,
+    )
     const source = spec.source
     const names = namesFor(source.tokens, mode)
     const token = names.find((name) => values[name] !== undefined)
@@ -326,6 +312,26 @@ function adjustInks(
     }
   }
   return out
+}
+
+// An override can name a token from the source: "{primary}", or a DTCG path "{color.brand.500}".
+function reference(
+  value: string | undefined,
+  values: Readonly<Record<string, string>>,
+  role: Role,
+  mode: Mode,
+): string | undefined {
+  const match = value === undefined ? null : /^\{([\w.-]+)\}$/.exec(value.trim())
+  if (!match) return value
+  const name = (match[1] as string).replace(/^colou?rs?\./, "").replaceAll(".", "-")
+  const found = values[name]
+  if (found === undefined) {
+    throw new EmailKitError(
+      "unresolved-role",
+      `The override for ${role} names {${match[1]}}, but the ${mode} theme has no token "${name}"`,
+    )
+  }
+  return found
 }
 
 function namesFor(names: TokenNames | undefined, mode: Mode): readonly string[] {

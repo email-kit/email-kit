@@ -1,0 +1,29 @@
+{
+  "$description": "A brand theme in DTCG 2025.10 form, light mode",
+  "brand": {
+    "$type": "color",
+    "600": { "$value": { "colorSpace": "oklch", "components": [0.45, 0.2, 265] } },
+    "50": { "$value": { "colorSpace": "srgb", "components": [0.94, 0.96, 1] } }
+  },
+  "radius": { "$type": "dimension", "$value": { "value": 0.5, "unit": "rem" } },
+  "color": {
+    "$type": "color",
+    "background": { "$value": { "colorSpace": "srgb", "components": [1, 1, 1], "hex": "#ffffff" } },
+    "foreground": { "$value": { "colorSpace": "oklch", "components": [0.2, 0.02, 265] } },
+    "card": { "$value": "{color.background}" },
+    "muted": {
+      "$root": { "$value": "{brand.50}" },
+      "foreground": { "$value": { "colorSpace": "oklch", "components": [0.45, 0.03, 265] } }
+    },
+    "primary": {
+      "$root": { "$value": "{brand.600}" },
+      "foreground": { "$value": { "colorSpace": "srgb", "components": [1, 1, 1] } }
+    },
+    "secondary": { "$value": "{brand.50}" },
+    "secondary-foreground": { "$value": "{brand.600}" },
+    "destructive": {
+      "$value": { "colorSpace": "display-p3", "components": [0.75, 0.1, 0.1], "hex": "#b91c1c" }
+    },
+    "border": { "$value": { "colorSpace": "oklch", "components": [0.9, 0.01, 265] } }
+  }
+}
