@@ -57,6 +57,12 @@ export interface EmailKitConfig {
      * default (CFG-03): `{ pt: "pt-BR" }` sends `pt` and `pt-AO` to Brazilian Portuguese.
      */
     readonly fallback?: Readonly<Record<string, string>>
+    /**
+     * Also compile and ship the pseudo-locales, generated from the default locale (I18N-05):
+     * `en-XA` (accented, bracketed, longer) and `ar-XB` (right to left), for QA on staging.
+     * `email-kit check` builds them either way. Default: `false`
+     */
+    readonly pseudo?: boolean | readonly ("en-XA" | "ar-XB")[]
   }
 }
 

@@ -105,7 +105,7 @@ async function checkCommand(options: CheckFlags, io: Io): Promise<number> {
   }
   try {
     const config = await loadConfig({ cwd: io.cwd, config: options.config })
-    const project = await buildProject(config)
+    const project = await buildProject(config, { pseudo: true })
     const checks = [...CATALOGUE, ...config.customChecks.map(fromCustom)]
     const findings = runChecks(await contextOf(project), config.checks, checks)
     const output = REPORTERS[name as keyof typeof REPORTERS](findings)

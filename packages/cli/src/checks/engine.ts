@@ -9,9 +9,11 @@ import type { CheckSetting } from "@email-kit/core"
 import { createTemplate } from "@email-kit/dialect/module"
 
 import type { BuiltProject } from "../compiler/build.ts"
+import type { CompiledEmail } from "../compiler/compile.ts"
 import { modelOf } from "../compiler/emit/types.ts"
 import { fixturesWithVariants } from "../compiler/fixtures.ts"
 import { pluralRules } from "../i18n/plurals.ts"
+import { isPseudo } from "../i18n/pseudo.ts"
 import { CATALOGUE } from "./catalogue/index.ts"
 import { parseEmail } from "./parse.ts"
 import { type SourceFile, sourceFile } from "./source.ts"
@@ -33,17 +35,26 @@ export async function contextOf(project: BuiltProject): Promise<CheckContext> {
   const { config } = project
   const fileOf = (id: string, locale: string) =>
     relative(config.dir, `${config.out}/${id}/${locale}.html`)
-  const emails: CheckedEmail[] = project.templates.flatMap((template) =>
-    template.emails.map((email) => ({
-      template: template.id,
-      locale: email.locale,
-      file: fileOf(template.id, email.locale),
-      subject: email.subject,
-      preheader: email.preheader,
-      html: email.html,
-      text: email.text,
-      parsed: parseEmail(email.html),
-    })),
+  const checked = (id: string, email: CompiledEmail): CheckedEmail => ({
+    template: id,
+    locale: email.locale,
+    file: fileOf(id, email.locale),
+    subject: email.subject,
+    preheader: email.preheader,
+    html: email.html,
+    text: email.text,
+    parsed: parseEmail(email.html),
+  })
+  const emails = project.templates.flatMap((t) => t.emails.map((email) => checked(t.id, email)))
+  const pseudo = project.templates.flatMap((t) =>
+    t.pseudo.flatMap((build) => (build.email ? [checked(t.id, build.email)] : [])),
+  )
+  const pseudoErrors = project.templates.flatMap((t) =>
+    t.pseudo.flatMap((build) =>
+      build.error === undefined
+        ? []
+        : [{ template: t.id, locale: build.locale, message: build.error }],
+    ),
   )
 
   // The fixture sweep (P1-164): each template × locale rendered the way the generated module
@@ -96,6 +107,8 @@ export async function contextOf(project: BuiltProject): Promise<CheckContext> {
   return {
     emails,
     rendered,
+    pseudo,
+    pseudoErrors,
     templates: project.templates.map((t) => ({
       id: t.id,
       file: relative(config.dir, t.file),
@@ -124,6 +137,10 @@ export function runChecks(
     const passes: CheckContext[] = [
       ...(on === "render" ? [] : [context]),
       ...(on === "template" ? [] : [{ ...context, emails: context.rendered }]),
+      // i18n.expansion: the pseudo-locales pass the static checks too.
+      ...(on === "render" || context.pseudo.length === 0
+        ? []
+        : [{ ...context, emails: context.pseudo }]),
     ]
     for (const pass of passes) {
       check.run(pass, (problem) => {
@@ -156,7 +173,19 @@ export function runChecks(
   // A static problem shows in the template and in every render: keep the first, which has the
   // line number. Problems that come from data differ per fixture and stay.
   const seen = new Set<string>()
+  // A pseudo-locale finding the real locales already have adds nothing: keep only the new ones.
+  const real = new Set(
+    findings
+      .filter((f) => !isPseudo(f.subject.locale ?? ""))
+      .map((f) => `${f.id}|${f.subject.template}|${f.message}`),
+  )
   return findings.filter((f) => {
+    if (
+      isPseudo(f.subject.locale ?? "") &&
+      !context.emails.some((e) => e.locale === f.subject.locale)
+    ) {
+      if (real.has(`${f.id}|${f.subject.template}|${f.message}`)) return false
+    }
     const key = `${f.id}|${f.subject.template}|${f.subject.locale}|${f.subject.file}|${f.message}`
     if (seen.has(key)) return false
     seen.add(key)

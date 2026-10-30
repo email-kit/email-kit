@@ -3,6 +3,7 @@ import { A11Y } from "./a11y.ts"
 import { CSS } from "./css.ts"
 import { DARK } from "./dark.ts"
 import { HTML } from "./html.ts"
+import { I18N } from "./i18n.ts"
 import { IMG } from "./img.ts"
 import { RENDER } from "./render.ts"
 import { SOURCE } from "./source.ts"
@@ -15,5 +16,6 @@ export const CATALOGUE: readonly Check[] = [
   ...IMG,
   ...DARK,
   ...A11Y,
+  ...I18N,
   ...RENDER,
 ]

@@ -46,7 +46,10 @@ cd examples/playground
 5. **Plurals.** The sign-in code's expiry is an ICU plural:
    `{minutes, plural, one {# minute} other {# minutes}}`. The `one-minute` fixture renders
    "1 minute". Remove the `one` case and compile: it fails, because English needs it.
-6. **The module.** `email-kit/compiled/index.d.mts` is what a backend imports: `createEmails`,
+6. **Pseudo-locales.** `pnpm check` also builds every template in `en-XA` (accented, bracketed,
+   up to three times longer) and `ar-XB` (right to left). Set `locales.pseudo: true` in the config
+   and run `pnpm preview` to look at them in the browser.
+7. **The module.** `email-kit/compiled/index.d.mts` is what a backend imports: `createEmails`,
    `render(data, { locale })` and the data types. `preview.mjs` uses it the way a backend would.
 
 ## Real email clients

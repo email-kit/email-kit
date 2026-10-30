@@ -13,6 +13,7 @@ const FAMILIES: readonly [string, string][] = [
   ["img", "Images"],
   ["dark", "Dark mode"],
   ["a11y", "Accessibility"],
+  ["i18n", "Internationalisation"],
   ["copy", "Copy"],
   ["size", "Size"],
 ]

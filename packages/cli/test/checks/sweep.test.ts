@@ -176,6 +176,8 @@ describe("checks on renders", () => {
   const only = (rendered: CheckedEmail[]): CheckContext => ({
     emails: [],
     rendered,
+    pseudo: [],
+    pseudoErrors: [],
     templates: [],
     sources: [],
     theme: undefined as never,

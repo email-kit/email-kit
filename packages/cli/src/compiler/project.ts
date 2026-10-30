@@ -6,6 +6,7 @@ import { basename, join, relative } from "node:path"
 
 import type { Purpose, StandardSchemaV1 } from "@email-kit/core"
 import { EmailKitError, isEmailKitError } from "@email-kit/core/internal"
+import { isPseudo, PSEUDO_LOCALES, pseudoMessages } from "../i18n/pseudo.ts"
 import type { Theme } from "../theme/theme.ts"
 import { type CompiledEmail, compileEmail } from "./compile.ts"
 import type { ResolvedConfig } from "./config.ts"
@@ -30,6 +31,8 @@ export interface CompiledTemplate {
   readonly emails: readonly CompiledEmail[]
   /** Every source file bundled into the template */
   readonly sources: readonly string[]
+  /** The pseudo-locales `check` built in memory, when it asked for them */
+  readonly pseudo: readonly PseudoBuild[]
   /** The default locale's messages, for the generated t() types (P1-159) */
   readonly messages: Readonly<Record<string, string>>
   /** The fixtures from defineEmail(), validated against the schema */
@@ -38,9 +41,17 @@ export interface CompiledTemplate {
   readonly schema: StandardSchemaV1
 }
 
+export interface PseudoBuild {
+  readonly locale: string
+  readonly email?: CompiledEmail
+  /** Why this template didn't compile in the pseudo-locale (i18n.expansion) */
+  readonly error?: string
+}
+
 export async function compileProject(
   config: ResolvedConfig,
   theme?: Theme,
+  options: { readonly pseudo?: boolean } = {},
 ): Promise<readonly CompiledTemplate[]> {
   if (!isDirectory(config.templates)) {
     throw new EmailKitError(
@@ -58,7 +69,7 @@ export async function compileProject(
   const templates: CompiledTemplate[] = []
   for (const file of files) {
     try {
-      templates.push(await compileTemplate(file, config, theme))
+      templates.push(await compileTemplate(file, config, theme, options.pseudo === true))
     } catch (error) {
       problems.push(toProblem(error, file, config.dir))
     }
@@ -91,6 +102,7 @@ async function compileTemplate(
   file: string,
   config: ResolvedConfig,
   theme: Theme | undefined,
+  pseudo: boolean,
 ): Promise<CompiledTemplate> {
   const { definition, files } = await loadTemplate(file, { cacheDir: config.cacheDir })
   const schema = await readSchema(definition.schema, { resolveFrom: file })
@@ -103,16 +115,25 @@ async function compileTemplate(
     )
   }
   await validateFixtures(definition.schema, definition.fixtures ?? {}, definition.id)
+  const defaults = readMessages(
+    join(config.messages, config.locales[0] as string, `${definition.id}.json`),
+  )
+  const compileLocale = (locale: string, messages: Readonly<Record<string, string>>) =>
+    compileEmail(definition, {
+      locale,
+      messages,
+      platform: config.platform,
+      ...(schema.model && { model: schema.model }),
+      ...(theme && { theme }),
+    })
   const emails = config.locales.map((locale) => {
     const messagesFile = join(config.messages, locale, `${definition.id}.json`)
     try {
-      return compileEmail(definition, {
+      // A shipped pseudo-locale (locales.pseudo) comes from the default locale's messages.
+      return compileLocale(
         locale,
-        messages: readMessages(messagesFile),
-        platform: config.platform,
-        ...(schema.model && { model: schema.model }),
-        ...(theme && { theme }),
-      })
+        isPseudo(locale) ? pseudoMessages(defaults, locale) : readMessages(messagesFile),
+      )
     } catch (error) {
       if (isEmailKitError(error) && error.code === "missing-message") {
         // Amend rather than wrap: the original stack points at the t() call in the template.
@@ -121,9 +142,20 @@ async function compileTemplate(
       throw error
     }
   })
+  // `check` builds the pseudo-locales that don't ship; a failure is a finding, not a stop.
+  const pseudoBuilds: PseudoBuild[] = []
+  for (const locale of PSEUDO_LOCALES) {
+    if (!pseudo || config.locales.includes(locale)) continue
+    try {
+      pseudoBuilds.push({ locale, email: compileLocale(locale, pseudoMessages(defaults, locale)) })
+    } catch (error) {
+      pseudoBuilds.push({ locale, error: error instanceof Error ? error.message : String(error) })
+    }
+  }
   return {
     id: definition.id,
     file,
+    pseudo: pseudoBuilds,
     purpose: definition.purpose,
     identifiers: identifiersFor(definition.id),
     model: schema.model,
@@ -131,9 +163,7 @@ async function compileTemplate(
     emails,
     sources: files,
     fixtures: definition.fixtures ?? {},
-    messages: readMessages(
-      join(config.messages, config.locales[0] as string, `${definition.id}.json`),
-    ),
+    messages: defaults,
     schema: definition.schema,
   }
 }

@@ -36,11 +36,14 @@ export interface BuiltProject {
   readonly themeFindings: readonly TokenFinding[]
 }
 
-export async function buildProject(config: ResolvedConfig): Promise<BuiltProject> {
+export async function buildProject(
+  config: ResolvedConfig,
+  options: { readonly pseudo?: boolean } = {},
+): Promise<BuiltProject> {
   // Every theme permutation is resolved and validated on compile (THM-10).
   const theme = loadTheme(config.theme, config.dir)
   const themeFindings = checkPermutations(theme, config.theme, config.dir)
-  const templates = await compileProject(config, theme)
+  const templates = await compileProject(config, theme, options)
   return { config, templates, theme, themeFindings }
 }
 

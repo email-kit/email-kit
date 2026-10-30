@@ -382,6 +382,15 @@ variant instead of the compiled templates (each render then has `fixture`), or `
 
 **Fix:** Use DataTable, which writes all of these.
 
+## Internationalisation
+
+### i18n.expansion
+**Default:** error
+
+**Rule:** Every template compiles in the pseudo-locales en-XA (accented, bracketed, longer by length) and ar-XB (right to left), and passes the static checks there.
+
+**Fix:** Translations run up to three times longer and right to left: don't build copy from fragments, and don't let the layout depend on a string's length.
+
 ## Copy
 
 ### copy.placeholder-fallbacks

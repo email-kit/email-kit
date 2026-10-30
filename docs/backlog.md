@@ -274,6 +274,14 @@ inserting the script a region implies (`zh-TW` → `zh-Hant-TW`, so it never lan
 overrides CLDR's parents; targets must be compiled locales. The module embeds only its languages'
 CLDR data (spec §16). Messages don't inherit: every compiled locale still has every key (I18N-03).
 
+**P1-155** pseudo-locales, and the toggle part of **P1-150**: `en-XA` (accented, bracketed, padded
+by length: ×3 up to 10 characters down to ×1.3 over 70, research 05 ⚠5) and `ar-XB` (right-to-left
+override, compiled `dir="rtl"`), generated from the default locale's messages by transforming only
+literal ICU text; plurals gain the pseudo-locale's categories from `other`. `email-kit check`
+builds both in memory: the template checks run on them and report only what the real locales
+don't (`i18n.expansion` for a template that doesn't compile there). `locales.pseudo` ships them.
+Not yet: `i18n.expansion-render` (clipping, button lines; phase 2) and the other `i18n.*` checks.
+
 | ID | Task | Reqs | Pri | Dep | Done when |
 |---|---|---|---|---|---|
 | P1-150 | Locale config (default, list, fallback chain, pseudo-locale toggles) | CFG-03 | MUST | P1-004 | Typed and validated |

@@ -344,3 +344,94 @@ function branch(
 ): IrSection {
   return { kind: "section", inverted, path, scope, opens: openScope(), children }
 }
+
+// Pseudo-localisation (I18N-05, research 05 ⚠5): a message's literal text is changed, never its
+// arguments, plural keywords or `#`. `expand` (en-XA) accents letters, brackets the message and
+// pads it by length: short strings grow most (W3C and IBM: up to 10 characters 200–300%, over 70
+// about 130%). `rtl` (ar-XB) wraps the text in a right-to-left override. Plurals gain the
+// categories the pseudo-locale's language uses, from their `other` case.
+
+const ACCENTS: Readonly<Record<string, string>> = Object.fromEntries(
+  [..."abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"].map((c, i) => [
+    c,
+    [..."áƀçðéƒĝĥîĵķļɱñöþǫŕšţûṽŵẋýžÁƁÇÐÉƑĜĤÎĴĶĻṀÑÖÞǪŔŠŢÛṼŴẊÝŽ"][i] as string,
+  ]),
+)
+const FILLER = "one two three four five six seven eight nine ten"
+const RLO = "\u202e"
+const PDF = "\u202c"
+
+/** How much longer a pseudo-localised string is, by the original's length. */
+export function expansion(length: number): number {
+  if (length <= 10) return 3
+  if (length <= 20) return 2
+  if (length <= 30) return 1.8
+  if (length <= 50) return 1.6
+  if (length <= 70) return 1.5
+  return 1.3
+}
+
+export function pseudoMessage(
+  source: string,
+  mode: "expand" | "rtl",
+  categories: readonly string[],
+  where = "a message",
+): string {
+  const parts = parse(source, where)
+  const visible = (list: readonly Part[]): number =>
+    list.reduce(
+      (n, part) =>
+        n +
+        (part.kind === "text"
+          ? part.value.length
+          : part.kind === "argument" || part.kind === "pound"
+            ? 4
+            : visible(part.cases.get("other") ?? [])),
+      0,
+    )
+  const text = (value: string) =>
+    mode === "rtl" ? `${RLO}${value}${PDF}` : [...value].map((c) => ACCENTS[c] ?? c).join("")
+  const transform = (list: readonly Part[]): Part[] =>
+    list.map((part): Part => {
+      if (part.kind === "text") return { kind: "text", value: text(part.value) }
+      if (part.kind !== "plural" && part.kind !== "select") return part
+      const cases = new Map<string, readonly Part[]>()
+      for (const [key, value] of part.cases) {
+        if (part.kind === "select" || key.startsWith("=") || categories.includes(key)) {
+          cases.set(key, transform(value))
+        }
+      }
+      if (part.kind === "plural") {
+        for (const category of categories) {
+          if (!cases.has(category)) cases.set(category, transform(part.cases.get("other") ?? []))
+        }
+      }
+      return { ...part, cases }
+    })
+  const out = transform(parts)
+  if (mode === "rtl") return serialize(out)
+  const length = visible(parts)
+  const pad = Math.ceil(length * (expansion(length) - 1))
+  const filler = FILLER.repeat(Math.ceil(pad / FILLER.length) + 1)
+    .slice(0, pad)
+    .trim()
+  return serialize([
+    { kind: "text", value: "[" },
+    ...out,
+    { kind: "text", value: filler ? ` ${filler}]` : "]" },
+  ])
+}
+
+// Parts back to ICU MessageFormat: literal `'`, `{`, `}`, `#` and `|` quoted.
+function serialize(parts: readonly Part[]): string {
+  return parts
+    .map((part) => {
+      if (part.kind === "text")
+        return part.value.replace(/'/g, "''").replace(/[{}#|]/g, (c) => `'${c}'`)
+      if (part.kind === "argument") return `{${part.name}}`
+      if (part.kind === "pound") return "#"
+      const cases = [...part.cases].map(([key, value]) => `${key} {${serialize(value)}}`).join(" ")
+      return `{${part.name}, ${part.kind}, ${cases}}`
+    })
+    .join("")
+}

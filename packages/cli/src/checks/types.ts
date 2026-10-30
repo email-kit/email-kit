@@ -57,6 +57,14 @@ export interface CheckContext {
   readonly emails: readonly CheckedEmail[]
   /** Every template × locale rendered with each fixture and generated variant (CHK-06) */
   readonly rendered: readonly CheckedEmail[]
+  /** The templates compiled in the pseudo-locales that don't ship (I18N-05) */
+  readonly pseudo: readonly CheckedEmail[]
+  /** Templates that failed to compile in a pseudo-locale */
+  readonly pseudoErrors: readonly {
+    readonly template: string
+    readonly locale: string
+    readonly message: string
+  }[]
   readonly templates: readonly CheckedTemplate[]
   /** The project's own source files the templates bundle (templates and user components) */
   readonly sources: readonly SourceFile[]

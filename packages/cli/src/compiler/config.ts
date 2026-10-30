@@ -13,6 +13,7 @@ import {
 } from "@email-kit/core/internal"
 
 import { CATALOGUE } from "../checks/catalogue/index.ts"
+import { PSEUDO_LOCALES } from "../i18n/pseudo.ts"
 import { ROLES } from "../theme/roles.ts"
 import { TOKEN_CHECKS } from "../theme/validate.ts"
 
@@ -147,7 +148,8 @@ export function resolveConfig(
     customChecks.map((check) => check.id),
     problems,
   )
-  const locales = readLocales(config.locales, problems)
+  const real = readLocales(config.locales, problems)
+  const locales = [...real, ...readPseudo(config.locales, real, problems)]
   const localeFallback = readLocaleFallback(config.locales, locales, problems)
   if (problems.length > 0) {
     throw new EmailKitError(
@@ -367,6 +369,33 @@ function distance(a: string, b: string): number {
   return row[b.length] as number
 }
 
+// CFG-03's pseudo-locale toggle: `true` for both, or a list of them.
+function readPseudo(value: unknown, locales: readonly string[], problems: string[]): string[] {
+  const pseudo =
+    typeof value === "object" && value !== null
+      ? (value as Record<string, unknown>).pseudo
+      : undefined
+  if (pseudo === undefined || pseudo === false) return []
+  const chosen = pseudo === true ? [...PSEUDO_LOCALES] : pseudo
+  if (
+    !Array.isArray(chosen) ||
+    chosen.some((tag) => !(PSEUDO_LOCALES as readonly unknown[]).includes(tag))
+  ) {
+    problems.push(
+      `locales.pseudo: must be true, or a list of ${PSEUDO_LOCALES.map((l) => `"${l}"`).join(" and ")}`,
+    )
+    return []
+  }
+  const clash = chosen.find((tag) => locales.some((l) => l.toLowerCase() === tag.toLowerCase()))
+  if (clash) {
+    problems.push(
+      `locales.pseudo: "${clash}" is also in locales.list; pseudo-locales are generated, not translated`,
+    )
+    return []
+  }
+  return [...new Set(chosen as string[])]
+}
+
 // CFG-03: `{ "pt": "pt-BR" }`: a tag that isn't compiled → a compiled locale.
 function readLocaleFallback(
   value: unknown,
@@ -405,7 +434,13 @@ function readLocales(value: unknown, problems: string[]): string[] {
     problems.push('locales: must be an object like { default: "en", list: ["en", "de"] }')
     return ["en"]
   }
-  const { default: fallback, list, fallback: _chain, ...unknown } = value as Record<string, unknown>
+  const {
+    default: fallback,
+    list,
+    fallback: _chain,
+    pseudo: _pseudo,
+    ...unknown
+  } = value as Record<string, unknown>
   for (const key of Object.keys(unknown)) problems.push(`locales.${key}: unknown option`)
   const fallbackProblem = localeProblem(fallback)
   if (typeof fallback !== "string" || fallbackProblem) {

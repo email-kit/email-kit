@@ -111,8 +111,10 @@ describe("each check, with one rule broken", () => {
   ]
 
   it("covers every output check", () => {
-    // Source checks and render-only checks have their own tests (and sweep.test.ts).
-    const output = CATALOGUE.filter((c) => !c.id.startsWith("source.") && c.on !== "render")
+    // Source, render-only and pseudo-locale checks have their own tests (sweep, pseudo).
+    const output = CATALOGUE.filter(
+      (c) => !c.id.startsWith("source.") && !c.id.startsWith("i18n.") && c.on !== "render",
+    )
     expect(cases.map(([id]) => id).sort()).toEqual(output.map((c) => c.id).sort())
   })
 
