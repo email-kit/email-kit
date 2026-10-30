@@ -568,7 +568,8 @@ a CLDR attribution in generated modules; honest READMEs; Changesets prerelease m
 packages at `0.1.0-preview.0`; `VERSION` read from package.json; the components' peer range on
 core is `^`; `docs/releasing.md`. Smoke-tested from packed tarballs in a fresh Next.js 16.4.2 app:
 `create-email-kit --yes` (real install), `next build`, a route, `check`, `new`. Publishing (P0-02)
-needs the npm org and the public repository URLs.
+needs the npm org and the public repository URLs. What else blocks a first version:
+[release-readiness.md](release-readiness.md).
 
 | ID | Task | Reqs | Pri | Dep | Done when |
 |---|---|---|---|---|---|
