@@ -30,6 +30,7 @@ export async function compileWithConfig(config: ResolvedConfig): Promise<Compile
     locales: config.locales,
     configFile: basename(config.file),
     module: config.module,
+    perTemplateEntries: config.perTemplateEntries,
     platform: config.platform,
   })
   return { config, templates, files: writeOutput(config.out, output) }
@@ -45,4 +46,26 @@ export function summarize({ config, templates, files }: CompileResult): string {
     `(${count(total, "file")}: ${files.written.length} written, ${files.unchanged.length} unchanged, ` +
     `${files.deleted.length} removed)`
   )
+}
+
+/** `--verbose`: every template × locale with its sizes, then the files that changed (CLI-07). */
+export function describeResult({ templates, files }: CompileResult): string {
+  const kb = (text: string) => `${(Buffer.byteLength(text, "utf8") / 1024).toFixed(1)} KB`
+  const width = Math.max(0, ...templates.map((t) => t.id.length))
+  const lines: string[] = []
+  for (const template of templates) {
+    template.emails.forEach((email, index) => {
+      const name = (index === 0 ? template.id : "").padEnd(width)
+      lines.push(
+        `  ${name}  ${email.locale.padEnd(5)}  html ${kb(email.html)}  text ${kb(email.text)}`,
+      )
+    })
+  }
+  for (const [label, paths] of [
+    ["written", files.written],
+    ["removed", files.deleted],
+  ] as const) {
+    if (paths.length > 0) lines.push(`  ${label}: ${paths.join(", ")}`)
+  }
+  return lines.join("\n")
 }

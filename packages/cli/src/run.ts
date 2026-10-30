@@ -3,7 +3,7 @@
 
 import { cac } from "cac"
 
-import { compile, summarize } from "./compiler/build.ts"
+import { compile, describeResult, summarize } from "./compiler/build.ts"
 import { formatError } from "./compiler/problems.ts"
 import { watchProject } from "./compiler/watch.ts"
 import { VERSION } from "./version.ts"
@@ -29,6 +29,7 @@ export async function run(args: readonly string[], io: Io): Promise<number> {
     .option("--config <path>", "Use this config file instead of ./email-kit.config.ts")
     .option("--watch", "Recompile when a template, component, message or the config changes")
     .option("--quiet", "Print errors only")
+    .option("--verbose", "Also print each template's sizes per locale, and the files that changed")
     .action((options: CompileFlags) => {
       pending = compileCommand(options, io)
     })
@@ -55,16 +56,26 @@ interface CompileFlags {
   readonly config?: string
   readonly watch?: boolean
   readonly quiet?: boolean
+  readonly verbose?: boolean
 }
 
 async function compileCommand(options: CompileFlags, io: Io): Promise<number> {
+  if (options.quiet && options.verbose) {
+    io.err("✗ --quiet and --verbose can't be used together")
+    return 1
+  }
+  const report = (result: Parameters<typeof summarize>[0]) => {
+    if (options.quiet) return
+    io.out(summarize(result))
+    if (options.verbose) io.out(describeResult(result))
+  }
   if (options.watch) {
     const watcher = await watchProject({
       cwd: io.cwd,
       config: options.config,
       onCompile: (outcome) => {
         if ("error" in outcome) io.err(formatError(outcome.error, io))
-        else if (!options.quiet) io.out(summarize(outcome.result))
+        else report(outcome.result)
       },
     })
     io.out("Watching for changes. Press Ctrl+C to stop.")
@@ -76,8 +87,7 @@ async function compileCommand(options: CompileFlags, io: Io): Promise<number> {
     return 0
   }
   try {
-    const result = await compile({ cwd: io.cwd, config: options.config })
-    if (!options.quiet) io.out(summarize(result))
+    report(await compile({ cwd: io.cwd, config: options.config }))
     return 0
   } catch (error) {
     io.err(formatError(error, io))

@@ -54,6 +54,25 @@ describe("email-kit CLI", () => {
     expect(quiet.out).toEqual([])
   })
 
+  it("prints sizes and changed files with --verbose, and refuses --quiet --verbose", async () => {
+    mkdirSync(TMP, { recursive: true })
+    const dir = mkdtempSync(join(TMP, "verbose-"))
+    cpSync(fileURLToPath(new URL("fixtures/project/", import.meta.url)), dir, {
+      recursive: true,
+      filter: (path) => !path.includes(`${sep}compiled`),
+    })
+    const verbose = capture(dir)
+    expect(await run(["compile", "--verbose"], verbose.io)).toBe(0)
+    const details = verbose.out[1] ?? ""
+    expect(details).toMatch(/^ {2}order-confirmation {2}en {5}html \d+\.\d KB {2}text \d+\.\d KB$/m)
+    expect(details).toMatch(/^ {22}de {5}html /m)
+    expect(details).toContain("written: index.ts, manifest.json, order-confirmation/de.html")
+
+    const both = capture(dir)
+    expect(await run(["compile", "--quiet", "--verbose"], both.io)).toBe(1)
+    expect(both.err[0]).toBe("✗ --quiet and --verbose can't be used together")
+  })
+
   it("reports a missing config with exit code 1", async () => {
     mkdirSync(TMP, { recursive: true })
     const { io, err } = capture(mkdtempSync(join(TMP, "none-")))

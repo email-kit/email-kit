@@ -26,6 +26,8 @@ export interface ResolvedConfig {
   readonly locales: readonly string[]
   /** The generated module's format */
   readonly module: "ts" | "mjs"
+  /** Also write `<out>/<id>/index.*` per template */
+  readonly perTemplateEntries: boolean
   /** Platform values: compile-time constants and the keys passed at send time */
   readonly platform: PlatformValues
   /** Where loaded modules are bundled to, inside the project so packages resolve */
@@ -39,7 +41,10 @@ export const CONFIG_FILES: readonly string[] = [
   "email-kit.config.mjs",
 ]
 
-const KEYS = new Set(["root", "templates", "messages", "out", "module", "platform", "locales"])
+const KEYS = new Set([
+  ...["root", "templates", "messages", "out", "module", "perTemplateEntries", "platform"],
+  "locales",
+])
 
 export async function loadConfig(options: {
   readonly cwd: string
@@ -113,6 +118,10 @@ export function resolveConfig(
   if (module !== "ts" && module !== "mjs") {
     problems.push(`module: must be "ts" or "mjs", not ${JSON.stringify(module)}`)
   }
+  const perTemplateEntries = config.perTemplateEntries ?? false
+  if (typeof perTemplateEntries !== "boolean") {
+    problems.push("perTemplateEntries: must be true or false")
+  }
   const platform = readPlatform(config.platform, problems)
   const locales = readLocales(config.locales, problems)
   if (problems.length > 0) {
@@ -131,6 +140,7 @@ export function resolveConfig(
     out,
     locales,
     module: module === "mjs" ? "mjs" : "ts",
+    perTemplateEntries: perTemplateEntries === true,
     platform,
     cacheDir,
   }

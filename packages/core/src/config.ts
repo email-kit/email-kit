@@ -22,6 +22,11 @@ export interface EmailKitConfig {
    */
   readonly module?: "ts" | "mjs"
   /**
+   * Also write one self-contained module per template, `<out>/<id>/index.ts` (OUT-06), so a
+   * Worker or Lambda that sends one email bundles only that email. Default: `false`.
+   */
+  readonly perTemplateEntries?: boolean
+  /**
    * Platform values (CFG-07). A string is a compile-time constant, written into the output.
    * `{ runtime: true }` means the backend passes it at send time: `createEmails({ siteUrl })`.
    */

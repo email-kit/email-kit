@@ -47,6 +47,7 @@ export function buildOutput(
     readonly locales: readonly string[]
     readonly configFile: string
     readonly module: "ts" | "mjs"
+    readonly perTemplateEntries: boolean
     readonly platform: PlatformValues
   },
 ): OutputFile[] {
@@ -83,12 +84,23 @@ export function buildOutput(
     configFile: options.configFile,
     context: options.platform.runtime,
   }
-  const typescript = generateModule(templates, moduleOptions)
-  if (options.module === "mjs") {
-    const { js, dts } = toJavaScript(typescript, moduleHeader(moduleOptions))
-    files.push({ path: "index.mjs", content: js }, { path: "index.d.mts", content: dts })
-  } else {
-    files.push({ path: "index.ts", content: typescript })
+  // One module for every template, and optionally one per template (OUT-06): the same
+  // generator on a single template, so every entry has the same API and is self-contained.
+  const writeModule = (folder: string, included: readonly CompiledTemplate[]) => {
+    const typescript = generateModule(included, moduleOptions)
+    if (options.module === "mjs") {
+      const { js, dts } = toJavaScript(typescript, moduleHeader(moduleOptions))
+      files.push(
+        { path: `${folder}index.mjs`, content: js },
+        { path: `${folder}index.d.mts`, content: dts },
+      )
+    } else {
+      files.push({ path: `${folder}index.ts`, content: typescript })
+    }
+  }
+  writeModule("", templates)
+  if (options.perTemplateEntries) {
+    for (const template of templates) writeModule(`${template.id}/`, [template])
   }
   const owned = [...files.map((file) => file.path), "manifest.json"].sort()
   files.push({

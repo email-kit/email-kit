@@ -41,7 +41,11 @@ when** (acceptance).
   `file:line:col [id]`, code frames mapped through the bundle's source map, docs links into
   `docs/errors.md`, which a test keeps complete), P1-008 and P1-053 (platform values: constants
   written into the output, `{ runtime: true }` keys passed to `createEmails()`; data can't override
-  or shadow them).
+  or shadow them), P1-075 (`perTemplateEntries: true` writes a self-contained module per template;
+  a Worker bundle that imports one has only that template), P1-089 (`--help`, `--version`,
+  `NO_COLOR`, `--quiet`, `--verbose`).
+  **M1.1 remaining:** P1-063 (layout shell, waits for ADR 0001 / P0-04) and the rest of the
+  milestone's SHOULDs (P1-077 validator, P1-091 incremental compile).
   Fixture project with committed output in `packages/cli/test/fixtures/project/`.
 - **Phase 0 remaining:** P0-04 (needs real email clients), accepting ADRs 0002 and 0006, and
   P0-02 (publishing needs the maintainer's accounts).
