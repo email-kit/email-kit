@@ -19,9 +19,9 @@ function plural(n: number, word: string): string {
 }
 
 function where(finding: Finding): string {
-  const { file, line, column } = finding.subject
-  if (!file) return ""
-  return line === undefined ? file : `${file}:${line}:${column ?? 1}`
+  const { file, line, column, fixture } = finding.subject
+  const at = file === undefined ? "" : line === undefined ? file : `${file}:${line}:${column ?? 1}`
+  return fixture === undefined ? at : `${at} (rendered with ${fixture})`.trim()
 }
 
 export function formatHuman(findings: readonly Finding[]): string {
@@ -79,7 +79,9 @@ export function formatGithub(findings: readonly Finding[]): string {
         ...(column !== undefined ? [`col=${column}`] : []),
         `title=${property(finding.id)}`,
       ]
-      return `::${command[finding.level]} ${props.join(",")}::${data(`${finding.message}\nFix: ${finding.fix}\nDocs: ${finding.docs}`)}`
+      const fixture =
+        finding.subject.fixture === undefined ? "" : ` (rendered with ${finding.subject.fixture})`
+      return `::${command[finding.level]} ${props.join(",")}::${data(`${finding.message}${fixture}\nFix: ${finding.fix}\nDocs: ${finding.docs}`)}`
     })
     .join("\n")
 }

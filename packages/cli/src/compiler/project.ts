@@ -4,12 +4,13 @@
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs"
 import { basename, join, relative } from "node:path"
 
-import type { Purpose } from "@email-kit/core"
+import type { Purpose, StandardSchemaV1 } from "@email-kit/core"
 import { EmailKitError, isEmailKitError } from "@email-kit/core/internal"
 import type { Theme } from "../theme/theme.ts"
 import { type CompiledEmail, compileEmail } from "./compile.ts"
 import type { ResolvedConfig } from "./config.ts"
 import { assertUniqueIdentifiers, type Identifiers, identifiersFor } from "./emit/identifiers.ts"
+import { validateFixtures } from "./fixtures.ts"
 import { loadTemplate } from "./load.ts"
 import { CompileError, type Problem, toProblem } from "./problems.ts"
 import { type Field, readSchema } from "./schema.ts"
@@ -29,8 +30,10 @@ export interface CompiledTemplate {
   readonly emails: readonly CompiledEmail[]
   /** Every source file bundled into the template */
   readonly sources: readonly string[]
-  /** The fixture names from defineEmail() */
-  readonly fixtures: readonly string[]
+  /** The fixtures from defineEmail(), validated against the schema */
+  readonly fixtures: Readonly<Record<string, unknown>>
+  /** The schema, for validating generated fixture variants */
+  readonly schema: StandardSchemaV1
 }
 
 export async function compileProject(
@@ -97,6 +100,7 @@ async function compileTemplate(
         .join("\n")}`,
     )
   }
+  await validateFixtures(definition.schema, definition.fixtures ?? {}, definition.id)
   const emails = config.locales.map((locale) => {
     const messagesFile = join(config.messages, locale, `${definition.id}.json`)
     try {
@@ -123,7 +127,8 @@ async function compileTemplate(
     jsonSchema: schema.jsonSchema,
     emails,
     sources: files,
-    fixtures: Object.keys(definition.fixtures ?? {}),
+    fixtures: definition.fixtures ?? {},
+    schema: definition.schema,
   }
 }
 

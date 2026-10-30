@@ -16,6 +16,8 @@ export interface Subject {
   readonly file?: string
   readonly line?: number
   readonly column?: number
+  /** For findings in a rendered email: the fixture or generated variant it was rendered with */
+  readonly fixture?: string
 }
 
 export interface Finding {
@@ -38,6 +40,8 @@ export interface CheckedEmail {
   readonly html: string
   readonly text: string
   readonly parsed: ParsedEmail
+  /** Set when this is a render: the fixture or generated variant */
+  readonly fixture?: string
 }
 
 /** A template as the source checks see it. */
@@ -49,7 +53,10 @@ export interface CheckedTemplate {
 }
 
 export interface CheckContext {
+  /** The compiled templates, with mustache tags where the data goes */
   readonly emails: readonly CheckedEmail[]
+  /** Every template × locale rendered with each fixture and generated variant (CHK-06) */
+  readonly rendered: readonly CheckedEmail[]
   readonly templates: readonly CheckedTemplate[]
   /** The project's own source files the templates bundle (templates and user components) */
   readonly sources: readonly SourceFile[]
@@ -85,5 +92,10 @@ export interface Check {
   readonly fix: string
   /** Runs only when classic Outlook is a target */
   readonly outlookClassic?: boolean
+  /**
+   * What `context.emails` holds when it runs: the compiled `template`s (the default), the
+   * `render`s of the fixture sweep, or `both`, for values that may come from data.
+   */
+  readonly on?: "template" | "render" | "both"
   run(context: CheckContext, report: (problem: Problem) => void): void
 }

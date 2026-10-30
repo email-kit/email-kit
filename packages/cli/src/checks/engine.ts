@@ -1,12 +1,16 @@
 // The check engine (P1-140, CHK-01): runs the catalogue over a built project, applies the
 // per-id config (CHK-02, CFG-06) and the targets (CHK-05), and shapes every finding (CHK-04).
-// The theme's tokens.* findings join as they are.
+// Checks see the compiled templates, the renders of the fixture sweep (CHK-06), or both. The
+// theme's tokens.* findings join as they are.
 
 import { relative } from "node:path"
 
 import type { CheckSetting } from "@email-kit/core"
+import { createTemplate } from "@email-kit/dialect/module"
 
 import type { BuiltProject } from "../compiler/build.ts"
+import { modelOf } from "../compiler/emit/types.ts"
+import { fixturesWithVariants } from "../compiler/fixtures.ts"
 import { CATALOGUE } from "./catalogue/index.ts"
 import { parseEmail } from "./parse.ts"
 import { type SourceFile, sourceFile } from "./source.ts"
@@ -19,13 +23,20 @@ export function docsUrl(id: string): string {
   return `${CHECKS_DOCS_URL}#${id.toLowerCase().replace(/[^a-z0-9 _-]/g, "")}`
 }
 
-export function contextOf(project: BuiltProject): CheckContext {
+/** A stand-in for a platform value the backend passes at send time. */
+function contextValue(key: string): string {
+  return /url|link|href/i.test(key) ? "https://example.test/" : `Example ${key}`
+}
+
+export async function contextOf(project: BuiltProject): Promise<CheckContext> {
   const { config } = project
+  const fileOf = (id: string, locale: string) =>
+    relative(config.dir, `${config.out}/${id}/${locale}.html`)
   const emails: CheckedEmail[] = project.templates.flatMap((template) =>
     template.emails.map((email) => ({
       template: template.id,
       locale: email.locale,
-      file: relative(config.dir, `${config.out}/${template.id}/${email.locale}.html`),
+      file: fileOf(template.id, email.locale),
       subject: email.subject,
       preheader: email.preheader,
       html: email.html,
@@ -33,6 +44,46 @@ export function contextOf(project: BuiltProject): CheckContext {
       parsed: parseEmail(email.html),
     })),
   )
+
+  // The fixture sweep (P1-164): each template × locale rendered the way the generated module
+  // renders it, with every fixture and generated variant.
+  const values = Object.fromEntries(config.platform.runtime.map((key) => [key, contextValue(key)]))
+  const rendered: CheckedEmail[] = []
+  for (const template of project.templates) {
+    const parts = Object.fromEntries(
+      template.emails.map((e) => [
+        e.locale,
+        { subject: e.subject, preheader: e.preheader, html: e.html, text: e.text },
+      ]),
+    )
+    const runtime = createTemplate(
+      template.id,
+      template.purpose,
+      modelOf(template.model),
+      config.locales,
+      parts,
+      values,
+      false,
+    )
+    const fixtures = await fixturesWithVariants(template.schema, template.model, template.fixtures)
+    for (const fixture of fixtures) {
+      for (const locale of config.locales) {
+        const email = runtime.render(fixture.data, { locale })
+        rendered.push({
+          template: template.id,
+          locale,
+          file: fileOf(template.id, locale),
+          subject: email.subject,
+          preheader: email.preheader,
+          html: email.html,
+          text: email.text,
+          parsed: parseEmail(email.html),
+          fixture: fixture.name,
+        })
+      }
+    }
+  }
+
   // Each project file once, with the templates that bundle it.
   const users = new Map<string, string[]>()
   for (const template of project.templates) {
@@ -42,10 +93,11 @@ export function contextOf(project: BuiltProject): CheckContext {
   const source = config.theme?.source
   return {
     emails,
+    rendered,
     templates: project.templates.map((t) => ({
       id: t.id,
       file: relative(config.dir, t.file),
-      fixtures: t.fixtures,
+      fixtures: Object.keys(t.fixtures),
     })),
     sources,
     theme: project.theme,
@@ -66,18 +118,25 @@ export function runChecks(
   for (const check of checks) {
     if (check.outlookClassic && !context.outlookClassic) continue
     if (levelOf(check.id, check.level) === "off") continue
-    check.run(context, (problem) => {
-      const level = settings[check.id]?.level ?? problem.level ?? check.level
-      if (level === "off") return
-      findings.push({
-        id: check.id,
-        level,
-        subject: subjectOf(problem),
-        message: problem.message,
-        fix: problem.fix ?? check.fix,
-        docs: docsUrl(check.id),
+    const on = check.on ?? "template"
+    const passes: CheckContext[] = [
+      ...(on === "render" ? [] : [context]),
+      ...(on === "template" ? [] : [{ ...context, emails: context.rendered }]),
+    ]
+    for (const pass of passes) {
+      check.run(pass, (problem) => {
+        const level = settings[check.id]?.level ?? problem.level ?? check.level
+        if (level === "off") return
+        findings.push({
+          id: check.id,
+          level,
+          subject: subjectOf(problem),
+          message: problem.message,
+          fix: problem.fix ?? check.fix,
+          docs: docsUrl(check.id),
+        })
       })
-    })
+    }
   }
   for (const finding of context.themeFindings) {
     const level = levelOf(finding.id, finding.level === "warning" ? "warn" : finding.level)
@@ -92,7 +151,15 @@ export function runChecks(
       docs: docsUrl(finding.id),
     })
   }
-  return findings
+  // A static problem shows in the template and in every render: keep the first, which has the
+  // line number. Problems that come from data differ per fixture and stay.
+  const seen = new Set<string>()
+  return findings.filter((f) => {
+    const key = `${f.id}|${f.subject.template}|${f.subject.locale}|${f.subject.file}|${f.message}`
+    if (seen.has(key)) return false
+    seen.add(key)
+    return true
+  })
 }
 
 function subjectOf(problem: Problem): Finding["subject"] {
@@ -108,11 +175,9 @@ function subjectOf(problem: Problem): Finding["subject"] {
   }
   const email = problem.email
   if (!email) return {}
+  const base = { template: email.template, locale: email.locale, file: email.file }
+  // A render isn't a file on disk: its offsets don't point into the compiled HTML.
+  if (email.fixture !== undefined) return { ...base, fixture: email.fixture }
   const position = problem.at === undefined ? undefined : email.parsed.position(problem.at)
-  return {
-    template: email.template,
-    locale: email.locale,
-    file: email.file,
-    ...(position && { line: position.line, column: position.column }),
-  }
+  return { ...base, ...(position && { line: position.line, column: position.column }) }
 }

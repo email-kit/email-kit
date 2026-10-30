@@ -114,6 +114,8 @@ export const HTML: readonly Check[] = [
   {
     id: "html.no-forms-embeds",
     level: "error",
+    // Renders too: hostile data must stay escaped text, never markup.
+    on: "both",
     rule: "No form, input, script, iframe, object, embed, video or svg elements.",
     fix: "Clients strip them or mark the email as suspicious; link to a web page instead.",
     run: (context, report) =>

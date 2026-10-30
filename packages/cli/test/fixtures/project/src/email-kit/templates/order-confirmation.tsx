@@ -9,8 +9,9 @@ export default defineEmail({
   id: "order-confirmation",
   purpose: "transactional",
   schema: z.object({
-    customerName: z.string(),
-    orderNumber: z.string(),
+    // Required and non-empty: "Thanks, {name}!" has no fallback (copy.placeholder-fallbacks).
+    customerName: z.string().min(1),
+    orderNumber: z.string().min(1),
     orderUrl: z.string().meta(url),
     items: z.array(z.object({ name: z.string(), qty: z.number() })),
     discount: z.string().optional(),

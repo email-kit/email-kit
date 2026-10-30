@@ -654,7 +654,7 @@ export function createEmails(context: EmailContext): Emails {
     orderConfirmation: createTemplate(
       "order-confirmation",
       "transactional",
-      {"type":"object","properties":{"customerName":{"type":"string"},"orderNumber":{"type":"string"},"orderUrl":{"type":"string","url":true},"items":{"type":"array","items":{"type":"object","properties":{"name":{"type":"string"},"qty":{"type":"number"}},"required":["name","qty"]}},"discount":{"type":"string"}},"required":["customerName","orderNumber","orderUrl","items"]},
+      {"type":"object","properties":{"customerName":{"type":"string","constraints":{"minLength":1}},"orderNumber":{"type":"string","constraints":{"minLength":1}},"orderUrl":{"type":"string","url":true},"items":{"type":"array","items":{"type":"object","properties":{"name":{"type":"string"},"qty":{"type":"number"}},"required":["name","qty"]}},"discount":{"type":"string"}},"required":["customerName","orderNumber","orderUrl","items"]},
       locales,
       TEMPLATES.orderConfirmation,
       values,

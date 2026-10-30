@@ -97,6 +97,12 @@ A test checks that every id the code can raise is listed here.
 **Why:** a `<DataTable>` has fewer than two columns. NVDA with classic Outlook treats one-column tables as layout and stops announcing headers, and a single column reads better as a list.
 **Fix:** use `KeyValue` or `List`, or add the column the data needs.
 
+## Fixtures
+
+### invalid-fixture
+**Why:** a fixture in `defineEmail({ fixtures })` doesn't match the template's schema. The studio previews fixtures and `email-kit check` renders them, so they must be data the backend could send.
+**Fix:** correct the fixture at the path in the message, or the schema if the fixture shows real data it doesn't allow yet.
+
 ## Data and placeholders
 
 ### placeholder-misuse

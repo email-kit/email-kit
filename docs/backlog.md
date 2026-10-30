@@ -288,6 +288,19 @@ allowed for spacer cells) and `source.fixture-exists`. Style objects are found t
 `style`, spreads, conditionals and same-file constants, so data such as a fixture's colour name
 isn't flagged. email-kit's own components pass them, which closes **P1-120**'s lint.
 
+**Third slice:** **P1-015** fixtures are validated against the schema on compile
+(`invalid-fixture`, every issue with its path), and empty, long and hostile variants are
+generated from the schema's model starting from the first fixture, within its constraints
+(min/max length, enums, max items, nullable, optional; patterns keep the fixture's value; a
+variant the schema still rejects is dropped). **P1-164** the fixture sweep renders every template
+× locale with each fixture and variant through the dialect runtime the generated module uses
+(`@email-kit/dialect/module`); checks declare `on: template | render | both`, render findings name
+the fixture, and duplicates collapse to the template finding with its line. New render checks:
+`size.gmail` (largest render + 5 KB vs the 102 KB clip) and `copy.placeholder-fallbacks`. The
+data-dependent `img.alt`, `img.https`, `img.format` and `html.no-forms-embeds` also run on renders.
+The fixture project's schema now requires non-empty `customerName` and `orderNumber`: the sweep
+found "Thanks, !" in its empty variant.
+
 | ID | Task | Reqs | Pri | Dep | Done when |
 |---|---|---|---|---|---|
 | P1-140 | Check engine core (context over output, sources, theme, messages and fixtures), shared by the CLI, the studio and CI | CHK-01 | MUST | P1-074 | The API runs registered checks |

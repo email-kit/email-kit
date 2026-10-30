@@ -15,6 +15,7 @@ export const IMG: readonly Check[] = [
   {
     id: "img.alt",
     level: "error",
+    on: "both",
     rule: "Every image has `alt`, non-empty when it is linked.",
     fix: 'Describe what the image says, name the destination of a linked one, or use alt="" for decoration.',
     run: (context, report) =>
@@ -60,6 +61,7 @@ export const IMG: readonly Check[] = [
   {
     id: "img.https",
     level: "error",
+    on: "both",
     rule: "Image URLs are absolute `https:` URLs.",
     fix: "Gmail and Apple fetch images through proxies; relative and http: URLs break or warn.",
     run: (context, report) =>
@@ -80,6 +82,7 @@ export const IMG: readonly Check[] = [
   {
     id: "img.format",
     level: "error",
+    on: "both",
     rule: "Images are PNG, JPEG or GIF; never SVG or `data:` URIs.",
     fix: "Export a PNG or JPEG: SVG shows blank in Outlook on the web, classic Outlook can't show WebP or AVIF, Gmail drops data: images.",
     run: (context, report) =>

@@ -193,7 +193,7 @@ checks: { "img.fluid-width": { level: "off", reason: "Hero images are fixed widt
 ### html.no-forms-embeds
 **Default:** error
 
-**Rule:** No form, input, script, iframe, object, embed, video or svg elements.
+**Rule:** No form, input, script, iframe, object, embed, video or svg elements. Also runs on the renders, for values that come from data.
 
 **Fix:** Clients strip them or mark the email as suspicious; link to a web page instead.
 
@@ -274,7 +274,7 @@ checks: { "img.fluid-width": { level: "off", reason: "Hero images are fixed widt
 ### img.alt
 **Default:** error
 
-**Rule:** Every image has `alt`, non-empty when it is linked.
+**Rule:** Every image has `alt`, non-empty when it is linked. Also runs on the renders, for values that come from data.
 
 **Fix:** Describe what the image says, name the destination of a linked one, or use alt="" for decoration.
 
@@ -288,14 +288,14 @@ checks: { "img.fluid-width": { level: "off", reason: "Hero images are fixed widt
 ### img.https
 **Default:** error
 
-**Rule:** Image URLs are absolute `https:` URLs.
+**Rule:** Image URLs are absolute `https:` URLs. Also runs on the renders, for values that come from data.
 
 **Fix:** Gmail and Apple fetch images through proxies; relative and http: URLs break or warn.
 
 ### img.format
 **Default:** error
 
-**Rule:** Images are PNG, JPEG or GIF; never SVG or `data:` URIs.
+**Rule:** Images are PNG, JPEG or GIF; never SVG or `data:` URIs. Also runs on the renders, for values that come from data.
 
 **Fix:** Export a PNG or JPEG: SVG shows blank in Outlook on the web, classic Outlook can't show WebP or AVIF, Gmail drops data: images.
 
@@ -351,3 +351,21 @@ checks: { "img.fluid-width": { level: "off", reason: "Hero images are fixed widt
 **Rule:** Data tables have `th scope`, a caption or a heading before them, at least 2 × 2 cells, and no presentation role.
 
 **Fix:** Use DataTable, which writes all of these.
+
+## Copy
+
+### copy.placeholder-fallbacks
+**Default:** error
+
+**Rule:** Empty, long and real data render cleanly: no “Hi ,”, doubled spaces or empty brackets in the subject, preheader or text. Runs on the renders of every fixture and generated variant.
+
+**Fix:** Give the value a fallback, restructure the message (“Hi,” rather than “Hi {name},”), or require it in the schema (`z.string().min(1)`).
+
+## Size
+
+### size.gmail
+**Default:** error
+
+**Rule:** The HTML part of the largest render, plus 5 KB for the provider, stays under Gmail's 102 KB clip (a warning from 90 KB). Runs on the renders of every fixture and generated variant.
+
+**Fix:** Gmail hides everything past the clip behind “View entire message”, footers and tracking included. Trim the content, or cap long lists.

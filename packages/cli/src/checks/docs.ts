@@ -13,6 +13,8 @@ const FAMILIES: readonly [string, string][] = [
   ["img", "Images"],
   ["dark", "Dark mode"],
   ["a11y", "Accessibility"],
+  ["copy", "Copy"],
+  ["size", "Size"],
 ]
 
 export function checksMarkdown(): string {
@@ -20,10 +22,15 @@ export function checksMarkdown(): string {
     "Adjust the colour or the role in the theme; `email-kit tokens` lists every pair."
   const entries = [
     ...TOKEN_CHECKS.map((check) => ({ ...check, fix: tokenFix })),
-    ...CATALOGUE.map(({ id, level, rule, fix, outlookClassic }) => ({
+    ...CATALOGUE.map(({ id, level, rule, fix, outlookClassic, on }) => ({
       id,
       level,
-      rule: outlookClassic ? `${rule} Runs when classic Outlook is a target.` : rule,
+      rule: [
+        rule,
+        ...(outlookClassic ? ["Runs when classic Outlook is a target."] : []),
+        ...(on === "render" ? ["Runs on the renders of every fixture and generated variant."] : []),
+        ...(on === "both" ? ["Also runs on the renders, for values that come from data."] : []),
+      ].join(" "),
       fix,
     })),
   ]

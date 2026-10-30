@@ -30,7 +30,7 @@ let project: BuiltProject
 let context: CheckContext
 beforeAll(async () => {
   project = await buildProject(await loadConfig({ cwd: FIXTURE }))
-  context = contextOf(project)
+  context = await contextOf(project)
 })
 
 /** The fixture's English email, changed by `edit`, as the only email to check. */
@@ -111,7 +111,8 @@ describe("each check, with one rule broken", () => {
   ]
 
   it("covers every output check", () => {
-    const output = CATALOGUE.filter((c) => !c.id.startsWith("source."))
+    // Source checks and render-only checks have their own tests (and sweep.test.ts).
+    const output = CATALOGUE.filter((c) => !c.id.startsWith("source.") && c.on !== "render")
     expect(cases.map(([id]) => id).sort()).toEqual(output.map((c) => c.id).sort())
   })
 

@@ -104,7 +104,7 @@ async function checkCommand(options: CheckFlags, io: Io): Promise<number> {
   try {
     const config = await loadConfig({ cwd: io.cwd, config: options.config })
     const project = await buildProject(config)
-    const findings = runChecks(contextOf(project), config.checks)
+    const findings = runChecks(await contextOf(project), config.checks)
     const output = REPORTERS[name as keyof typeof REPORTERS](findings)
     if (output) io.out(output)
     return findings.some((finding) => finding.level === "error") ? 1 : 0
