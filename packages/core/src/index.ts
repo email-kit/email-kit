@@ -18,7 +18,13 @@ export {
   type Purpose,
 } from "./define.ts"
 export { EmailKitError } from "./errors.ts"
-export type { Message, MessageParam, Translate } from "./i18n.ts"
+export type {
+  Message,
+  MessageParam,
+  MessageRegistry,
+  Translate,
+  TypedTranslate,
+} from "./i18n.ts"
 export type { IrNode } from "./ir.ts"
 export { type Child, Fragment } from "./jsx-runtime.ts"
 export { secret, secretUrl, url } from "./markers.ts"

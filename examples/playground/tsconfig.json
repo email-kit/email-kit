@@ -7,5 +7,10 @@
     "isolatedDeclarations": false,
     "declaration": false
   },
-  "include": ["email-kit.config.ts", "email-kit/templates", "email-kit/fixtures"]
+  "include": [
+    "email-kit.config.ts",
+    "email-kit/templates",
+    "email-kit/fixtures",
+    "email-kit/compiled/messages.d.ts"
+  ]
 }

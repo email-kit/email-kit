@@ -24,5 +24,9 @@
     "allowImportingTsExtensions": true,
     "noEmit": true
   },
-  "files": ["generated.check.ts", "fixtures/project/src/email-kit/compiled/index.ts"]
+  "files": [
+    "generated.check.ts",
+    "fixtures/project/src/email-kit/compiled/index.ts",
+    "fixtures/project/src/email-kit/compiled/messages.d.ts"
+  ]
 }

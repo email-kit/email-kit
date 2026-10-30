@@ -10,7 +10,7 @@ import { type ThemeContext, withDirection, withTheme } from "./theme-context.ts"
 
 export { isEmailDefinition } from "./define.ts"
 export { EmailKitError, isEmailKitError } from "./errors.ts"
-export { type Messages, type PluralSupport, selectKey } from "./i18n.ts"
+export { type Messages, messageArguments, type PluralSupport, selectKey } from "./i18n.ts"
 export * from "./ir.ts"
 export {
   PLATFORM_KEYS,

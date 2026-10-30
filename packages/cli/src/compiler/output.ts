@@ -22,6 +22,7 @@ import type { Theme } from "../theme/theme.ts"
 
 import { VERSION } from "../version.ts"
 import { toJavaScript } from "./emit/javascript.ts"
+import { generateMessageTypes } from "./emit/messages.ts"
 import { generateModule, moduleHeader } from "./emit/module.ts"
 import type { CompiledTemplate } from "./project.ts"
 
@@ -106,6 +107,10 @@ export function buildOutput(
     }
   }
   writeModule("", templates)
+  files.push({
+    path: "messages.d.ts",
+    content: generateMessageTypes(templates, moduleHeader(moduleOptions)),
+  })
   if (options.perTemplateEntries) {
     for (const template of templates) writeModule(`${template.id}/`, [template])
   }

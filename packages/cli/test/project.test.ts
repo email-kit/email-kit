@@ -72,12 +72,13 @@ describe("email-kit compile", () => {
     const dir = copyProject()
     const result = await compile({ cwd: dir })
     expect(summarize(result)).toBe(
-      "Compiled 1 template × 2 locales into src/email-kit/compiled (7 files: 7 written, 0 unchanged, 0 removed)",
+      "Compiled 1 template × 2 locales into src/email-kit/compiled (8 files: 8 written, 0 unchanged, 0 removed)",
     )
     const manifest = JSON.parse(read(dir, "manifest.json")) as { files: string[] }
     expect(manifest.files).toEqual([
       "index.ts",
       "manifest.json",
+      "messages.d.ts",
       "order-confirmation/de.html",
       "order-confirmation/de.txt",
       "order-confirmation/en.html",
@@ -224,7 +225,7 @@ describe("email-kit compile", () => {
     const first = read(dir, "index.ts")
     const second = await compile({ cwd: dir })
     expect(second.files.written).toEqual([])
-    expect(second.files.unchanged).toHaveLength(7)
+    expect(second.files.unchanged).toHaveLength(8)
     expect(read(dir, "index.ts")).toBe(first)
   })
 

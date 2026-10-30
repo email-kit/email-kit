@@ -39,7 +39,10 @@ directly, and `pnpm build` runs the production build.
    every `.tsx` file.
 3. Compile before Next.js builds: `"build": "email-kit compile && next build"`. While developing,
    run `email-kit compile --watch` next to `next dev`.
-4. Import `@/email-kit/compiled` in server code (route handlers, server actions) and call
+4. `t()` in templates is typed from your messages once you've compiled: a misspelt key or a
+   missing parameter is an editor error. The types are in `src/email-kit/compiled/messages.d.ts`,
+   which your tsconfig picks up if it includes the folder (Next.js's default does).
+5. Import `@/email-kit/compiled` in server code (route handlers, server actions) and call
    `emails.<template>.render(data, { locale })`. The module has no dependencies and works in the
    Node.js and edge runtimes.
-5. `email-kit check` runs the checks; add it to CI.
+6. `email-kit check` runs the checks; add it to CI.

@@ -18,6 +18,24 @@ export type Translate = (key: string, params?: Readonly<Record<string, MessagePa
 
 export type Messages = Readonly<Record<string, string>>
 
+/**
+ * Each template's message keys and their parameters, filled in by the `messages.d.ts` that
+ * `email-kit compile` writes from the default locale (P1-159). Empty until then, and `t()` stays
+ * untyped.
+ */
+// biome-ignore lint/suspicious/noEmptyInterface: augmented by the generated messages.d.ts
+export interface MessageRegistry {}
+
+/** `t()` for one template: its keys, and each message's parameters with their types. */
+export type TypedTranslate<Id extends string> = Id extends keyof MessageRegistry
+  ? <Key extends keyof MessageRegistry[Id] & string>(
+      key: Key,
+      ...params: ParamsArgument<MessageRegistry[Id][Key]>
+    ) => Message
+  : Translate
+
+type ParamsArgument<P> = [keyof P] extends [never] ? [params?: Record<string, never>] : [params: P]
+
 /** The locale's CLDR plural rules, from the compiler. */
 export interface PluralSupport {
   /** The categories the locale uses, such as ["one", "other"] */
@@ -162,6 +180,30 @@ function parse(source: string, where: string): Part[] {
   const parts = message(false, 0)
   if (pos < source.length) fail('an unbalanced "}"')
   return parts
+}
+
+/**
+ * A message's arguments and how it uses them, for the generated `t()` types: a plural takes a
+ * number, a select a string, a plain `{name}` any message value.
+ */
+export function messageArguments(
+  source: string,
+  where: string,
+): ReadonlyMap<string, "plural" | "select" | "text"> {
+  const out = new Map<string, "plural" | "select" | "text">()
+  const visit = (parts: readonly Part[]) => {
+    for (const part of parts) {
+      if (part.kind === "argument") {
+        if (!out.has(part.name)) out.set(part.name, "text")
+      } else if (part.kind === "plural" || part.kind === "select") {
+        // A plural wins over the others: its number also prints as text.
+        if (out.get(part.name) !== "plural") out.set(part.name, part.kind)
+        for (const parts of part.cases.values()) visit(parts)
+      }
+    }
+  }
+  visit(parse(source, where))
+  return out
 }
 
 export function createTranslate(

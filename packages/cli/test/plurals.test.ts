@@ -140,6 +140,13 @@ describe("plural and select in a compiled project", () => {
     await compile({ cwd: dir })
     const out = join(dir, "src/email-kit/compiled")
     expect(JSON.parse(readFileSync(join(out, "manifest.json"), "utf8")).cldr).toBe(CLDR_VERSION)
+    // The typed t(): a plural takes a number, a select a string, a plain argument anything.
+    const types = readFileSync(join(out, "messages.d.ts"), "utf8")
+    expect(types).toContain('readonly "subject": { readonly count: number | Placeholder<number> }')
+    expect(types).toContain('readonly "plan": { readonly plan: string | Placeholder<string> }')
+    expect(types).toContain(
+      'readonly "line": { readonly name: MessageParam; readonly qty: number | Placeholder<number>; readonly count: number | Placeholder<number> }',
+    )
     const { emails } = (await import(pathToFileURL(join(out, "index.ts")).href)) as {
       emails: {
         cart: {

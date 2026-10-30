@@ -63,6 +63,7 @@
   "files": [
     "index.ts",
     "manifest.json",
+    "messages.d.ts",
     "order-confirmation/de.html",
     "order-confirmation/de.txt",
     "order-confirmation/en.html",

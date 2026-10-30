@@ -66,7 +66,9 @@ describe("email-kit CLI", () => {
     const details = verbose.out[1] ?? ""
     expect(details).toMatch(/^ {2}order-confirmation {2}en {5}html \d+\.\d KB {2}text \d+\.\d KB$/m)
     expect(details).toMatch(/^ {22}de {5}html /m)
-    expect(details).toContain("written: index.ts, manifest.json, order-confirmation/de.html")
+    expect(details).toContain(
+      "written: index.ts, manifest.json, messages.d.ts, order-confirmation/de.html",
+    )
 
     const both = capture(dir)
     expect(await run(["compile", "--quiet", "--verbose"], both.io)).toBe(1)

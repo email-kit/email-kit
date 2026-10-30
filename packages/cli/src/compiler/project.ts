@@ -30,6 +30,8 @@ export interface CompiledTemplate {
   readonly emails: readonly CompiledEmail[]
   /** Every source file bundled into the template */
   readonly sources: readonly string[]
+  /** The default locale's messages, for the generated t() types (P1-159) */
+  readonly messages: Readonly<Record<string, string>>
   /** The fixtures from defineEmail(), validated against the schema */
   readonly fixtures: Readonly<Record<string, unknown>>
   /** The schema, for validating generated fixture variants */
@@ -129,6 +131,9 @@ async function compileTemplate(
     emails,
     sources: files,
     fixtures: definition.fixtures ?? {},
+    messages: readMessages(
+      join(config.messages, config.locales[0] as string, `${definition.id}.json`),
+    ),
     schema: definition.schema,
   }
 }

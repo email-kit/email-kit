@@ -261,6 +261,12 @@ string or with a case that isn't a value. Literal numbers and strings resolve at
 Not yet: conformance cases for `(locale, n) → category` (the test cross-checks Intl instead),
 `selectordinal`, and the i18n.* checks as check-engine findings.
 
+**P1-159** typed `t()`: compile writes `messages.d.ts`, augmenting core's `MessageRegistry`
+with each template's keys and parameters from the default locale (a plural takes a number, a
+select a string, a plain argument any message value). `defineEmail` infers the id as a literal
+and types `t` from it; a template not compiled yet keeps an untyped `t`. Verified on TS 5.9 and
+7 through the bundled declarations, by type tests, and in the Next.js example.
+
 | ID | Task | Reqs | Pri | Dep | Done when |
 |---|---|---|---|---|---|
 | P1-150 | Locale config (default, list, fallback chain, pseudo-locale toggles) | CFG-03 | MUST | P1-004 | Typed and validated |
