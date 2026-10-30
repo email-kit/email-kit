@@ -19,6 +19,8 @@ when** (acceptance).
   `packages/dialect` (internal) and a 142-case seed suite in `conformance/mustache-core/`.
 - **P0-03 and P0-11 done.** Prototype compiler in `@email-kit/core` and `@email-kit/cli`; rolldown
   recommended as the transform. Findings in `docs/spikes/`.
+- **P0-10 done.** Schema reader and portability check in `@email-kit/cli`; findings in
+  `docs/spikes/p0-10-schema.md` (one decision open: refinements).
 - **P0-02 prepared.** The placeholder packages and the release workflow are ready. Publishing and
   creating the repos need the maintainer's accounts: see `docs/setup/reserve-names.md`.
 - All other tasks are `todo`.

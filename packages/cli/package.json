@@ -47,8 +47,11 @@
   "devDependencies": {
     "@email-kit/dialect": "workspace:*",
     "@types/node": "catalog:",
+    "@valibot/to-json-schema": "catalog:",
+    "arktype": "catalog:",
     "tsdown": "catalog:",
     "typescript": "catalog:",
+    "valibot": "catalog:",
     "vitest": "catalog:",
     "zod": "catalog:"
   }

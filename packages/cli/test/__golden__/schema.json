@@ -1,0 +1,80 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "code": {
+      "type": "string",
+      "x-email-kit": {
+        "secret": true
+      }
+    },
+    "customer": {
+      "type": "object",
+      "properties": {
+        "email": {
+          "type": "string",
+          "format": "email"
+        },
+        "name": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "email",
+        "name"
+      ]
+    },
+    "discount": {
+      "type": "string"
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "qty": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "name",
+          "qty"
+        ]
+      }
+    },
+    "note": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "orderUrl": {
+      "type": "string",
+      "x-email-kit": {
+        "url": true
+      }
+    },
+    "plan": {
+      "type": "string",
+      "enum": [
+        "free",
+        "pro"
+      ]
+    },
+    "total": {
+      "type": "number"
+    }
+  },
+  "required": [
+    "code",
+    "customer",
+    "items",
+    "note",
+    "orderUrl",
+    "plan",
+    "total"
+  ]
+}

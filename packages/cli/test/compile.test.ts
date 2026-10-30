@@ -10,6 +10,7 @@ import { beforeAll, describe, expect, it } from "vitest"
 
 import { type CompiledEmail, compileEmail } from "../src/compiler/compile.ts"
 import { type LoadedTemplate, loadTemplate } from "../src/compiler/load.ts"
+import { readSchema } from "../src/compiler/schema.ts"
 
 const fixture = (path: string) => fileURLToPath(new URL(`fixtures/${path}`, import.meta.url))
 export const cacheDir = fileURLToPath(new URL("../node_modules/.cache/email-kit/", import.meta.url))
@@ -44,6 +45,14 @@ describe("loadTemplate", () => {
       "Card.tsx",
       "order-confirmation.tsx",
     ])
+  })
+
+  it("reads the template's schema as portable JSON Schema", async () => {
+    const schema = await readSchema(loaded.definition.schema, { resolveFrom: fixture("") })
+    expect(schema.issues).toEqual([])
+    await expect(`${JSON.stringify(schema.jsonSchema, null, 2)}\n`).toMatchFileSnapshot(
+      golden("schema.json"),
+    )
   })
 
   it("rejects a file without a default defineEmail export", async () => {
