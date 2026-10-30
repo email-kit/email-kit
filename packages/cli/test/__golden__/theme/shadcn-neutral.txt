@@ -1,0 +1,124 @@
+## light
+
+pageGround                  #f5f5f5
+canvas                      #ffffff
+card                        #ffffff
+muted                       #f5f5f5
+codeSurface                 #f5f5f5
+inverse                     #0a0a0a
+ink                         #0a0a0a
+mutedInk                    #707070
+subtleInk                   #707070
+inverseInk                  #ffffff
+link                        #171717
+hairline                    #e5e5e5
+divider                     #e5e5e5
+strongBorder                #0a0a0a
+brand                       #171717
+onBrand                     #fafafa
+brandInk                    #171717
+action.primary.fill         #171717
+action.primary.label        #fafafa
+action.primary.border       #171717
+action.secondary.fill       #f5f5f5
+action.secondary.label      #171717
+action.secondary.border     #e5e5e5
+action.destructive.fill     #e7000b
+action.destructive.label    #ffffff
+action.destructive.border   #e7000b
+status.info.surface         #eff6ff
+status.info.ink             #1d4ed8
+status.info.border          #bfdbfe
+status.info.fill            #1d4ed8
+status.info.onFill          #ffffff
+status.success.surface      #f0fdf4
+status.success.ink          #15803d
+status.success.border       #bbf7d0
+status.success.fill         #166534
+status.success.onFill       #ffffff
+status.warning.surface      #fffbeb
+status.warning.ink          #b45309
+status.warning.border       #fde68a
+status.warning.fill         #92400e
+status.warning.onFill       #ffffff
+status.error.surface        #fef2f2
+status.error.ink            #b91c1c
+status.error.border         #fecaca
+status.error.fill           #e7000b
+status.error.onFill         #ffffff
+
+## dark
+
+pageGround                  #0a0a0a
+canvas                      #171717
+card                        #171717
+muted                       #262626
+codeSurface                 #262626
+inverse                     #fafafa
+ink                         #fafafa
+mutedInk                    #a1a1a1
+subtleInk                   #a1a1a1
+inverseInk                  #0a0a0a
+link                        #e5e5e5
+hairline                    #2e2e2e
+divider                     #2e2e2e
+strongBorder                #fafafa
+brand                       #e5e5e5
+onBrand                     #171717
+brandInk                    #e5e5e5
+action.primary.fill         #e5e5e5
+action.primary.label        #171717
+action.primary.border       #e5e5e5
+action.secondary.fill       #262626
+action.secondary.label      #fafafa
+action.secondary.border     #2e2e2e
+action.destructive.fill     #ff6467
+action.destructive.label    #0a0a0a
+action.destructive.border   #ff6467
+status.info.surface         #172554
+status.info.ink             #93c5fd
+status.info.border          #1e40af
+status.info.fill            #60a5fa
+status.info.onFill          #0a0a0a
+status.success.surface      #052e16
+status.success.ink          #86efac
+status.success.border       #166534
+status.success.fill         #4ade80
+status.success.onFill       #0a0a0a
+status.warning.surface      #451a03
+status.warning.ink          #fcd34d
+status.warning.border       #92400e
+status.warning.fill         #fbbf24
+status.warning.onFill       #0a0a0a
+status.error.surface        #450a0a
+status.error.ink            #fca5a5
+status.error.border         #991b1b
+status.error.fill           #ff6467
+status.error.onFill         #0a0a0a
+
+## notes
+
+light computed: action.destructive.label is #ffffff, the more readable of ink and inverseInk on action.destructive.fill
+light computed: status.info.onFill is #ffffff, the more readable of ink and inverseInk on status.info.fill
+light computed: status.success.onFill is #ffffff, the more readable of ink and inverseInk on status.success.fill
+light computed: status.warning.onFill is #ffffff, the more readable of ink and inverseInk on status.warning.fill
+light computed: status.error.onFill is #ffffff, the more readable of ink and inverseInk on status.error.fill
+light adjusted: mutedInk #737373 is 4.35:1 on the light canvas or page ground; adjusted to #707070, the nearest lightness that reaches 4.5:1 (override the role to choose another)
+light adjusted: subtleInk #737373 is 4.35:1 on the light canvas or page ground; adjusted to #707070, the nearest lightness that reaches 4.5:1 (override the role to choose another)
+dark flattened: hairline oklch(1 0 0 / 10%) is translucent: flattened over canvas (#171717) to #2e2e2e
+dark flattened: divider oklch(1 0 0 / 10%) is translucent: flattened over canvas (#171717) to #2e2e2e
+dark flattened: action.secondary.border oklch(1 0 0 / 10%) is translucent: flattened over canvas (#171717) to #2e2e2e
+dark computed: action.destructive.label is #0a0a0a, the more readable of ink and inverseInk on action.destructive.fill
+dark computed: status.info.onFill is #0a0a0a, the more readable of ink and inverseInk on status.info.fill
+dark computed: status.success.onFill is #0a0a0a, the more readable of ink and inverseInk on status.success.fill
+dark computed: status.warning.onFill is #0a0a0a, the more readable of ink and inverseInk on status.warning.fill
+dark computed: status.error.onFill is #0a0a0a, the more readable of ink and inverseInk on status.error.fill
+
+## findings
+
+light warning tokens.action-contrast: The secondary button's fill #f5f5f5 and border #e5e5e5 reach only 1.26:1 on canvas #ffffff; one needs 3:1
+light info tokens.gmail-fill: The secondary fill #f5f5f5 is light (YIQ 245 > 205): Gmail Android may darken it
+light warning tokens.midtone: action.destructive.fill #e7000b has L* 48, inside the 40–65 band that forced dark mode can't separate
+light warning tokens.midtone: status.error.fill #e7000b has L* 48, inside the 40–65 band that forced dark mode can't separate
+dark info tokens.gmail-fill: The primary fill #e5e5e5 is light (YIQ 229 > 205): Gmail Android may darken it
+dark warning tokens.action-contrast: The secondary button's fill #262626 and border #2e2e2e reach only 1.32:1 on canvas #171717; one needs 3:1

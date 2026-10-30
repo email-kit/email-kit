@@ -50,6 +50,13 @@ when** (acceptance).
   **M1.1 remaining:** P1-063 (layout shell, waits for ADR 0001 / P0-04) and the rest of the
   milestone's SHOULDs (P1-091 incremental compile).
   Fixture project with committed output in `packages/cli/test/fixtures/project/`.
+- **M1.2 started: the colour core** (`packages/cli/src/theme/`). P1-103 (CSS Color 4 gamut mapping,
+  8-bit alpha flattening over the real surface, hex; the research 05 reference values are tests),
+  P1-102 in part (shadcn CSS: `:root`/`.dark`, `@layer base`, `var()` chains, bare HSL),
+  P1-104 (the THM-04 roles with the §12.5 shadcn mapping and status defaults), P1-111 (muted ink
+  moved to the nearest passing lightness: shadcn's #737373 is 4.35:1 on its own page ground),
+  and the colour checks of P1-110. Next: config (P1-100), DTCG and TS inputs, typography, spacing,
+  radius, `email-kit tokens`, `theme.json`.
 - **Phase 0 remaining:** P0-04 (needs real email clients), accepting ADRs 0002 and 0006, and
   P0-02 (publishing needs the maintainer's accounts).
 - **P0-02 prepared.** The placeholder packages and the release workflow are ready. Publishing and

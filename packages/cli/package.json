@@ -43,10 +43,13 @@
   "dependencies": {
     "@email-kit/core": "workspace:*",
     "cac": "^7.1.0",
+    "culori": "^4.0.2",
+    "postcss": "^8.5.32",
     "rolldown": "catalog:"
   },
   "devDependencies": {
     "@email-kit/dialect": "workspace:*",
+    "@types/culori": "^4.0.1",
     "@types/node": "catalog:",
     "@valibot/to-json-schema": "catalog:",
     "arktype": "catalog:",

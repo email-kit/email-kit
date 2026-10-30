@@ -151,6 +151,24 @@ A test checks that every id the code can raise is listed here.
 **Why:** Valibot schemas need the official converter.
 **Fix:** `npm install -D @valibot/to-json-schema`.
 
+## Themes
+
+### invalid-theme
+**Why:** the theme file isn't valid CSS, has no `:root { --… }` variables, or its `var()` references form a cycle.
+**Fix:** correct the file named in the error. A shadcn theme is the CSS that `shadcn init` writes (`app/globals.css` or similar).
+
+### invalid-colour
+**Why:** a theme value isn't a CSS colour email-kit can convert (`oklch()`, `rgb()`, `hsl()`, `color(display-p3 …)`, hex or a named colour).
+**Fix:** use one of those forms. Every colour is converted to 6-digit hex for email clients.
+
+### translucent-colour
+**Why:** a colour with alpha was used where there is no surface to flatten it onto. Email clients don't support `rgba()` or `opacity` everywhere, so translucent colours are composited at build time.
+**Fix:** make the colour opaque, or use it for a role that sits on a surface (borders and text sit on the canvas).
+
+### unresolved-role
+**Why:** a colour role has no value in a mode: the theme lacks the token it maps from, and there is no default.
+**Fix:** add the variable named in the error to the theme, or override the role in the config.
+
 ## Output
 
 ### invalid-output
