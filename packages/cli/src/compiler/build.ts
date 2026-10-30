@@ -20,11 +20,16 @@ export interface CompileResult {
 }
 
 export async function compile(options: CompileOptions): Promise<CompileResult> {
-  const config = await loadConfig(options)
+  return compileWithConfig(await loadConfig(options))
+}
+
+/** Compiles with an already loaded config. */
+export async function compileWithConfig(config: ResolvedConfig): Promise<CompileResult> {
   const templates = await compileProject(config)
   const output = buildOutput(templates, {
     locales: config.locales,
     configFile: basename(config.file),
+    module: config.module,
   })
   return { config, templates, files: writeOutput(config.out, output) }
 }

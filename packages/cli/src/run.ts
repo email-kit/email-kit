@@ -6,6 +6,7 @@ import { cac } from "cac"
 
 import { compile, summarize } from "./compiler/build.ts"
 import { CompileError } from "./compiler/project.ts"
+import { watchProject } from "./compiler/watch.ts"
 import { VERSION } from "./version.ts"
 
 export { VERSION }
@@ -25,8 +26,9 @@ export async function run(args: readonly string[], io: Io): Promise<number> {
     .command("compile", "Compile the templates into the output folder")
     .alias("generate")
     .option("--config <path>", "Use this config file instead of ./email-kit.config.ts")
+    .option("--watch", "Recompile when a template, component, message or the config changes")
     .option("--quiet", "Print errors only")
-    .action((options: { config?: string; quiet?: boolean }) => {
+    .action((options: CompileFlags) => {
       pending = compileCommand(options, io)
     })
   cli.help()
@@ -48,10 +50,30 @@ export async function run(args: readonly string[], io: Io): Promise<number> {
   return 0
 }
 
-async function compileCommand(
-  options: { config?: string; quiet?: boolean },
-  io: Io,
-): Promise<number> {
+interface CompileFlags {
+  readonly config?: string
+  readonly watch?: boolean
+  readonly quiet?: boolean
+}
+
+async function compileCommand(options: CompileFlags, io: Io): Promise<number> {
+  if (options.watch) {
+    const watcher = await watchProject({
+      cwd: io.cwd,
+      config: options.config,
+      onCompile: (outcome) => {
+        if ("error" in outcome) io.err(formatError(outcome.error))
+        else if (!options.quiet) io.out(summarize(outcome.result))
+      },
+    })
+    io.out("Watching for changes. Press Ctrl+C to stop.")
+    await new Promise<void>((resolve) => {
+      process.once("SIGINT", resolve)
+      process.once("SIGTERM", resolve)
+    })
+    watcher.close()
+    return 0
+  }
   try {
     const result = await compile({ cwd: io.cwd, config: options.config })
     if (!options.quiet) io.out(summarize(result))

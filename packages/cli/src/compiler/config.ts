@@ -19,6 +19,8 @@ export interface ResolvedConfig {
   readonly out: string
   /** Every locale to compile, the default first */
   readonly locales: readonly string[]
+  /** The generated module's format */
+  readonly module: "ts" | "mjs"
   /** Where loaded modules are bundled to, inside the project so packages resolve */
   readonly cacheDir: string
 }
@@ -30,7 +32,7 @@ export const CONFIG_FILES: readonly string[] = [
   "email-kit.config.mjs",
 ]
 
-const KEYS = new Set(["root", "templates", "messages", "out", "locales"])
+const KEYS = new Set(["root", "templates", "messages", "out", "module", "locales"])
 
 export async function loadConfig(options: {
   readonly cwd: string
@@ -100,6 +102,10 @@ export function resolveConfig(
     )
   }
 
+  const module = config.module ?? "ts"
+  if (module !== "ts" && module !== "mjs") {
+    problems.push(`module: must be "ts" or "mjs", not ${JSON.stringify(module)}`)
+  }
   const locales = readLocales(config.locales, problems)
   if (problems.length > 0) {
     throw new EmailKitError(
@@ -108,7 +114,17 @@ export function resolveConfig(
         problems.map((problem) => `  • ${problem}`).join("\n"),
     )
   }
-  return { file, dir, root, templates, messages, out, locales, cacheDir }
+  return {
+    file,
+    dir,
+    root,
+    templates,
+    messages,
+    out,
+    locales,
+    module: module === "mjs" ? "mjs" : "ts",
+    cacheDir,
+  }
 }
 
 function readLocales(value: unknown, problems: string[]): string[] {

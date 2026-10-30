@@ -1,7 +1,6 @@
-// IR → the HTML part, with placeholders left in (BLD-01). Prototype (P0-03): the real document
-// skeleton, CSS pipeline and table shell arrive with P1-061 to P1-063.
+// IR → HTML, with placeholders left in (BLD-01). The document around it is document.ts.
 
-import type { IrAttr, IrNode } from "@email-kit/core/internal"
+import { EmailKitError, type IrAttr, type IrNode } from "@email-kit/core/internal"
 
 import { placeholderTag, sectionTags } from "./tags.ts"
 
@@ -10,34 +9,6 @@ const BLOCK = new Set([
   ...["div", "p", "h1", "h2", "h3", "h4", "h5", "h6", "ul", "ol", "li"],
   ...["table", "thead", "tbody", "tr", "td", "th"],
 ])
-
-export interface HtmlDocument {
-  readonly lang: string
-  readonly dir: "ltr" | "rtl"
-  readonly title: IrNode
-  readonly preheader: IrNode | undefined
-  readonly body: IrNode
-}
-
-export function renderDocument(doc: HtmlDocument): string {
-  const preheader = doc.preheader
-    ? `<div style="display:none;max-height:0;overflow:hidden;mso-hide:all">${renderHtml(doc.preheader)}</div>\n`
-    : ""
-  return [
-    "<!DOCTYPE html>",
-    `<html lang="${doc.lang}" dir="${doc.dir}">`,
-    "<head>",
-    '<meta charset="utf-8">',
-    '<meta name="viewport" content="width=device-width, initial-scale=1">',
-    `<title>${renderHtml(doc.title)}</title>`,
-    "</head>",
-    "<body>",
-    `${preheader}${renderHtml(doc.body).trimEnd()}`,
-    "</body>",
-    "</html>",
-    "",
-  ].join("\n")
-}
 
 export function renderHtml(node: IrNode, scopes: readonly number[] = [0]): string {
   switch (node.kind) {
@@ -61,6 +32,30 @@ export function renderHtml(node: IrNode, scopes: readonly number[] = [0]): strin
       const end = BLOCK.has(node.tag) ? "\n" : ""
       return `<${node.tag}${attrs}>${children}</${node.tag}>${end}`
     }
+  }
+}
+
+/** Text and placeholders (and sections around them) as an attribute value, such as aria-label. */
+export function renderAttributeValue(node: IrNode, scopes: readonly number[] = [0]): string {
+  switch (node.kind) {
+    case "text":
+      return escapeAttribute(node.value)
+    case "placeholder":
+      return placeholderTag(node, scopes)
+    case "fragment":
+      return node.children.map((child) => renderAttributeValue(child, scopes)).join("")
+    case "section": {
+      const [open, close] = sectionTags(node, scopes)
+      const inner = [...scopes, node.opens]
+      return (
+        open + node.children.map((child) => renderAttributeValue(child, inner)).join("") + close
+      )
+    }
+    case "element":
+      throw new EmailKitError(
+        "invalid-attribute",
+        `<${node.tag}> can't be used here: this value is text only (for example the subject)`,
+      )
   }
 }
 

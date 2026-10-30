@@ -17,7 +17,8 @@ import { dirname, join, sep } from "node:path"
 import { DIALECT } from "@email-kit/dialect"
 
 import { VERSION } from "../version.ts"
-import { generateModule } from "./emit/module.ts"
+import { toJavaScript } from "./emit/javascript.ts"
+import { generateModule, moduleHeader } from "./emit/module.ts"
 import type { CompiledTemplate } from "./project.ts"
 
 export interface OutputFile {
@@ -41,7 +42,11 @@ const GENERATED =
  */
 export function buildOutput(
   templates: readonly CompiledTemplate[],
-  options: { readonly locales: readonly string[]; readonly configFile: string },
+  options: {
+    readonly locales: readonly string[]
+    readonly configFile: string
+    readonly module: "ts" | "mjs"
+  },
 ): OutputFile[] {
   const files: OutputFile[] = []
   const manifestTemplates = templates.map((template) => {
@@ -70,10 +75,18 @@ export function buildOutput(
       locales,
     }
   })
-  files.push({
-    path: "index.ts",
-    content: generateModule(templates, { version: VERSION, ...options }),
-  })
+  const moduleOptions = {
+    version: VERSION,
+    locales: options.locales,
+    configFile: options.configFile,
+  }
+  const typescript = generateModule(templates, moduleOptions)
+  if (options.module === "mjs") {
+    const { js, dts } = toJavaScript(typescript, moduleHeader(moduleOptions))
+    files.push({ path: "index.mjs", content: js }, { path: "index.d.mts", content: dts })
+  } else {
+    files.push({ path: "index.ts", content: typescript })
+  }
   const owned = [...files.map((file) => file.path), "manifest.json"].sort()
   files.push({
     path: "manifest.json",

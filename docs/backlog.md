@@ -34,8 +34,11 @@ when** (acceptance).
   P1-004/005/006 (config load and validation; loaded with the rolldown loader, not jiti), P1-050/051
   (the renderer passes the suite), P1-055, P1-070 (manifest without a signature), P1-071/072/073,
   P1-074 (generated `index.ts`, checked under the strictest host settings on TS 5.9 and 7.0),
-  P1-078, P1-079, P1-085, P1-087 (no `--watch` yet), P1-090. Fixture project with committed output in
-  `packages/cli/test/fixtures/project/`.
+  P1-076 (`module: "mjs"` writes `index.mjs` + `index.d.mts`; a tsc-built ESM and CommonJS backend
+  imports it through `#email-kit`), P1-078, P1-079, P1-085, P1-087 (with `--watch`), P1-090,
+  P1-061 (the research 01 §2 skeleton; `aria-roledescription` waits for localised layout messages),
+  P1-064, P1-065 (preheader element, filler, first line of the text part).
+  Fixture project with committed output in `packages/cli/test/fixtures/project/`.
 - **Phase 0 remaining:** P0-04 (needs real email clients), accepting ADRs 0002 and 0006, and
   P0-02 (publishing needs the maintainer's accounts).
 - **P0-02 prepared.** The placeholder packages and the release workflow are ready. Publishing and

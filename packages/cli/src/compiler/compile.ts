@@ -4,7 +4,7 @@ import type { EmailDefinition } from "@email-kit/core"
 import { EmailKitError, evaluate, type Messages } from "@email-kit/core/internal"
 import { parse } from "@email-kit/dialect"
 
-import { renderDocument } from "./html.ts"
+import { renderDocument } from "./document.ts"
 import { renderLine, renderTextPart } from "./text.ts"
 
 export interface CompiledEmail {
@@ -38,9 +38,11 @@ export function compileEmail<T>(
   const html = renderDocument({
     lang: options.locale,
     dir: RTL.has(language) ? "rtl" : "ltr",
-    title: ir.subject,
+    subject: ir.subject,
     preheader: ir.preheader,
     body: ir.body,
+    // Classic Outlook stays a target by default until the targets config (CFG-05, M1.2).
+    outlookClassic: true,
   })
   const text = renderTextPart(ir.body, preheader)
 

@@ -14,6 +14,11 @@ export interface EmailKitConfig {
   readonly messages?: string
   /** The output folder, owned by the compiler. Default: `<root>/compiled`. */
   readonly out?: string
+  /**
+   * The generated module's format (CFG-08). `"ts"` writes `index.ts`. `"mjs"` writes
+   * `index.mjs` + `index.d.mts`, for projects built with plain `tsc` (ADR 0004). Default: `"ts"`.
+   */
+  readonly module?: "ts" | "mjs"
   readonly locales?: {
     /** The locale render() falls back to. Default: `"en"`. */
     readonly default: string
