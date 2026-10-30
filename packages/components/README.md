@@ -1,10 +1,14 @@
 # @email-kit/components
 
-shadcn-style, email-safe components for [email-kit](https://github.com/email-kit/email-kit)
-templates: layout primitives, buttons, images, one-time codes, receipts and more. Each is themed
-from your design tokens and tested against Outlook, Gmail and Apple Mail.
+Email-safe components for [email-kit](https://github.com/email-kit/email-kit) templates, themed from
+your design tokens (shadcn CSS or DTCG): `Text`, `Heading`, `Link`, `Button`, `Image`, `Divider`,
+`Spacer`, `Section`, `List`, `KeyValue`, `Callout`, `OtpCode`, `DataTable` and `LineItems`.
 
-> **Status:** pre-release. This package name is reserved; the first components ship with milestone
-> M1.2. See the [PRD](https://github.com/email-kit/email-kit/blob/main/docs/prd.md).
+> **Preview (0.1).** Usable for transactional email, and changing. Not yet: a page layout with a
+> centred fixed-width container and footers (so no marketing email), testing in real email
+> clients (classic Outlook especially), and the preview studio. See [what's in the
+> preview](https://github.com/email-kit/email-kit#status).
 
-MIT licensed.
+They follow the email-client research in the repository (tables for layout, cell padding instead of
+margins, Outlook's line-height rule, dark-mode classes, right-to-left markup), and the checks
+verify their output. They haven't been tested in real clients yet. MIT licensed.

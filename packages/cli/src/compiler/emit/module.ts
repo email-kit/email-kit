@@ -166,6 +166,9 @@ const TEMPLATES = {
 ${parts.join("\n")}
 }
 
+// LOCALE_DATA and PLURALS derive from Unicode CLDR ${CLDR_VERSION} data, © Unicode, Inc., under the
+// Unicode License v3: https://www.unicode.org/license.txt
+
 /** CLDR ${CLDR_VERSION} parents and scripts for resolving a requested locale (spec §16). */
 const LOCALE_DATA: LocaleData = ${JSON.stringify(options.localeData, null, 2)}
 

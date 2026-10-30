@@ -1,6 +1,6 @@
 {
   "name": "@email-kit/components",
-  "version": "0.0.0",
+  "version": "0.1.0-preview.0",
   "description": "email-kit components: shadcn-style, email-safe components (Button, Layout, OtpCode, Receipt\u2026) for email-kit templates.",
   "keywords": [
     "email",
@@ -42,7 +42,7 @@
     "check:package": "publint --strict && attw --pack . --profile esm-only"
   },
   "peerDependencies": {
-    "@email-kit/core": "workspace:*"
+    "@email-kit/core": "workspace:^"
   },
   "devDependencies": {
     "@email-kit/core": "workspace:*",

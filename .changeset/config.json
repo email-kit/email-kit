@@ -1,6 +1,6 @@
 {
   "$schema": "https://unpkg.com/@changesets/config@4.0.1/schema.json",
-  "changelog": ["@changesets/changelog-github", { "repo": "email-kit/email-kit" }],
+  "changelog": "@changesets/cli/changelog",
   "commit": false,
   "fixed": [["@email-kit/cli", "@email-kit/core", "@email-kit/components", "create-email-kit"]],
   "linked": [],
