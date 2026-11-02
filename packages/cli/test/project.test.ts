@@ -334,6 +334,22 @@ describe("config validation", () => {
         "  • platform.phone: unknown platform value (known: productName, senderName, legalName, postalAddress, privacyUrl, helpUrl, supportEmail, siteUrl)",
       ].join("\n"),
     )
+    expect(
+      resolve({
+        platform: {
+          siteUrl: "http://shop.example",
+          helpUrl: "help.shop.example",
+          supportEmail: "help",
+        },
+      }),
+    ).toThrow(
+      [
+        "has 3 problems:",
+        '  • platform.siteUrl: must be an https URL, like "https://example.com/…"',
+        '  • platform.helpUrl: must be an https URL, like "https://example.com/…"',
+        '  • platform.supportEmail: must be an email address, like "help@example.com"',
+      ].join("\n"),
+    )
     const config = resolveConfig(
       { platform: { siteUrl: { runtime: true }, helpUrl: { runtime: true }, productName: "Acme" } },
       { file, cacheDir: TMP },

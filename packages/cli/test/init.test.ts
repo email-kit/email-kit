@@ -285,6 +285,54 @@ describe("finding the project", () => {
   })
 })
 
+describe("the project's schema library", () => {
+  const base = (deps: Record<string, string>) =>
+    project({
+      "package.json": { name: "shop", dependencies: { next: "16.4.2", ...deps } },
+      "tsconfig.json": { compilerOptions: { jsx: "react-jsx", paths: { "@/*": ["./src/*"] } } },
+      "src/app/page.tsx": "",
+    })
+
+  it.each([
+    {
+      library: "valibot",
+      deps: { valibot: "^1" },
+      line: 'import * as v from "valibot"',
+      schema: "startUrl: v.pipe(v.string(), v.metadata(url)),",
+      added: { "@valibot/to-json-schema": "^1" },
+    },
+    {
+      library: "arktype",
+      deps: { arktype: "^2" },
+      line: 'import { type } from "arktype"',
+      schema: "startUrl: type.string.configure(url),",
+      added: {},
+    },
+  ])("writes $library templates for a $library project", async ({ deps, line, schema, added }) => {
+    const dir = base(deps)
+    const { code, out } = await init(dir)
+    expect(code).toBe(0)
+    const welcome = read(dir, "src/email-kit/templates/welcome.tsx")
+    expect(welcome).toContain(line)
+    expect(welcome).toContain(schema)
+    expect(welcome).not.toContain("zod")
+    const devDependencies = json(dir, "package.json").devDependencies
+    expect(devDependencies).toMatchObject(added)
+    expect(devDependencies).not.toHaveProperty("zod")
+    // The first compile read the schema: the url field is marked in schema.json.
+    expect(out).toContain("Compiled 1 template × 1 locale")
+    expect(
+      json(dir, "src/email-kit/compiled/welcome/schema.json").properties.startUrl,
+    ).toMatchObject({ "x-email-kit": { url: true } })
+
+    // `new` writes the same library's schema, and it compiles.
+    const result = await run(["new", "order-shipped"], { cwd: dir, out: () => {}, err: () => {} })
+    expect(result).toBe(0)
+    expect(read(dir, "src/email-kit/templates/order-shipped.tsx")).toContain(line)
+    expect(await run(["compile", "--quiet"], { cwd: dir, out: () => {}, err: () => {} })).toBe(0)
+  })
+})
+
 describe("email-kit new (P1-211)", () => {
   const cli = async (dir: string, args: string[]) => {
     const out: string[] = []
@@ -333,6 +381,12 @@ describe("email-kit new (P1-211)", () => {
     )
     expect(await cli(dir, ["compile", "--quiet"])).toMatchObject({ code: 0 })
     expect(existsSync(join(dir, "src/email-kit/compiled/password-reset/de.html"))).toBe(true)
+    // With its footer, the new template passes every check, the legal.* ones included.
+    const checked = await cli(dir, ["check", "--json"])
+    const errors = JSON.parse(checked.out).findings.filter(
+      (f: { level: string }) => f.level === "error",
+    )
+    expect(errors).toEqual([])
   })
 
   it("refuses an invalid id and one that exists, and writes nothing", async () => {

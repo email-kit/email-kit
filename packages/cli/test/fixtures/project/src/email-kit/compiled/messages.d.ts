@@ -23,6 +23,8 @@ declare module "@email-kit/core" {
       readonly "orderLine": { readonly order: MessageParam }
       /** Thanks for your order */
       readonly "preheader": {}
+      /** You're receiving this email because you ordered from {product}. */
+      readonly "reason": { readonly product: MessageParam }
       /** Order {order} confirmed */
       readonly "subject": { readonly order: MessageParam }
       /** View your order */

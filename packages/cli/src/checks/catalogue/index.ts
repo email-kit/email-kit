@@ -7,6 +7,7 @@ import { HTML } from "./html.ts"
 import { I18N } from "./i18n.ts"
 import { IMG } from "./img.ts"
 import { LAYOUT } from "./layout.ts"
+import { LEGAL } from "./legal.ts"
 import { LINK } from "./link.ts"
 import { OUTPUT } from "./output.ts"
 import { RENDER } from "./render.ts"
@@ -24,6 +25,7 @@ export const CATALOGUE: readonly Check[] = [
   ...DARK,
   ...A11Y,
   ...LINK,
+  ...LEGAL,
   ...I18N,
   ...TEXT,
   ...RENDER,

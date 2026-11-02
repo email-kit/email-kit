@@ -95,6 +95,11 @@ describe("each check, with one rule broken", () => {
   // [check, edit, other checks the same edit trips by design]
   const cases: [string, (html: string) => string, string[]?][] = [
     ["html.doctype", once("<!DOCTYPE html>\n", "")],
+    ["legal.reason", once('class="ek-footer-reason ', 'class="')],
+    [
+      "legal.sender-identity",
+      (h) => h.replace(/(class="ek-footer-sender [^>]*>)Shop Example/, "$1"),
+    ],
     ["html.lang-dir", once('lang="en" dir="ltr" style=', 'lang="en" dir="rtl" style=')],
     ["html.title", once("<title>Order", "<title>Your order")],
     ["html.xmlns", once(' xmlns:o="urn:schemas-microsoft-com:office:office"', "")],
@@ -249,6 +254,52 @@ describe("each check, with one rule broken", () => {
     ])
   })
 
+  it("legal.postal-address: required for marketing and consent-request, not transactional", () => {
+    const [template] = context.templates
+    if (!template) throw new Error("no template")
+    const as = (
+      purpose: "marketing" | "consent-request" | "transactional",
+      html = (h: string) => `${h} `,
+    ) => ({
+      ...mutated(html),
+      templates: [{ ...template, purpose }],
+    })
+    expect(ids(runChecks(as("transactional")))).toEqual([])
+    expect(ids(runChecks(as("marketing")))).toEqual(["legal.postal-address"])
+    expect(ids(runChecks(as("consent-request")))).toEqual(["legal.postal-address"])
+    const withAddress = (h: string) =>
+      h.replace(
+        /(class="ek-footer-sender [^>]*>Shop Example)/,
+        '$1<br><span class="ek-footer-address">Hauptstraße 1, 10115 Berlin</span>',
+      )
+    expect(ids(runChecks(as("marketing", withAddress)))).toEqual([])
+    const empty = (h: string) =>
+      h.replace(
+        /(class="ek-footer-sender [^>]*>Shop Example)/,
+        '$1<br><span class="ek-footer-address"> </span>',
+      )
+    expect(runChecks(as("marketing", empty)).map((f) => f.message)).toEqual([
+      "the postal address is empty",
+    ])
+  })
+
+  it("legal.purpose-declared: a template without a purpose doesn't compile", async () => {
+    const { defineEmail } = await import("@email-kit/core")
+    const base = {
+      id: "x",
+      schema: {} as never,
+      subject: () => "",
+      fixtures: {},
+      component: () => "",
+    }
+    expect(() => defineEmail({ ...base } as never)).toThrow(
+      expect.objectContaining({ code: "invalid-purpose" }),
+    )
+    expect(() => defineEmail({ ...base, purpose: "promo" } as never)).toThrow(
+      'Template "x" needs a purpose: "transactional", "marketing" or "consent-request", not "promo"',
+    )
+  })
+
   it("link.url-fields: a literal URL that isn't https, and a url field passes", () => {
     const literal = mutated(inBody('<a href="http://x.test/">Track the parcel</a>'))
     expect(ids(runChecks(literal))).toEqual(["link.url-fields", "text.links-match"])
@@ -272,7 +323,9 @@ describe("each check, with one rule broken", () => {
 
   it("covers every check of the compiled output", () => {
     // Source, render-only, pseudo-locale, output-folder and compiler checks have their own tests.
-    const covered = [...cases, ...parts].map(([id]) => id).concat("subject.no-secret")
+    const covered = [...cases, ...parts]
+      .map(([id]) => id)
+      .concat("subject.no-secret", "legal.postal-address")
     const output = CATALOGUE.filter(
       (c) => !/^(source|i18n|output)\./.test(c.id) && c.on !== "render" && !c.compiler,
     )
@@ -429,6 +482,7 @@ describe("source checks (UI-01)", () => {
         templates: [
           {
             id: "welcome",
+            purpose: "transactional",
             file: "src/email-kit/templates/welcome.tsx",
             fixtures: [],
             model: { type: "object", nullable: false, properties: [] },

@@ -15,6 +15,7 @@ const FAMILIES: readonly [string, string][] = [
   ["dark", "Dark mode"],
   ["a11y", "Accessibility"],
   ["link", "Links"],
+  ["legal", "Legal"],
   ["i18n", "Internationalisation"],
   ["text", "Text part"],
   ["preheader", "Preheader"],

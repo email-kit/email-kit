@@ -27,7 +27,7 @@ Works today:
   Outlook, and fifteen components, including `Button`, `OtpCode`, `DataTable`, `LineItems` and a
   transactional `Footer`.
 - A dependency-free generated module with a runtime data validator; `.ts`, or `.mjs` with types.
-- `email-kit check`: 107 of the 175 planned checks, over the output, renders of every fixture,
+- `email-kit check`: 111 of the 175 planned checks, over the output, renders of every fixture,
   the sources and the theme; human, JSON and GitHub reporters; team checks.
 
 Not yet:

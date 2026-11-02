@@ -8,5 +8,6 @@
   "viewTitle": "Bestellung {order}",
   "view": "Bestellung ansehen",
   "footer": "Gesendet von {product}.",
-  "visit": "Zum Shop"
+  "visit": "Zum Shop",
+  "reason": "Sie erhalten diese E-Mail, weil Sie bei {product} bestellt haben."
 }

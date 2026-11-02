@@ -13,3 +13,7 @@ You saved 10%.
 View your order: https://shop.example/orders/A-1042?ref=email&lang=en
 
 Sent by Shop Example. Visit our shop: https://shop.example
+
+You're receiving this email because you ordered from Shop Example.
+
+Shop Example

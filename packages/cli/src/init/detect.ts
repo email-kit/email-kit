@@ -12,6 +12,17 @@ import { relativePath, toPosix } from "../paths.ts"
 
 export type PackageManager = "pnpm" | "npm" | "yarn" | "bun"
 
+export type SchemaLibrary = "zod" | "valibot" | "arktype"
+
+/** The schema library a package.json depends on: Zod first when it has several. */
+export function schemaLibraryOf(packageJson: Record<string, unknown>): SchemaLibrary | undefined {
+  const deps = {
+    ...(packageJson.dependencies as Record<string, string> | undefined),
+    ...(packageJson.devDependencies as Record<string, string> | undefined),
+  }
+  return (["zod", "valibot", "arktype"] as const).find((name) => deps[name] !== undefined)
+}
+
 /**
  * - `bundler`: Next.js, Bun, Vite, tsup, esbuild, Wrangler, tsx: tsconfig paths work at runtime
  * - `tsc`: a tsc build run with `node dist`
@@ -36,7 +47,7 @@ export interface Project {
   readonly host: Host
   readonly hostReason: string
   /** zod, valibot or arktype, if the project already uses one */
-  readonly schemaLibrary: "zod" | "valibot" | "arktype" | undefined
+  readonly schemaLibrary: SchemaLibrary | undefined
   /** A shadcn CSS file with theme variables, relative to `dir` */
   readonly shadcnCss: string | undefined
 }
@@ -123,9 +134,7 @@ export function detectProject(dir: string, override?: string): Project {
             ? ["tsc", "tsc builds it and node runs the output"]
             : ["unknown", "no bundler, tsc build or Node type stripping found"]
 
-  const schemaLibrary = (["zod", "valibot", "arktype"] as const).find(
-    (name) => deps[name] !== undefined,
-  )
+  const schemaLibrary = schemaLibraryOf(packageJson)
 
   return {
     dir,

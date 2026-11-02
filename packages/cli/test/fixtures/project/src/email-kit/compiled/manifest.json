@@ -34,13 +34,13 @@
           "preheader": "Thanks for your order",
           "html": {
             "file": "order-confirmation/en.html",
-            "bytes": 8169,
-            "sha256": "1dd607d4e2c7425a43cc82b4fc09c20ace0dc54444298585f38cfd735b9a4e85"
+            "bytes": 9489,
+            "sha256": "9924b09eab5994b38230837ad6c79710c0ca34906fcc25d82a40e4c4496635f7"
           },
           "text": {
             "file": "order-confirmation/en.txt",
-            "bytes": 357,
-            "sha256": "127918f275e21bb688dbe92d0232baf9fcc9a1acc8302e1c865c4da761a942b3"
+            "bytes": 439,
+            "sha256": "bd45b2f0c24b44e4ef251ec8f86b8d1d3dcd387c17c561b6408da0b5e8d15c12"
           }
         },
         "de": {
@@ -48,13 +48,13 @@
           "preheader": "Danke für Ihre Bestellung",
           "html": {
             "file": "order-confirmation/de.html",
-            "bytes": 8205,
-            "sha256": "b93a3c0918604edea752e20c7aba49abbcd5fe6963adc01d71aa27a8bad7371f"
+            "bytes": 9527,
+            "sha256": "2ac8e86ef17de3f5d5bd59b91fe8b2c528d099f4f98100007a2578a2095df059"
           },
           "text": {
             "file": "order-confirmation/de.txt",
-            "bytes": 375,
-            "sha256": "d34e8da0c987bd205095776ec520ca025b14cc49394c54995f2c47cb5c681d3c"
+            "bytes": 459,
+            "sha256": "94830f5f17fcb7548218be4979e37cc3a98e32dac60665508b5d7c18d973d2e7"
           }
         }
       }

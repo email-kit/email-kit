@@ -172,9 +172,14 @@ describe("Footer", () => {
     expect(email.body).toMatch(
       /border-top-color:#[0-9a-f]{6}" class="ek-border-top-color--hairline"/,
     )
-    expect(email.count('class="ek-c--mutedInk"')).toBe(3)
+    // Each part is marked for the legal.* checks.
+    for (const part of ["reason", "sender", "links"]) {
+      expect(email.count(`class="ek-footer-${part} ek-c--mutedInk"`)).toBe(1)
+    }
     expect(email.body).toContain("font-size:14px;line-height:20px")
-    expect(email.body).toContain("Shop Example GmbH<br>Hauptstraße 1, 10115 Berlin")
+    expect(email.body).toContain(
+      'Shop Example GmbH<br><span class="ek-footer-address">Hauptstraße 1, 10115 Berlin</span>',
+    )
     expect(email.body).toMatch(/>Help<\/a> · <a href="https:\/\/shop.example\/privacy"/)
   })
 

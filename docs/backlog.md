@@ -93,6 +93,16 @@ when** (acceptance).
   P0-02 (publishing needs the maintainer's accounts).
 - **P0-02 prepared.** The placeholder packages and the release workflow are ready. Publishing and
   creating the repos need the maintainer's accounts: see `docs/setup/reserve-names.md`.
+- **Post-preview slice (2026-11-02), done:** the four code items release-readiness left open for
+  after the preview. `init` and `new` write Valibot or ArkType templates for projects that use
+  them (P1-202, P1-211); `@email-kit/core` declares its metadata key on ArkType's `ArkEnv`;
+  URL platform values are held to https and `supportEmail` to an address, in the config and at
+  `createEmails()` (`invalid-context`, P1-008/P1-181); and `purpose` is read by checks:
+  `legal.purpose-declared` (compiler, `invalid-purpose`), `legal.reason`,
+  `legal.sender-identity` and `legal.postal-address` (111 of 175 ids). The plural test no longer
+  requires Node's CLDR to match cldr-core's (Node 22.23 ships 48). **Next checkpoint:** the
+  studio (M1.6) with `email-kit dev` (P1-212), or the marketing footer (P1-144, P1-188/189:
+  unsubscribe, `legal.marketing-unsubscribe`, `legal.privacy-link`).
 - All other tasks are `todo`.
 
 ---
@@ -381,6 +391,16 @@ a team check and a browser preview) is the project for trying everything by hand
 | P1-170 | Compliance defaults: `global-strict` profile data, footer slot values, opt-out wording key | CFG-11, LEG-08 | SHOULD | P1-004 | Template-level legal checks read the profile |
 | P1-172 | Implement the phase-1 check catalogue (tasks P1-C01… below) | CHK-11 | MUST | P1-165 | Every phase-1 id in Appendix A implemented |
 
+**Fifth slice (legal):** `purpose` is validated by `defineEmail()` (`invalid-purpose`, reported
+as `legal.purpose-declared`), and `Footer` marks its parts with `ek-footer-reason`,
+`ek-footer-sender` and `ek-footer-address` classes, which `legal.reason` and
+`legal.sender-identity` (every purpose) and `legal.postal-address` (marketing and consent-request)
+look for; a hand-built footer passes with the same classes. The template from `email-kit new`, the
+test fixture and the examples gained a `Footer`. **Not yet:** `legal.privacy-link` (an error
+would fail `check` right after `init`, which can't know the project's privacy URL: `init` should
+ask for it first), "on behalf of" in `legal.sender-identity`, and the marketing ids, which wait
+for the unsubscribe slot (P1-144, P1-189).
+
 **Phase-1 check tasks.** For every check below, done means:
 - implemented with its default level;
 - a positive and a negative fixture (TST-04);
@@ -525,8 +545,10 @@ theme it finds; refuses a foreign config, never writes into a foreign folder (fa
 steps. `create-email-kit` runs it. Tests cover Next.js with and without `src/`, a tsc project and
 Node type stripping (both run `#email-kit` with plain node), conflicts, consent and `--dir`; checked
 by hand on a fresh create-next-app. Not yet: the `email-kit:dev` script and `dev` (with the studio,
-P1-212), the workspace `exports` offer (P1-208, SHOULD), ADR 0004's option B (build-output-only
-deploys), and a valibot or arktype welcome template.
+P1-212), the workspace `exports` offer (P1-208, SHOULD) and ADR 0004's option B (build-output-only
+deploys). **Since then:** a project that uses Valibot or ArkType gets its welcome template (and
+every template `new` writes) in that library, with `@valibot/to-json-schema` added for Valibot;
+`new` follows the library the other templates import.
 
 | ID | Task | Reqs | Pri | Dep | Done when |
 |---|---|---|---|---|---|
