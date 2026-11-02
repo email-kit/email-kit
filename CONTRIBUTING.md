@@ -42,6 +42,16 @@ live in the `catalog:` section of `pnpm-workspace.yaml`.
 - Releases are published from CI only, through npm trusted publishing (no tokens). See
   [docs/setup/reserve-names.md](docs/setup/reserve-names.md).
 
+## Docs site
+
+The user docs are published at [email-kit/docs-site](https://github.com/email-kit/docs-site), an
+Astro Starlight site that copies `docs/guide/`, `docs/recipes/`, `docs/checks.md` and
+`docs/errors.md` from this repository when it builds. Write and change them here, in the same pull
+request as the code. A new page also needs an entry in the site's `scripts/sync-docs.mjs`. When
+these files change on `main`, `.github/workflows/docs-site.yml` asks the site to rebuild; it needs
+the `DOCS_SITE_TOKEN` secret (a fine-grained token for `email-kit/docs-site` with read and write
+access to its contents).
+
 ## Supply-chain rules
 
 - No `install`/`postinstall` scripts in our packages.

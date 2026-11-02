@@ -187,6 +187,9 @@ export function resolveConfig(
   }
 }
 
+/** Platform values that are URLs; render() holds runtime ones to https too. */
+const URL_KEYS = new Set(["helpUrl", "privacyUrl", "siteUrl"])
+
 function readPlatform(value: unknown, problems: string[]): PlatformValues {
   const constants: Partial<Record<PlatformKey, string>> = {}
   const runtime: PlatformKey[] = []
@@ -201,6 +204,11 @@ function readPlatform(value: unknown, problems: string[]): PlatformValues {
     if (!(PLATFORM_KEYS as readonly string[]).includes(key)) {
       problems.push(`platform.${key}: unknown platform value (known: ${PLATFORM_KEYS.join(", ")})`)
     } else if (typeof option === "string" && option.trim() !== "") {
+      if (URL_KEYS.has(key) && !/^https:\/\/[^\s/?#]+[^\s]*$/i.test(option)) {
+        problems.push(`platform.${key}: must be an https URL, like "https://example.com/…"`)
+      } else if (key === "supportEmail" && !/^[^\s@<>"]+@[^\s@<>"]+$/.test(option)) {
+        problems.push(`platform.${key}: must be an email address, like "help@example.com"`)
+      }
       constants[key as PlatformKey] = option
     } else if (
       typeof option === "object" &&

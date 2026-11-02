@@ -149,6 +149,13 @@ function has(record: Record<string, unknown>, key: string): boolean {
   return Object.prototype.hasOwnProperty.call(record, key) && record[key] !== undefined
 }
 
+/** An https URL with a host and no whitespace: url fields and URL platform values. */
+const HTTPS_URL = /^https:\/\/[^\s/?#]+[^\s]*$/i
+
+/** Platform values that hold a URL or an email address (CFG-07), checked like url fields. */
+const URL_CONTEXT_KEYS: readonly string[] = ["helpUrl", "privacyUrl", "siteUrl"]
+const EMAIL_ADDRESS = /^[^\s@<>"]+@[^\s@<>"]+$/
+
 function describe(value: unknown): string {
   if (value === null) return "null"
   if (Array.isArray(value)) return "a list"
@@ -202,7 +209,7 @@ function validate(model: Model, value: unknown, path = ""): DataIssue[] {
       if (pattern !== undefined && !new RegExp(pattern, "u").test(value)) {
         fail(`must match ${pattern}`)
       }
-      if (model.url && !/^https:\/\/[^\s/?#]+[^\s]*$/i.test(value)) {
+      if (model.url && !HTTPS_URL.test(value)) {
         fail(`must be an https URL, got ${describe(value)}`)
       }
       break
@@ -367,8 +374,9 @@ function collect(
 }
 
 /**
- * Checks the values passed to createEmails() (RUN-04): every runtime key is a non-empty string.
- * Only the declared keys are kept.
+ * Checks the values passed to createEmails() (RUN-04): every runtime key is a non-empty string,
+ * the URL keys are https URLs and `supportEmail` is an email address, as they would have to be in
+ * the config. Only the declared keys are kept.
  */
 function readContext(keys: readonly string[], context: unknown): Readonly<Record<string, string>> {
   const values: Record<string, string> = {}
@@ -378,6 +386,18 @@ function readContext(keys: readonly string[], context: unknown): Readonly<Record
       throw new EmailRenderError(
         "missing-context",
         `createEmails() needs "${key}" as a non-empty string`,
+      )
+    }
+    if (URL_CONTEXT_KEYS.includes(key) && !HTTPS_URL.test(value)) {
+      throw new EmailRenderError(
+        "invalid-context",
+        `createEmails() needs "${key}" as an https URL, got ${describe(value)}`,
+      )
+    }
+    if (key === "supportEmail" && !EMAIL_ADDRESS.test(value)) {
+      throw new EmailRenderError(
+        "invalid-context",
+        `createEmails() needs "supportEmail" as an email address, got ${describe(value)}`,
       )
     }
     values[key] = value

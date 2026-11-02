@@ -49,6 +49,7 @@ export type EmailDefinitionInput<S extends StandardSchemaV1, Id extends string =
 
 const ID = /^[a-z][a-z0-9]*(-[a-z0-9]+)*$/
 const DEFINITION = Symbol.for("email-kit.definition")
+const PURPOSES: readonly Purpose[] = ["transactional", "marketing", "consent-request"]
 
 /** Defines an email template. `data` and the fixtures are typed from `schema`. */
 export function defineEmail<S extends StandardSchemaV1, const Id extends string = string>(
@@ -58,6 +59,14 @@ export function defineEmail<S extends StandardSchemaV1, const Id extends string 
     throw new EmailKitError(
       "invalid-id",
       `Template id "${definition.id}" must be lowercase words joined by hyphens, like "order-confirmation"`,
+    )
+  }
+  // legal.purpose-declared: the purpose decides the footer parts the legal checks require.
+  if (!PURPOSES.includes(definition.purpose as Purpose)) {
+    throw new EmailKitError(
+      "invalid-purpose",
+      `Template "${definition.id}" needs a purpose: "transactional", "marketing" or "consent-request"` +
+        (definition.purpose === undefined ? "" : `, not ${JSON.stringify(definition.purpose)}`),
     )
   }
   // The compiler calls t() untyped; the typed view is for the template author only.

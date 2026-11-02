@@ -32,3 +32,21 @@ export const secretUrl: { readonly "x-email-kit": { readonly secret: true; reado
   {
     "x-email-kit": { secret: true, url: true },
   }
+
+/** The `x-email-kit` metadata the markers write, as schema libraries see it. */
+export interface EmailKitMeta {
+  readonly "x-email-kit"?: {
+    readonly secret?: true
+    readonly url?: true
+    readonly formatted?: FormattedKind
+  }
+}
+
+// ArkType types `configure()` from the global ArkEnv. Declaring the markers' key here lets
+// `type.string.configure(url)` type-check without a declaration in the user's project. The
+// interface is inert for projects that don't use ArkType.
+declare global {
+  interface ArkEnv {
+    meta(): EmailKitMeta
+  }
+}

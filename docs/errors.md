@@ -61,6 +61,10 @@ A test checks that every id the code can raise is listed here.
 **Why:** template ids are lowercase words joined by hyphens (`order-confirmation`), because they become file names and code identifiers.
 **Fix:** rename the id. Never rename an id that has shipped: backends call it by name.
 
+### invalid-purpose
+**Why:** every template declares its legal purpose, `"transactional"`, `"marketing"` or `"consent-request"`, because it decides which footer parts the `legal.*` checks require (`legal.purpose-declared`).
+**Fix:** add `purpose` to `defineEmail()`. Any promotional content makes an email `"marketing"`.
+
 ### duplicate-id
 **Why:** two templates use the same id.
 **Fix:** give each template its own id.
@@ -230,4 +234,5 @@ These come from the generated module in a backend, not from the CLI.
 - **`missing-value`, `non-scalar-value`, `invalid-number`:** from the placeholder renderer, when the data doesn't match the template. See the [mustache-core spec](spec/mustache-core.md#10-errors).
 - **`invalid-data`:** with validation on (the default), the data passed to `render()` doesn't match the template's schema. The error's `issues` list each problem with its path, such as `items[1].qty: expected a number, got "2"`. Call `validate(data)` to check data without rendering, for example when it arrives from a queue.
 - **`missing-context`:** `createEmails()` was called without a value the config marks `{ runtime: true }`, or with an empty one. Pass every runtime key as a non-empty string.
+- **`invalid-context`:** a value passed to `createEmails()` isn't what that platform value has to be: `siteUrl`, `helpUrl` and `privacyUrl` must be `https://` URLs and `supportEmail` an email address, the same rules the config applies to values set there.
 - **`subject-line-break`:** the rendered subject contains CR or LF, usually from user data, and could inject mail headers. Strip line breaks from the value before rendering.

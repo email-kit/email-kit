@@ -15,6 +15,14 @@ export const COMPILER: readonly Check[] = [
     run: nothing,
   },
   {
+    id: "legal.purpose-declared",
+    level: "error",
+    rule: 'Every template declares a purpose: "transactional", "marketing" or "consent-request".',
+    fix: 'Add `purpose` to `defineEmail()`; any promotional content makes it "marketing".',
+    compiler: { codes: ["invalid-purpose"] },
+    run: nothing,
+  },
+  {
     id: "source.fixture-valid",
     level: "error",
     rule: "Every fixture validates against the template's schema.",

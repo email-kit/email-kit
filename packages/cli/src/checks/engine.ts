@@ -31,6 +31,7 @@ export function docsUrl(id: string): string {
 
 /** A stand-in for a platform value the backend passes at send time. */
 function contextValue(key: string): string {
+  if (key === "supportEmail") return "help@example.test"
   return /url|link|href/i.test(key) ? "https://example.test/" : `Example ${key}`
 }
 
@@ -131,6 +132,7 @@ export async function contextOf(project: BuiltProject): Promise<CheckContext> {
     },
     templates: project.templates.map((t) => ({
       id: t.id,
+      purpose: t.purpose,
       model: t.model,
       file: relativePath(config.dir, t.file),
       fixtures: Object.keys(t.fixtures),

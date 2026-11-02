@@ -24,7 +24,8 @@ interface Row {
   readonly schemas: Partial<Record<Library, () => unknown>>
 }
 
-// ArkType's metadata type doesn't list our key; the value is passed through unchanged.
+// ArkType's metadata type has no `format` key; the value is passed through unchanged. Our markers
+// type-check on their own: @email-kit/core declares its key on ArkEnv.
 const meta = (value: object) => value as never
 
 const ROWS: readonly Row[] = [
@@ -124,9 +125,9 @@ const ROWS: readonly Row[] = [
       ArkType: () =>
         type({
           placedAt: type.string.configure(meta({ format: "date-time" })),
-          code: type.string.configure(meta(secret)),
-          orderUrl: type.string.configure(meta(url)),
-          magicLink: type.string.configure(meta(secretUrl)),
+          code: type.string.configure(secret),
+          orderUrl: type.string.configure(url),
+          magicLink: type.string.configure(secretUrl),
         }),
       Valibot: () =>
         v.object({
@@ -321,12 +322,12 @@ describe("canonical JSON Schema", () => {
     total: z.number(),
   })
   const ark = type({
-    code: type.string.configure(meta(secret)),
+    code: type.string.configure(secret),
     customer: { email: type.string.configure(meta({ format: "email" })), name: "string" },
     "discount?": "string",
     items: type({ name: "string", qty: "number.integer" }).array(),
     note: "string | null",
-    orderUrl: type.string.configure(meta(url)),
+    orderUrl: type.string.configure(url),
     plan: "'free' | 'pro'",
     total: "number",
   })

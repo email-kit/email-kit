@@ -28,10 +28,12 @@ export interface FooterProps {
 export function Footer(props: FooterProps): IrNode {
   const theme = useTheme()
   const cell = textCell()
-  const paragraph = (children: Child, last = false) => (
+  // The `ek-footer-*` classes mark the parts for the legal.* checks (research 03 §15.5).
+  const paragraph = (part: string, children: Child, last = false) => (
     <Block bottom={last ? 0 : theme.space.stack.sm}>
       <p
         {...cell.attrs}
+        class={`ek-footer-${part}`}
         style={{ margin: "0", ...cell.style, ...font("footer", theme), color: role("mutedInk") }}
       >
         {children}
@@ -51,14 +53,15 @@ export function Footer(props: FooterProps): IrNode {
               borderTopColor: role("hairline"),
             }}
           >
-            {paragraph(props.reason)}
+            {paragraph("reason", props.reason)}
             {paragraph(
+              "sender",
               <>
                 {props.sender}
                 {props.address !== undefined && (
                   <>
                     <br />
-                    {props.address}
+                    <span class="ek-footer-address">{props.address}</span>
                   </>
                 )}
               </>,
@@ -66,6 +69,7 @@ export function Footer(props: FooterProps): IrNode {
             )}
             {links.length > 0 &&
               paragraph(
+                "links",
                 links.map((link, i) => (
                   <>
                     {i > 0 && " · "}

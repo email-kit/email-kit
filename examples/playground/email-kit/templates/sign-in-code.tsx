@@ -1,4 +1,4 @@
-import { Callout, Heading, OtpCode, Text } from "@email-kit/components"
+import { Callout, Footer, Heading, OtpCode, Text } from "@email-kit/components"
 import { defineEmail, If } from "@email-kit/core"
 import { z } from "zod"
 
@@ -26,6 +26,14 @@ export default defineEmail({
       <Callout tone="info" title={t("notYouTitle")}>
         {t("notYou")}
       </Callout>
+      <Footer
+        reason={t("footer", { product: platform.productName })}
+        sender={platform.legalName}
+        links={[
+          { href: platform.helpUrl, label: t("helpCentre") },
+          { href: platform.privacyUrl, label: t("privacy") },
+        ]}
+      />
     </>
   ),
 })

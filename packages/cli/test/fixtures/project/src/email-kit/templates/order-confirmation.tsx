@@ -1,5 +1,5 @@
 /** @jsxImportSource @email-kit/core */
-import { Button, Heading, Link, List, ListItem, Text } from "@email-kit/components"
+import { Button, Footer, Heading, Link, List, ListItem, Text } from "@email-kit/components"
 import { defineEmail, Each, If, Unless, url } from "@email-kit/core"
 import { z } from "zod"
 
@@ -54,6 +54,10 @@ export default defineEmail({
         {t("footer", { product: platform.productName })}{" "}
         <Link href={platform.siteUrl}>{t("visit")}</Link>
       </Text>
+      <Footer
+        reason={t("reason", { product: platform.productName })}
+        sender={platform.productName}
+      />
     </Card>
   ),
 })

@@ -349,6 +349,12 @@ The footer of a transactional email: why the reader got it, who sent it and from
 help and privacy links, in small muted type under a hairline. Unsubscribe links and the other
 marketing parts don't exist yet.
 
+`check` requires a reason line and a sender in every email (`legal.reason`,
+`legal.sender-identity`), and a postal address in `marketing` and `consent-request` emails
+(`legal.postal-address`). It finds them by the classes `Footer` puts on its parts:
+`ek-footer-reason`, `ek-footer-sender` and `ek-footer-address`. A footer you build yourself
+passes the same checks if it carries those classes.
+
 | Prop | Type | Default | |
 |---|---|---|---|
 | `reason` | `Child` | | Why the reader got the email, naming the account or relationship. Required |

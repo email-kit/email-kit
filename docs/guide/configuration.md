@@ -80,6 +80,9 @@ compile, or `{ runtime: true }`, passed by your backend to
 [`createEmails()`](sending.md#runtime-platform-values) at send time. Templates read them as
 `platform.<key>`; see [Platform values](templates.md#platform-values).
 
+`siteUrl`, `helpUrl` and `privacyUrl` must be `https://` URLs and `supportEmail` an email address,
+whether set here or passed at send time.
+
 ## Theme
 
 The theme gives every colour, font, size and radius the components use. Without one, emails use

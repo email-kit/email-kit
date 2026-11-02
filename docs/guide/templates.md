@@ -133,7 +133,7 @@ Conditions that don't depend on data are plain JavaScript, decided when the temp
 | Field | Type | Required | What it is |
 |---|---|---|---|
 | `id` | `string` | yes | Lowercase words joined by hyphens, such as `order-shipped`. It names the output folder and becomes `emails.orderShipped` and the type `OrderShippedData`. Don't rename an id that has shipped: backends call it by name |
-| `purpose` | `"transactional"`, `"marketing"` or `"consent-request"` | yes | The legal purpose. It's recorded in the manifest and in `render()`'s `meta`; no check uses it yet, and the marketing footer parts don't exist yet |
+| `purpose` | `"transactional"`, `"marketing"` or `"consent-request"` | yes | The legal purpose. It's recorded in the manifest and in `render()`'s `meta`, and the compile fails without it (`legal.purpose-declared`). `marketing` and `consent-request` emails must show a postal address (`legal.postal-address`); the marketing footer parts (unsubscribe) don't exist yet |
 | `schema` | a Zod 4, Valibot or ArkType 2 schema | yes | The data the email takes. `data`, `fixtures` and the generated types come from it |
 | `subject` | `(data, t, platform) => …` | yes | The subject line: text only, one line |
 | `preheader` | `(data, t, platform) => …` | no | The inbox preview text after the subject: one line. Without it `check` warns (`preheader.length`) |
@@ -191,17 +191,8 @@ quotes and braces). A required name without `.min(1)` renders as "Thanks, !" in 
 which `copy.placeholder-fallbacks` reports; a list without a maximum can push the long variant
 past Gmail's clipping size (`size.gmail`).
 
-With ArkType, `configure()` doesn't accept the markers' type until you declare it once, in any
-`.d.ts` file your `tsconfig.json` includes:
-
-```ts
-declare global {
-  interface ArkEnv {
-    meta(): { "x-email-kit"?: { secret?: true; url?: true; formatted?: string } }
-  }
-}
-export {}
-```
+With ArkType, `configure()` accepts the markers as they are: `@email-kit/core` declares its
+metadata key on ArkType's global `ArkEnv`, so no declaration of your own is needed.
 
 ## Field markers
 

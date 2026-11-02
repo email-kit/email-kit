@@ -154,8 +154,9 @@ export const emails = createEmails({ siteUrl: process.env.SITE_URL ?? "" })
 
 The module then exports `createEmails()` but no ready-made `emails`, so you can't forget the
 values. `createEmails()` throws an `EmailRenderError` with the code `missing-context` if a runtime
-key is missing or empty. The values aren't checked beyond that, so pass `https://` URLs. Data
-passed to `render()` can't override them. Call `createEmails()` once and reuse the result.
+key is missing or empty, and `invalid-context` if `siteUrl`, `helpUrl` or `privacyUrl` isn't an
+`https://` URL or `supportEmail` isn't an email address: the rules the config applies to values set
+there. Data passed to `render()` can't override them. Call `createEmails()` once and reuse the result.
 
 ## Per-template modules
 
@@ -176,6 +177,7 @@ import { emails } from "./email-kit/compiled/order-shipped/index.ts"
 |---|---|
 | `invalid-data` | The data doesn't match the schema |
 | `missing-context` | `createEmails()` lacks a runtime platform value, or it's empty |
+| `invalid-context` | A URL platform value passed to `createEmails()` isn't `https://`, or `supportEmail` isn't an email address |
 | `subject-line-break` | The rendered subject contains CR or LF, usually from user data. Strip line breaks before rendering |
 
 `MustacheCoreError` comes from the placeholder renderer, with the codes `missing-value`,

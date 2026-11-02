@@ -575,6 +575,36 @@ variant instead of the compiled templates (each render then has `fixture`), or `
 
 **Fix:** Mark the field with `url` in the schema (`z.string().meta(url)`): render() then accepts only https URLs.
 
+## Legal
+
+### legal.purpose-declared
+**Default:** error
+
+**Rule:** Every template declares a purpose: "transactional", "marketing" or "consent-request". Enforced when compiling: the compile fails with `invalid-purpose`, which `email-kit check` reports as this check.
+
+**Fix:** Add `purpose` to `defineEmail()`; any promotional content makes it "marketing".
+
+### legal.reason
+**Default:** error
+
+**Rule:** Every email says why the reader got it ("why you got this"), naming the account or subscription.
+
+**Fix:** Add `<Footer reason={t("footer")} …>`, with a line like "You're receiving this because you have an account with Acme."
+
+### legal.sender-identity
+**Default:** error
+
+**Rule:** Every email names who sends it: the legal name or brand.
+
+**Fix:** Add `<Footer sender={platform.legalName} …>`, with `legalName` (or `productName`) set in the config's `platform`.
+
+### legal.postal-address
+**Default:** error
+
+**Rule:** Marketing and consent-request emails show the sender's postal address.
+
+**Fix:** Pass `address={platform.postalAddress}` to `Footer`, with `postalAddress` set in the config's `platform`.
+
 ## Internationalisation
 
 ### i18n.missing-keys

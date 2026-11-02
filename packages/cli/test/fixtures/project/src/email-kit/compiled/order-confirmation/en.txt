@@ -20,3 +20,7 @@ No discount this time.
 View your order: {{orderUrl}}
 
 Sent by Shop Example. Visit our shop: {{_ek.context.siteUrl}}
+
+You're receiving this email because you ordered from Shop Example.
+
+Shop Example

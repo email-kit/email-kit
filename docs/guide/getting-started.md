@@ -74,7 +74,10 @@ Without a `src/` folder it sits at the project root.
 
 With your agreement, `init` also:
 
-- adds `@email-kit/cli`, `@email-kit/core`, `@email-kit/components` and `zod` as devDependencies;
+- adds `@email-kit/cli`, `@email-kit/core` and `@email-kit/components` as devDependencies, with
+  a schema library: the one the project already uses (Valibot also gets
+  `@valibot/to-json-schema`; ArkType needs nothing more), or `zod` if it uses none. The welcome
+  template, and every template `email-kit new` writes, uses that library;
 - adds the scripts `email-kit:compile` and `email-kit:check` (or under the prefix `emails:` or
   `ek:` if those are taken);
 - adds `"jsx": "react-jsx"` to `tsconfig.json` when it has no JSX setting;

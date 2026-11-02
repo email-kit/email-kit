@@ -1,0 +1,45 @@
+# Asks email-kit/docs-site to rebuild when the docs it publishes change on main. The site copies
+# docs/guide, docs/recipes, docs/checks.md and docs/errors.md at build time (its
+# scripts/sync-docs.mjs), and its deploy workflow listens for this `docs-updated` event.
+#
+# Needs the DOCS_SITE_TOKEN secret: a fine-grained token for email-kit/docs-site with
+# "Contents: read and write", which repository_dispatch requires. Without it the job does nothing.
+
+name: Docs site
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - docs/guide/**
+      - docs/recipes/**
+      - docs/checks.md
+      - docs/errors.md
+      - .github/workflows/docs-site.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: docs-site
+  cancel-in-progress: true
+
+jobs:
+  rebuild:
+    name: Rebuild the docs site
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send docs-updated to email-kit/docs-site
+        env:
+          GH_TOKEN: ${{ secrets.DOCS_SITE_TOKEN }}
+          REF: ${{ github.sha }}
+        run: |
+          if [ -z "$GH_TOKEN" ]; then
+            echo "::notice::DOCS_SITE_TOKEN isn't set, so the docs site wasn't asked to rebuild."
+            exit 0
+          fi
+          gh api --method POST repos/email-kit/docs-site/dispatches \
+            -f event_type=docs-updated \
+            -f "client_payload[ref]=$REF"
+          echo "Asked email-kit/docs-site to rebuild from $REF."

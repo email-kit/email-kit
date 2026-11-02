@@ -6,5 +6,8 @@
   "expiry": "It expires in {minutes, plural, one {# minute} other {# minutes}} and works once.",
   "device": "Requested from {device}.",
   "notYouTitle": "Didn't ask for this code?",
-  "notYou": "You can ignore this email. Nobody can sign in without the code."
+  "notYou": "You can ignore this email. Nobody can sign in without the code.",
+  "footer": "You're receiving this email because someone asked to sign in to your {product} account.",
+  "helpCentre": "Help centre",
+  "privacy": "Privacy policy"
 }

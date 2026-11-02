@@ -25,6 +25,7 @@ const messages = {
   view: "View your order",
   footer: "Sent by {product}.",
   visit: "Visit our shop",
+  reason: "You're receiving this email because you ordered from {product}.",
 }
 
 let html: string

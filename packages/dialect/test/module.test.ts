@@ -321,6 +321,28 @@ describe("runtime context (RUN-04)", () => {
         expect.objectContaining({ code: "missing-context" }),
       )
     }
-    expect(readContext(["siteUrl"], { siteUrl: "x", other: "y" })).toEqual({ siteUrl: "x" })
+    expect(readContext(["productName"], { productName: "x", other: "y" })).toEqual({
+      productName: "x",
+    })
+  })
+
+  it("holds URL values to https and supportEmail to an address, as the config does", () => {
+    for (const siteUrl of ["x", "http://shop.example", "https://", "https://a b", "javascript:x"]) {
+      expect(() => readContext(["siteUrl"], { siteUrl })).toThrow(
+        expect.objectContaining({ code: "invalid-context" }),
+      )
+    }
+    expect(() => readContext(["helpUrl"], { helpUrl: "ftp://help.example" })).toThrow(
+      'createEmails() needs "helpUrl" as an https URL, got "ftp://help.example"',
+    )
+    expect(() => readContext(["supportEmail"], { supportEmail: "help" })).toThrow(
+      expect.objectContaining({ code: "invalid-context" }),
+    )
+    expect(
+      readContext(["privacyUrl", "supportEmail"], {
+        privacyUrl: "https://shop.example/privacy",
+        supportEmail: "help@shop.example",
+      }),
+    ).toEqual({ privacyUrl: "https://shop.example/privacy", supportEmail: "help@shop.example" })
   })
 })

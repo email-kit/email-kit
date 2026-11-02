@@ -2,6 +2,8 @@
 // the rule, and the usual fix; a finding says where (template, locale, file:line:col), what, how
 // to fix it, and where the docs are.
 
+import type { Purpose } from "@email-kit/core"
+
 import type { OutputFile } from "../compiler/output.ts"
 import type { Field } from "../compiler/schema.ts"
 import type { Theme } from "../theme/theme.ts"
@@ -49,6 +51,8 @@ export interface CheckedEmail {
 /** A template as the source checks see it. */
 export interface CheckedTemplate {
   readonly id: string
+  /** The legal purpose: decides the footer parts the legal.* checks require */
+  readonly purpose: Purpose
   /** The schema's portable model */
   readonly model: Field
   /** Relative to the project folder */

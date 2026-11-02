@@ -18,8 +18,9 @@ import {
   configFile,
   type ImportStrategy,
   indexFile,
+  schemaDependencies,
   WELCOME_MESSAGES,
-  WELCOME_TEMPLATE,
+  welcomeTemplate,
 } from "./scaffold.ts"
 
 export interface Prompter {
@@ -139,7 +140,10 @@ export async function init(options: InitOptions, io: InitIo): Promise<number> {
       }),
     },
     { path: posix.join(folder, "index.ts"), content: indexFile(strategy) },
-    { path: posix.join(folder, "templates/welcome.tsx"), content: WELCOME_TEMPLATE },
+    {
+      path: posix.join(folder, "templates/welcome.tsx"),
+      content: welcomeTemplate(project.schemaLibrary ?? "zod"),
+    },
     { path: posix.join(folder, "messages/en/welcome.json"), content: WELCOME_MESSAGES },
   ]
   const { changes, scriptPrefix } = plannedChanges(project, folder, strategy)
@@ -270,10 +274,14 @@ function plannedChanges(
     ...(pkg.dependencies as object | undefined),
     ...(pkg.devDependencies as object | undefined),
   }
-  const missing = [
-    ...["@email-kit/cli", "@email-kit/core", "@email-kit/components"].filter((n) => !(n in deps)),
-    ...("zod" in deps ? [] : ["zod"]),
-  ]
+  // The schema library the project already uses (Zod when it has none), and what it needs.
+  const versions: Record<string, string> = {
+    "@email-kit/cli": `^${VERSION}`,
+    "@email-kit/core": `^${VERSION}`,
+    "@email-kit/components": `^${VERSION}`,
+    ...schemaDependencies(project.schemaLibrary ?? "zod"),
+  }
+  const missing = Object.keys(versions).filter((name) => !(name in deps))
   const editPackage = (edit: (json: Record<string, unknown>) => void) => () => {
     const file = join(dir, "package.json")
     const text = readFileSync(file, "utf8")
@@ -289,7 +297,7 @@ function plannedChanges(
       summary: `add the devDependencies ${missing.join(", ")}`,
       apply: editPackage((json) => {
         const dev = { ...(json.devDependencies as Record<string, string> | undefined) }
-        for (const name of missing) dev[name] = name === "zod" ? "^4" : `^${VERSION}`
+        for (const name of missing) dev[name] = versions[name] as string
         json.devDependencies = Object.fromEntries(
           Object.entries(dev).sort(([a], [b]) => a.localeCompare(b)),
         )
