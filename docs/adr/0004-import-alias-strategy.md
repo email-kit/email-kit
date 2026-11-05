@@ -1,8 +1,9 @@
 # ADR 0004: Import alias strategy
 
 **Status:** Accepted (2026-10-30).
-**Task:** P0-08 (SPK-06). **Evidence:** [`spikes/import-alias/run.ts`](../../spikes/import-alias/run.ts).
-Run it with `pnpm --filter @email-kit/spike-import-alias run`.
+**Task:** P0-08 (SPK-06). **Evidence:** `spikes/import-alias/run.ts`, removed after phase 0
+(recover it from git history before commit `0151249`). `packages/cli/test/host.test.ts` now
+covers the chosen strategy.
 
 ## Context
 
@@ -87,7 +88,7 @@ Findings:
   - the deployment shape.
 - **For B,** `check` (or `doctor`) warns when a script that runs `src/` lacks
   `--conditions=email-kit`, the one silent failure left.
-- **TST-08** host tests reuse this harness.
+- **TST-08** host tests build on this harness (see `packages/cli/test/host.test.ts`).
 - **Not covered by this spike:**
   - Windows;
   - Node 22.x (type stripping is on by default from 22.18; `require(esm)` from 22.12);

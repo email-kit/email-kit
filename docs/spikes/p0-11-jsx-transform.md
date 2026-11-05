@@ -1,7 +1,7 @@
 # P0-11: JSX transform for loading templates
 
-**Status:** done; feeds ADR 0006 (P0-12). **Code:** [`spikes/jsx-transform/`](../../spikes/jsx-transform/bench.ts)
-(`pnpm --filter @email-kit/spike-jsx-transform bench`).
+**Status:** done; feeds ADR 0006 (P0-12). **Code:** `spikes/jsx-transform/`
+(removed after phase 0; in git history before commit `0151249`).
 
 ## Question
 
@@ -89,4 +89,4 @@ The cost is install size (35 MB, a devDependency) and a pre-1.x-mature API surfa
   both must agree. The prototype keeps evaluation state in a `Symbol.for` slot on `globalThis`.
   The CLI should also compare versions and fail clearly on a mismatch (P1-032).
 - **Lifecycle scripts.** esbuild and @swc/core are listed with `allowBuilds: false` in
-  `pnpm-workspace.yaml` for this spike. Drop them when the spike is removed.
+  `pnpm-workspace.yaml` for this spike. Done: removed with the spike.

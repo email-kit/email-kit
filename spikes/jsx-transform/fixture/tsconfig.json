@@ -1,7 +1,0 @@
-{
-  "//": "A hostile host setting: the transform must ignore it.",
-  "compilerOptions": {
-    "jsx": "react-jsx",
-    "jsxImportSource": "hono/jsx"
-  }
-}

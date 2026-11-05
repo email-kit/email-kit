@@ -24,7 +24,7 @@ when** (acceptance).
 - **P0-09 done.** Recommendation: no HTML inliner by default (inline styles at the IR level);
   juice with `data-embed` if stylesheets are ever authored. `docs/spikes/p0-09-css-inliner.md`.
 - **P0-08 done.** ADR 0004 proposed (`docs/adr/0004-import-alias-strategy.md`), backed by real
-  tsc 5.9 / 7.0, tsx and Node runs in `spikes/import-alias/`.
+  tsc 5.9 / 7.0, tsx and Node runs (spike code removed; see git history).
 - **P0-05 done.** Init rules confirmed across `jsx` unset, Hono, Next.js `preserve`/`react-jsx`,
   classic and node10; core gained `typesVersions` for node10. `docs/spikes/p0-05-jsx-pragma.md`.
 - **P0-06 done; P0-12 partly.** ADRs 0003 (plurals), 0004 (aliases) and 0005 (no inliner)

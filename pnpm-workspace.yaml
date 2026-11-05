@@ -1,6 +1,5 @@
 packages:
   - packages/*
-  - spikes/*
   - examples/*
 
 # Shared versions for tools used by several packages. Reference them with "catalog:".
@@ -18,10 +17,9 @@ catalog:
 # Supply-chain safety: don't install versions published less than a day ago.
 minimumReleaseAge: 1440
 
-# Lifecycle scripts stay off (CONTRIBUTING supply-chain rules). These only verify a native binary
-# that pnpm already installs through optionalDependencies. Used by the P0-11 spike only.
+# Lifecycle scripts stay off (CONTRIBUTING supply-chain rules). esbuild's only verifies a native
+# binary that pnpm already installs through optionalDependencies.
 allowBuilds:
-  "@swc/core": false
   esbuild: false
   # Next.js's optional image optimiser (examples/nextjs doesn't use next/image).
   sharp: false

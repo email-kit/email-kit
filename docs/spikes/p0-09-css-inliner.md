@@ -1,7 +1,7 @@
 # P0-09: CSS inliner
 
-**Status:** done; feeds ADR 0005 (P0-12). **Code:** [`spikes/css-inliner/`](../../spikes/css-inliner/bench.ts)
-(`pnpm --filter @email-kit/spike-css-inliner bench`).
+**Status:** done; feeds ADR 0005 (P0-12). **Code:** `spikes/css-inliner/`
+(removed after phase 0; in git history before commit `0151249`).
 
 ## Question
 

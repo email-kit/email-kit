@@ -26,7 +26,6 @@ packages/
 ├── create-email-kit/    create-email-kit: `npm create email-kit`
 └── dialect/             @email-kit/dialect (private): mustache-core reference renderer
 conformance/             language-neutral golden cases every runtime must pass
-spikes/                  phase-0 experiments (private; not built or published)
 docs/                    PRD, backlog, research, ADRs, specs, spike findings
 ```
 

@@ -1,8 +1,8 @@
 # P0-05: the JSX pragma in host setups
 
 **Status:** done. **Done when:** "a matrix of results recorded; the init rules confirmed or
-changed". **Code:** [`spikes/jsx-pragma/run.ts`](../../spikes/jsx-pragma/run.ts)
-(`pnpm --filter @email-kit/spike-jsx-pragma run`). It is the starting point for P1-031.
+changed". **Code:** `spikes/jsx-pragma/run.ts`
+(removed after phase 0; in git history before commit `0151249`). It is the starting point for P1-031.
 
 ## Question
 

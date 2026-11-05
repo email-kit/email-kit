@@ -14,7 +14,6 @@
       "!**/__golden__",
       "!**/test/.tmp",
       "!packages/cli/test/fixtures/project/src/email-kit/compiled",
-      "!spikes/css-inliner/fixture.html",
       "!packages/cli/test/fixtures/themes",
       "!pnpm-lock.yaml",
       "!**/*.md"
