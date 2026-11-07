@@ -1,8 +1,4 @@
-// Symbol.for, so an error raised by one installed copy of @email-kit/core is still recognised by
-// a compiler that loaded another copy (instanceof can't see across copies).
 const BRAND = Symbol.for("email-kit.error")
-
-/** An authoring error found while evaluating a template at compile time. */
 export class EmailKitError extends Error {
   readonly code: string
 
@@ -14,7 +10,6 @@ export class EmailKitError extends Error {
   }
 }
 
-/** True for an EmailKitError from any copy of @email-kit/core. */
 export function isEmailKitError(value: unknown): value is EmailKitError {
   return (
     typeof value === "object" &&
