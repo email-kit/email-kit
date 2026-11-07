@@ -336,10 +336,6 @@ interface RuntimeTemplate {
   render(data: unknown, options?: { readonly locale?: string }): RenderedParts
 }
 
-function counted(n: number, word: string): string {
-  return `${n} ${word}${n === 1 ? "" : "s"}`
-}
-
 class EmailRenderError extends Error {
   readonly code: string
   readonly issues: readonly DataIssue[]
@@ -352,15 +348,19 @@ class EmailRenderError extends Error {
   }
 }
 
-const parsedTemplates = new Map<string, ParsedTemplate>()
+function has(record: Record<string, unknown>, key: string): boolean {
+  // biome-ignore lint/suspicious/noPrototypeBuiltins: Object.hasOwn needs lib ES2022 in the host
+  return Object.prototype.hasOwnProperty.call(record, key) && record[key] !== undefined
+}
 
-function fill(template: string, data: unknown, profile: "html" | "text"): string {
-  let parsed = parsedTemplates.get(template)
-  if (parsed === undefined) {
-    parsed = parse(template)
-    parsedTemplates.set(template, parsed)
-  }
-  return render(parsed, data, profile)
+const HTTPS_URL: RegExp = /^https:\/\/[^\s/?#]+[^\s]*$/i
+
+function describe(value: unknown): string {
+  if (value === null) return "null"
+  if (Array.isArray(value)) return "a list"
+  if (typeof value === "string")
+    return JSON.stringify(value.length > 40 ? `${value.slice(0, 40)}…` : value)
+  return typeof value === "object" ? "an object" : `${typeof value} ${String(value)}`
 }
 
 /** CLDR data for resolving a requested locale. */
@@ -408,21 +408,8 @@ function truncate(tag: string, data: LocaleData): string | undefined {
   return parts.join("-")
 }
 
-function has(record: Record<string, unknown>, key: string): boolean {
-  // biome-ignore lint/suspicious/noPrototypeBuiltins: Object.hasOwn needs lib ES2022 in the host
-  return Object.prototype.hasOwnProperty.call(record, key) && record[key] !== undefined
-}
-
-const HTTPS_URL = /^https:\/\/[^\s/?#]+[^\s]*$/i
-const URL_CONTEXT_KEYS: readonly string[] = ["helpUrl", "privacyUrl", "siteUrl"]
-const EMAIL_ADDRESS = /^[^\s@<>"]+@[^\s@<>"]+$/
-
-function describe(value: unknown): string {
-  if (value === null) return "null"
-  if (Array.isArray(value)) return "a list"
-  if (typeof value === "string")
-    return JSON.stringify(value.length > 40 ? `${value.slice(0, 40)}…` : value)
-  return typeof value === "object" ? "an object" : `${typeof value} ${String(value)}`
+function counted(n: number, word: string): string {
+  return `${n} ${word}${n === 1 ? "" : "s"}`
 }
 
 function validate(model: Model, value: unknown, path = ""): DataIssue[] {
@@ -612,7 +599,13 @@ function collect(
   }
 }
 
-function readContext(keys: readonly string[], context: unknown): Readonly<Record<string, string>> {
+const URL_CONTEXT_KEYS: readonly string[] = ["helpUrl", "privacyUrl", "siteUrl"]
+const EMAIL_ADDRESS = /^[^\s@<>"]+@[^\s@<>"]+$/
+
+function readContext(
+  keys: readonly string[],
+  context: unknown,
+): Readonly<Record<string, string>> {
   const values: Record<string, string> = {}
   for (const key of keys) {
     const value = isObject(context) ? context[key] : undefined
@@ -637,6 +630,17 @@ function readContext(keys: readonly string[], context: unknown): Readonly<Record
     values[key] = value
   }
   return values
+}
+
+const parsedTemplates = new Map<string, ParsedTemplate>()
+
+function fill(template: string, data: unknown, profile: "html" | "text"): string {
+  let parsed = parsedTemplates.get(template)
+  if (parsed === undefined) {
+    parsed = parse(template)
+    parsedTemplates.set(template, parsed)
+  }
+  return render(parsed, data, profile)
 }
 
 function createTemplate(
