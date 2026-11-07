@@ -1,9 +1,5 @@
-// The release smoke test (docs/releasing.md): the four public packages, packed as npm would
-// publish them, installed into a new project the way a user would, with nothing from the
-// workspace. Run `pnpm build` first.
-//
 //   node scripts/smoke-test.mjs          a Node project that runs TypeScript directly (fast)
-//   node scripts/smoke-test.mjs --next   a fresh create-next-app, built and served (slower)
+//   --next                               a fresh create-next-app, built and served (slower)
 //   --keep                               leave the temporary folder for a look around
 
 import { execFileSync, spawn } from "node:child_process"
@@ -21,7 +17,6 @@ const keep = process.argv.includes("--keep")
 const work = mkdtempSync(join(tmpdir(), "email-kit-smoke-"))
 const tarballs = join(work, "tarballs")
 const app = join(work, "app")
-// pnpm and npx are .cmd shims on Windows, which only a shell runs.
 const shell = process.platform === "win32"
 
 function run(command, args, cwd, options = {}) {
@@ -41,7 +36,6 @@ function expect(condition, message) {
 }
 
 try {
-  // 1. Pack: what npm would publish, with workspace: and catalog: versions replaced.
   mkdirSync(tarballs)
   const names = {}
   for (const dir of PACKAGES) {
@@ -50,11 +44,9 @@ try {
       capture: true,
     })
     const file = `${manifest.name.replace("@", "").replace("/", "-")}-${manifest.version}.tgz`
-    // file: URLs take forward slashes on every platform.
     names[manifest.name] = `file:${join(tarballs, file).replaceAll("\\", "/")}`
   }
 
-  // 2. A new project.
   if (next) {
     run(
       "pnpm",
@@ -92,7 +84,6 @@ try {
     )
     writeFileSync(join(app, "src/send.ts"), "// Replaced once email-kit is set up.\n")
   }
-  // The package names resolve to the tarballs, standing in for the registry.
   const overrides = Object.entries(names)
     .map(([name, spec]) => `  "${name}": "${spec}"`)
     .join("\n")
@@ -101,7 +92,6 @@ try {
     `${next ? readFileSync(join(app, "pnpm-workspace.yaml"), "utf8") : ""}\noverrides:\n${overrides}\n`,
   )
 
-  // 3. Set up as a user would: npm create email-kit, accepting the defaults.
   run("pnpm", ["add", "-D", `create-email-kit@${names["create-email-kit"]}`], app)
   run("pnpm", ["exec", "create-email-kit", "--yes"], app)
   const manifest = JSON.parse(readFileSync(join(app, "package.json"), "utf8"))
@@ -110,20 +100,16 @@ try {
     manifest.devDependencies["@email-kit/cli"] === `^${version}`,
     `init added @email-kit/cli ^${version}`,
   )
-
-  // 4. Render from server code.
   if (next) {
     const route = join(app, "src/app/api/email/welcome")
     mkdirSync(route, { recursive: true })
     writeFileSync(
       join(route, "route.ts"),
       `import { emails } from "@/email-kit"
-
-export async function GET() {
-  const email = emails.welcome.render({ name: "Grace", startUrl: "https://shop.example/start" })
-  return new Response(email.html, { headers: { "content-type": "text/html; charset=utf-8" } })
-}
-`,
+      export async function GET() {
+        const email = emails.welcome.render({ name: "Grace", startUrl: "https://shop.example/start" })
+        return new Response(email.html, { headers: { "content-type": "text/html; charset=utf-8" } })
+      }`,
     )
     run("pnpm", ["build"], app)
     const html = await serve(app, "/api/email/welcome")
@@ -132,10 +118,8 @@ export async function GET() {
     writeFileSync(
       join(app, "src/send.ts"),
       `import { emails } from "#email-kit"
-
-const email = emails.welcome.render({ name: "Grace", startUrl: "https://shop.example/start" })
-console.log(JSON.stringify({ subject: email.subject, html: email.html, text: email.text }))
-`,
+      const email = emails.welcome.render({ name: "Grace", startUrl: "https://shop.example/start" })
+      console.log(JSON.stringify({ subject: email.subject, html: email.html, text: email.text }))`,
     )
     const output = run("node", ["src/send.ts"], app, { capture: true })
     const email = JSON.parse(output.trim().split("\n").at(-1))
@@ -143,7 +127,6 @@ console.log(JSON.stringify({ subject: email.subject, html: email.html, text: ema
     expect(email.text.includes("https://shop.example/start"), "and its text part")
   }
 
-  // 5. The other commands.
   run("pnpm", ["exec", "email-kit", "check"], app)
   expect(true, "email-kit check passes")
   run("pnpm", ["exec", "email-kit", "new", "password-reset"], app)
@@ -156,9 +139,8 @@ console.log(JSON.stringify({ subject: email.subject, html: email.html, text: ema
   else rmSync(work, { recursive: true, force: true })
 }
 
-/** Starts `next start` on a free port, fetches `path`, and stops it. */
 async function serve(cwd, path) {
-  const port = 3900 + Math.floor(Math.random() * 90)
+  const port = 14232 + Math.floor(Math.random() * 90)
   const server = spawn("pnpm", ["exec", "next", "start", "--port", String(port)], {
     cwd,
     shell,
