@@ -76,16 +76,9 @@ export { type DataIssue, DIALECT, EmailRenderError, MustacheCoreError }
 // The mustache-core renderer and module runtime, inlined so this module has no dependencies.
 // Spec: https://github.com/email-kit/email-kit/blob/main/docs/spec/mustache-core.md
 
-/** The dialect id recorded in manifests (R7, DLG-06). */
 const DIALECT = "mustache-core@1" as const
-
-/**
- * Escaping profile for a template part (R3). `html` escapes values for HTML text and attributes;
- * `text` (the plain-text part and the subject) inserts values unchanged.
- */
 type Profile = "html" | "text"
 
-/** The escaping table of the `html` profile. No other character is escaped. */
 const HTML_ESCAPES: Readonly<Record<string, string>> = {
   "&": "&amp;",
   "<": "&lt;",
@@ -94,7 +87,6 @@ const HTML_ESCAPES: Readonly<Record<string, string>> = {
   "'": "&#39;",
 }
 
-/** Error codes shared by every mustache-core runtime (spec §10). */
 type ErrorCode =
   | "unclosed-tag"
   | "unsupported-tag"
@@ -121,7 +113,6 @@ type Node = string | VariableNode | SectionNode
 interface VariableNode {
   readonly type: "variable"
   readonly name: string
-  /** `{{{name}}}`: never escaped, in any profile. */
   readonly raw: boolean
 }
 
@@ -140,7 +131,94 @@ const UNSUPPORTED_SIGIL = /^[!>=&<$]/
 const PADDING = /^[ \t]+|[ \t]+$/g
 const LINE_END = /[ \t]*(?:\r?\n|$)/y
 
-/** Parses and validates a whole template. Throws a `MustacheCoreError` on any syntax error. */
+function lookup(stack: readonly unknown[], name: string): unknown {
+  if (name === ".") return stack[stack.length - 1]
+  const [first = "", ...rest] = name.split(".")
+  for (let i = stack.length - 1; i >= 0; i--) {
+    const context = stack[i]
+    if (isObject(context) && hasOwn(context, first)) {
+      let value = context[first]
+      for (const key of rest) {
+        if (!isObject(value) || !hasOwn(value, key)) return undefined
+        value = value[key]
+      }
+      return value
+    }
+  }
+  return undefined
+}
+
+function isTruthy(value: unknown, name: string): boolean {
+  if (typeof value === "number") return finite(value, name) !== 0
+  if (Array.isArray(value)) return value.length > 0
+  return !(value === undefined || value === null || value === false || value === "")
+}
+
+function toText(value: unknown, name: string): string {
+  if (typeof value === "string") return value
+  if (typeof value === "number") return String(finite(value, name))
+  if (typeof value === "boolean") return value ? "true" : "false"
+  if (value === undefined || value === null) fail("missing-value", `No value for "${name}"`)
+  return fail("non-scalar-value", `"${name}" is not a string, number or boolean`)
+}
+
+function finite(value: number, name: string): number {
+  if (!Number.isFinite(value)) fail("invalid-number", `"${name}" is ${value}`)
+  return value
+}
+
+function hasOwn(object: object, key: string): boolean {
+  // biome-ignore lint/suspicious/noPrototypeBuiltins: Object.hasOwn needs lib ES2022 in the host
+  return Object.prototype.hasOwnProperty.call(object, key)
+}
+
+/** A plain object: not null and not an array. module.ts uses it too. */
+function isObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value)
+}
+
+function isBlank(text: string, from: number, to: number): boolean {
+  for (let i = from; i < to; i++) {
+    if (text[i] !== " " && text[i] !== "\t") return false
+  }
+  return true
+}
+
+function fail(code: ErrorCode, message: string): never {
+  throw new MustacheCoreError(code, message)
+}
+
+function renderNodes(nodes: readonly Node[], stack: unknown[], html: boolean): string {
+  let out = ""
+  for (const node of nodes) {
+    if (typeof node === "string") {
+      out += node
+    } else if (node.type === "variable") {
+      const value = toText(lookup(stack, node.name), node.name)
+      out += html && !node.raw ? escapeHtml(value) : value
+    } else {
+      const value = lookup(stack, node.name)
+      const truthy = isTruthy(value, node.name)
+      if (node.type === "inverted") {
+        if (!truthy) out += renderNodes(node.children, stack, html)
+      } else if (Array.isArray(value)) {
+        for (const item of value) {
+          stack.push(item)
+          out += renderNodes(node.children, stack, html)
+          stack.pop()
+        }
+      } else if (value === true) {
+        out += renderNodes(node.children, stack, html)
+      } else if (truthy) {
+        stack.push(value)
+        out += renderNodes(node.children, stack, html)
+        stack.pop()
+      }
+    }
+  }
+  return out
+}
+
 function parse(template: string): ParsedTemplate {
   const nodes: Node[] = []
   const open: { name: string; offset: number; parent: Node[] }[] = []
@@ -150,10 +228,12 @@ function parse(template: string): ParsedTemplate {
   for (;;) {
     const start = template.indexOf("{{", pos)
     if (start === -1) break
+
     const raw = template[start + 2] === "{"
     const closer = raw ? "}}}" : "}}"
     const close = template.indexOf(closer, start + closer.length)
     if (close === -1) fail("unclosed-tag", `Tag at offset ${start} is not closed with "${closer}"`)
+
     const content = template.slice(start + closer.length, close)
     const sigil = !raw && /^[#^/]/.test(content) ? content.charAt(0) : ""
     const name = content.slice(sigil.length).replace(PADDING, "")
@@ -164,7 +244,6 @@ function parse(template: string): ParsedTemplate {
       fail("invalid-name", `Invalid name "${name}" at offset ${start}`)
     }
 
-    // A section, inverted or closing tag alone on its line removes the whole line (spec §5).
     let textEnd = start
     let end = close + closer.length
     if (sigil) {
@@ -210,113 +289,15 @@ function parse(template: string): ParsedTemplate {
   return { nodes }
 }
 
-/**
- * Renders a template with `data`. Values are escaped by the profile; any profile other than
- * `"text"` escapes, so a bad argument from untyped code fails safe.
- */
 function render(template: string | ParsedTemplate, data: unknown, profile: Profile): string {
   const { nodes } = typeof template === "string" ? parse(template) : template
   return renderNodes(nodes, [data], profile !== "text")
 }
 
-/** Escapes a value for HTML text and attribute contexts with `HTML_ESCAPES`. */
 function escapeHtml(value: string): string {
   return value.replace(/[&<>"']/g, (char) => HTML_ESCAPES[char] as string)
 }
 
-function renderNodes(nodes: readonly Node[], stack: unknown[], html: boolean): string {
-  let out = ""
-  for (const node of nodes) {
-    if (typeof node === "string") {
-      out += node
-    } else if (node.type === "variable") {
-      const value = toText(lookup(stack, node.name), node.name)
-      out += html && !node.raw ? escapeHtml(value) : value
-    } else {
-      const value = lookup(stack, node.name)
-      const truthy = isTruthy(value, node.name)
-      if (node.type === "inverted") {
-        if (!truthy) out += renderNodes(node.children, stack, html)
-      } else if (Array.isArray(value)) {
-        for (const item of value) {
-          stack.push(item)
-          out += renderNodes(node.children, stack, html)
-          stack.pop()
-        }
-      } else if (value === true) {
-        out += renderNodes(node.children, stack, html)
-      } else if (truthy) {
-        stack.push(value)
-        out += renderNodes(node.children, stack, html)
-        stack.pop()
-      }
-    }
-  }
-  return out
-}
-
-// Spec §6: the first segment is looked up from the innermost context outwards; the remaining
-// segments resolve only against the value found. Only own keys of plain objects count.
-function lookup(stack: readonly unknown[], name: string): unknown {
-  if (name === ".") return stack[stack.length - 1]
-  const [first = "", ...rest] = name.split(".")
-  for (let i = stack.length - 1; i >= 0; i--) {
-    const context = stack[i]
-    if (isObject(context) && hasOwn(context, first)) {
-      let value = context[first]
-      for (const key of rest) {
-        if (!isObject(value) || !hasOwn(value, key)) return undefined
-        value = value[key]
-      }
-      return value
-    }
-  }
-  return undefined
-}
-
-// Spec §7: falsy values are nothing (missing or null), false, 0, "" and [].
-function isTruthy(value: unknown, name: string): boolean {
-  if (typeof value === "number") return finite(value, name) !== 0
-  if (Array.isArray(value)) return value.length > 0
-  return !(value === undefined || value === null || value === false || value === "")
-}
-
-// Spec §8: numbers use the ECMAScript Number::toString format, which is what String() does.
-function toText(value: unknown, name: string): string {
-  if (typeof value === "string") return value
-  if (typeof value === "number") return String(finite(value, name))
-  if (typeof value === "boolean") return value ? "true" : "false"
-  if (value === undefined || value === null) fail("missing-value", `No value for "${name}"`)
-  return fail("non-scalar-value", `"${name}" is not a string, number or boolean`)
-}
-
-function finite(value: number, name: string): number {
-  if (!Number.isFinite(value)) fail("invalid-number", `"${name}" is ${value}`)
-  return value
-}
-
-// Not Object.hasOwn: generated modules compile under the host's tsconfig, which may predate ES2022.
-function hasOwn(object: object, key: string): boolean {
-  // biome-ignore lint/suspicious/noPrototypeBuiltins: Object.hasOwn needs lib ES2022 in the host
-  return Object.prototype.hasOwnProperty.call(object, key)
-}
-
-function isObject(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value)
-}
-
-function isBlank(text: string, from: number, to: number): boolean {
-  for (let i = from; i < to; i++) {
-    if (text[i] !== " " && text[i] !== "\t") return false
-  }
-  return true
-}
-
-function fail(code: ErrorCode, message: string): never {
-  throw new MustacheCoreError(code, message)
-}
-
-/** The four parts of one template in one locale, as mustache-core templates. */
 interface TemplateParts {
   readonly subject: string
   readonly preheader: string
@@ -324,16 +305,11 @@ interface TemplateParts {
   readonly text: string
 }
 
-/**
- * A template's data model, from its schema: the portable subset of JSON Schema (R4) in a compact
- * form. Constraint names are JSON Schema's.
- */
 interface Model {
   readonly type: "string" | "number" | "integer" | "boolean" | "array" | "object"
   readonly nullable?: true
   readonly enum?: readonly string[]
   readonly constraints?: Readonly<Record<string, number | string>>
-  /** An https URL (AUTH-04) */
   readonly url?: true
   readonly items?: Model
   readonly properties?: Readonly<Record<string, Model>>
@@ -391,10 +367,6 @@ function fill(template: string, data: unknown, profile: "html" | "text"): string
   return render(parsed, data, profile)
 }
 
-/**
- * BCP 47 lookup (RFC 4647 §3.4): try the tag, then drop subtags from the end (`pt-BR` → `pt`),
- * then fall back to the default locale. Matching ignores case.
- */
 /** CLDR data for resolving a requested locale, filtered to the project's languages (§16). */
 interface LocaleData {
   readonly parents: Readonly<Record<string, string>>
@@ -446,10 +418,6 @@ function truncate(tag: string, data: LocaleData): string | undefined {
   const likely = data.scripts[parts[0] as string]
   if (parts.length === 1 && script.length === 4 && likely && script !== likely) return undefined
   return parts.join("-")
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value)
 }
 
 function has(record: Record<string, unknown>, key: string): boolean {
@@ -566,7 +534,7 @@ function validate(model: Model, value: unknown, path = ""): DataIssue[] {
       break
     }
     case "object": {
-      if (!isRecord(value)) {
+      if (!isObject(value)) {
         fail(`expected an object, got ${describe(value)}`)
         break
       }
@@ -595,7 +563,7 @@ function project(model: Model, value: unknown): unknown {
   if (model.type === "array") {
     return Array.isArray(value) ? value.map((item) => project(model.items as Model, item)) : value
   }
-  if (model.type !== "object" || !isRecord(value)) return value
+  if (model.type !== "object" || !isObject(value)) return value
   const out: Record<string, unknown> = {}
   const required = model.required ?? []
   const properties = model.properties ?? {}
@@ -637,7 +605,7 @@ function prepare(
       for (const item of value) prepare(model.items as Model, item, category, inherited)
     return
   }
-  if (model.type !== "object" || !isRecord(value)) return
+  if (model.type !== "object" || !isObject(value)) return
   const plural: Tree = { ...inherited.plural }
   const select: Tree = { ...inherited.select }
   collect(model, value, plural, select, category)
@@ -671,9 +639,9 @@ function collect(
       plural[key] = entry
     } else if (field.type === "string" && field.enum && typeof v === "string") {
       select[key] = { [selectKey(v)]: true }
-    } else if (field.type === "object" && isRecord(v)) {
-      const p: Tree = isRecord(plural[key]) ? { ...(plural[key] as Tree) } : {}
-      const s: Tree = isRecord(select[key]) ? { ...(select[key] as Tree) } : {}
+    } else if (field.type === "object" && isObject(v)) {
+      const p: Tree = isObject(plural[key]) ? { ...(plural[key] as Tree) } : {}
+      const s: Tree = isObject(select[key]) ? { ...(select[key] as Tree) } : {}
       collect(field, v, p, s, category)
       plural[key] = p
       select[key] = s
@@ -689,7 +657,7 @@ function collect(
 function readContext(keys: readonly string[], context: unknown): Readonly<Record<string, string>> {
   const values: Record<string, string> = {}
   for (const key of keys) {
-    const value = isRecord(context) ? context[key] : undefined
+    const value = isObject(context) ? context[key] : undefined
     if (typeof value !== "string" || value === "") {
       throw new EmailRenderError(
         "missing-context",
@@ -751,8 +719,8 @@ function createTemplate(
       const parts = templates[locale] as TemplateParts
       const projected = project(model, data)
       prepare(model, projected, plurals[locale] ?? (() => "other"))
-      const values = isRecord(projected)
-        ? { ...projected, [EK]: { ...(isRecord(projected[EK]) ? projected[EK] : {}), context } }
+      const values = isObject(projected)
+        ? { ...projected, [EK]: { ...(isObject(projected[EK]) ? projected[EK] : {}), context } }
         : projected
       const subject = fill(parts.subject, values, "text")
       if (/[\r\n]/.test(subject)) {

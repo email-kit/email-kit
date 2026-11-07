@@ -1,14 +1,6 @@
-// The runtime half of a generated module (P1-074): locale fallback (OUT-09), validating data
-// against the schema (OUT-08, RUN-05), projecting it onto the schema, the runtime context
-// (RUN-04), and the per-template render() (OUT-10, RUN-06). The compiler inlines it after the
-// renderer, so the same rules apply: no imports below the marker, ES2020, and nothing unused
-// (hosts may compile with noUnusedLocals).
-
-import { type ParsedTemplate, parse, render } from "./index.ts"
+import { isObject, type ParsedTemplate, parse, render } from "./index.ts"
 
 // --- inlined into generated modules from here ---
-
-/** The four parts of one template in one locale, as mustache-core templates. */
 interface TemplateParts {
   readonly subject: string
   readonly preheader: string
@@ -16,28 +8,17 @@ interface TemplateParts {
   readonly text: string
 }
 
-/**
- * A template's data model, from its schema: the portable subset of JSON Schema (R4) in a compact
- * form. Constraint names are JSON Schema's.
- */
 interface Model {
   readonly type: "string" | "number" | "integer" | "boolean" | "array" | "object"
   readonly nullable?: true
   readonly enum?: readonly string[]
   readonly constraints?: Readonly<Record<string, number | string>>
-  /** An https URL (AUTH-04) */
   readonly url?: true
   readonly items?: Model
   readonly properties?: Readonly<Record<string, Model>>
   readonly required?: readonly string[]
 }
 
-/** "1 character", "2 characters" */
-function counted(n: number, word: string): string {
-  return `${n} ${word}${n === 1 ? "" : "s"}`
-}
-
-/** A value that doesn't match the schema, at a path such as `items[1].qty`. */
 interface DataIssue {
   readonly path: string
   readonly message: string
@@ -58,10 +39,12 @@ interface RuntimeTemplate {
   render(data: unknown, options?: { readonly locale?: string }): RenderedParts
 }
 
-/** An error from render() that isn't a mustache-core error, such as data that fails the schema. */
+function counted(n: number, word: string): string {
+  return `${n} ${word}${n === 1 ? "" : "s"}`
+}
+
 class EmailRenderError extends Error {
   readonly code: string
-  /** For `invalid-data`: every value that doesn't match the schema */
   readonly issues: readonly DataIssue[]
 
   constructor(code: string, message: string, issues: readonly DataIssue[] = []) {
@@ -83,11 +66,7 @@ function fill(template: string, data: unknown, profile: "html" | "text"): string
   return render(parsed, data, profile)
 }
 
-/**
- * BCP 47 lookup (RFC 4647 §3.4): try the tag, then drop subtags from the end (`pt-BR` → `pt`),
- * then fall back to the default locale. Matching ignores case.
- */
-/** CLDR data for resolving a requested locale, filtered to the project's languages (§16). */
+/** CLDR data for resolving a requested locale. */
 interface LocaleData {
   readonly parents: Readonly<Record<string, string>>
   readonly scripts: Readonly<Record<string, string>>
@@ -96,12 +75,6 @@ interface LocaleData {
 
 const NO_LOCALE_DATA: LocaleData = { parents: {}, scripts: {}, regions: {} }
 
-/**
- * The compiled locale for a requested one (I18N-04): RFC 4647 lookup over CLDR parents. A region
- * that implies another script gets it first (`zh-TW` → `zh-Hant-TW`); then each step tries a
- * compiled locale, and moves to the configured or CLDR parent, or drops the last subtag. `und`,
- * or dropping an unusual script (`sr-Latn` → `sr`), stops at the default: the first locale.
- */
 function resolveLocale(
   requested: string | undefined,
   available: readonly string[],
@@ -127,21 +100,15 @@ function resolveLocale(
   return fallback
 }
 
-// RFC 4647: drop the last subtag, and a singleton (`x`, `u`) left at the end with it.
 function truncate(tag: string, data: LocaleData): string | undefined {
   const parts = tag.split("-")
   parts.pop()
   while (parts.length > 0 && (parts[parts.length - 1] as string).length === 1) parts.pop()
   if (parts.length === 0) return undefined
-  // CLDR nonlikelyScript: a language in an unusual script doesn't fall back to the language.
   const script = tag.split("-")[1] as string
   const likely = data.scripts[parts[0] as string]
   if (parts.length === 1 && script.length === 4 && likely && script !== likely) return undefined
   return parts.join("-")
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value)
 }
 
 function has(record: Record<string, unknown>, key: string): boolean {
@@ -149,10 +116,7 @@ function has(record: Record<string, unknown>, key: string): boolean {
   return Object.prototype.hasOwnProperty.call(record, key) && record[key] !== undefined
 }
 
-/** An https URL with a host and no whitespace: url fields and URL platform values. */
 const HTTPS_URL = /^https:\/\/[^\s/?#]+[^\s]*$/i
-
-/** Platform values that hold a URL or an email address (CFG-07), checked like url fields. */
 const URL_CONTEXT_KEYS: readonly string[] = ["helpUrl", "privacyUrl", "siteUrl"]
 const EMAIL_ADDRESS = /^[^\s@<>"]+@[^\s@<>"]+$/
 
@@ -164,11 +128,6 @@ function describe(value: unknown): string {
   return typeof value === "object" ? "an object" : `${typeof value} ${String(value)}`
 }
 
-/**
- * Checks data against the model (OUT-08): types, required and nullable fields, enums, length
- * and range constraints, and https for url fields (RUN-05). Keys the schema doesn't declare are
- * ignored; projection drops them.
- */
 function validate(model: Model, value: unknown, path = ""): DataIssue[] {
   const issues: DataIssue[] = []
   const at = path || "data"
@@ -178,8 +137,7 @@ function validate(model: Model, value: unknown, path = ""): DataIssue[] {
     fail(value === null ? "can't be null" : "is required")
     return issues
   }
-  // Constraints are read through these, never as c["minLength"]: a linter would rewrite that to
-  // c.minLength, which hosts with noPropertyAccessFromIndexSignature reject.
+
   const constraints = model.constraints ?? {}
   const number = (name: string): number | undefined => {
     const limit = constraints[name]
@@ -258,7 +216,7 @@ function validate(model: Model, value: unknown, path = ""): DataIssue[] {
       break
     }
     case "object": {
-      if (!isRecord(value)) {
+      if (!isObject(value)) {
         fail(`expected an object, got ${describe(value)}`)
         break
       }
@@ -278,16 +236,11 @@ function validate(model: Model, value: unknown, path = ""): DataIssue[] {
   return issues
 }
 
-/**
- * Copies data onto the model before rendering: unknown keys are dropped and missing optional
- * keys become null. Without this, mustache-core's context-stack lookup could find an outer value
- * through an item that lacks the key, or an extra key could shadow an outer one.
- */
 function project(model: Model, value: unknown): unknown {
   if (model.type === "array") {
     return Array.isArray(value) ? value.map((item) => project(model.items as Model, item)) : value
   }
-  if (model.type !== "object" || !isRecord(value)) return value
+  if (model.type !== "object" || !isObject(value)) return value
   const out: Record<string, unknown> = {}
   const required = model.required ?? []
   const properties = model.properties ?? {}
@@ -301,23 +254,13 @@ function project(model: Model, value: unknown): unknown {
   return out
 }
 
-/** The section key for a select value: `v_` and the value, other characters as `_<hex>_`. */
 function selectKey(value: string): string {
   return `v_${value.replace(/[^A-Za-z0-9]/gu, (c) => `_${(c.codePointAt(0) as number).toString(16)}_`)}`
 }
 
 type Tree = Record<string, unknown>
-
-// The reserved key render() adds (§15). A constant, so strict consumers' noPropertyAccessFromIndexSignature
-// accepts the access and formatters leave it bracketed.
 const EK = "_ek"
 
-/**
- * Data preparation (ADR 0003): every object gets `_ek.plural`, each number field's category and
- * `exact_N` for whole numbers, and `_ek.select`, each enum field's value as a key. An object's
- * own fields go over its parents' entries, the way mustache-core resolves names, so a message in
- * a list item still finds the fields outside it.
- */
 function prepare(
   model: Model,
   value: unknown,
@@ -329,7 +272,7 @@ function prepare(
       for (const item of value) prepare(model.items as Model, item, category, inherited)
     return
   }
-  if (model.type !== "object" || !isRecord(value)) return
+  if (model.type !== "object" || !isObject(value)) return
   const plural: Tree = { ...inherited.plural }
   const select: Tree = { ...inherited.select }
   collect(model, value, plural, select, category)
@@ -341,7 +284,6 @@ function prepare(
   }
 }
 
-// The entries for an object's fields, down through nested objects but not into lists.
 function collect(
   model: Model,
   value: Record<string, unknown>,
@@ -363,9 +305,9 @@ function collect(
       plural[key] = entry
     } else if (field.type === "string" && field.enum && typeof v === "string") {
       select[key] = { [selectKey(v)]: true }
-    } else if (field.type === "object" && isRecord(v)) {
-      const p: Tree = isRecord(plural[key]) ? { ...(plural[key] as Tree) } : {}
-      const s: Tree = isRecord(select[key]) ? { ...(select[key] as Tree) } : {}
+    } else if (field.type === "object" && isObject(v)) {
+      const p: Tree = isObject(plural[key]) ? { ...(plural[key] as Tree) } : {}
+      const s: Tree = isObject(select[key]) ? { ...(select[key] as Tree) } : {}
       collect(field, v, p, s, category)
       plural[key] = p
       select[key] = s
@@ -373,15 +315,10 @@ function collect(
   }
 }
 
-/**
- * Checks the values passed to createEmails() (RUN-04): every runtime key is a non-empty string,
- * the URL keys are https URLs and `supportEmail` is an email address, as they would have to be in
- * the config. Only the declared keys are kept.
- */
 function readContext(keys: readonly string[], context: unknown): Readonly<Record<string, string>> {
   const values: Record<string, string> = {}
   for (const key of keys) {
-    const value = isRecord(context) ? context[key] : undefined
+    const value = isObject(context) ? context[key] : undefined
     if (typeof value !== "string" || value === "") {
       throw new EmailRenderError(
         "missing-context",
@@ -405,12 +342,6 @@ function readContext(keys: readonly string[], context: unknown): Readonly<Record
   return values
 }
 
-/**
- * Builds one entry of the generated `emails` object. `locales[0]` is the default locale. With
- * `checkData`, render() validates the data first. The context goes under the reserved `_ek` key
- * after projection, so data can't override it: the schema can't declare `_ek`, and projection
- * drops every undeclared key.
- */
 function createTemplate(
   id: string,
   purpose: string,
@@ -443,8 +374,8 @@ function createTemplate(
       const parts = templates[locale] as TemplateParts
       const projected = project(model, data)
       prepare(model, projected, plurals[locale] ?? (() => "other"))
-      const values = isRecord(projected)
-        ? { ...projected, [EK]: { ...(isRecord(projected[EK]) ? projected[EK] : {}), context } }
+      const values = isObject(projected)
+        ? { ...projected, [EK]: { ...(isObject(projected[EK]) ? projected[EK] : {}), context } }
         : projected
       const subject = fill(parts.subject, values, "text")
       if (/[\r\n]/.test(subject)) {

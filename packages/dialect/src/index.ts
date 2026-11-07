@@ -62,6 +62,94 @@ const UNSUPPORTED_SIGIL = /^[!>=&<$]/
 const PADDING = /^[ \t]+|[ \t]+$/g
 const LINE_END = /[ \t]*(?:\r?\n|$)/y
 
+function lookup(stack: readonly unknown[], name: string): unknown {
+  if (name === ".") return stack[stack.length - 1]
+  const [first = "", ...rest] = name.split(".")
+  for (let i = stack.length - 1; i >= 0; i--) {
+    const context = stack[i]
+    if (isObject(context) && hasOwn(context, first)) {
+      let value = context[first]
+      for (const key of rest) {
+        if (!isObject(value) || !hasOwn(value, key)) return undefined
+        value = value[key]
+      }
+      return value
+    }
+  }
+  return undefined
+}
+
+function isTruthy(value: unknown, name: string): boolean {
+  if (typeof value === "number") return finite(value, name) !== 0
+  if (Array.isArray(value)) return value.length > 0
+  return !(value === undefined || value === null || value === false || value === "")
+}
+
+function toText(value: unknown, name: string): string {
+  if (typeof value === "string") return value
+  if (typeof value === "number") return String(finite(value, name))
+  if (typeof value === "boolean") return value ? "true" : "false"
+  if (value === undefined || value === null) fail("missing-value", `No value for "${name}"`)
+  return fail("non-scalar-value", `"${name}" is not a string, number or boolean`)
+}
+
+function finite(value: number, name: string): number {
+  if (!Number.isFinite(value)) fail("invalid-number", `"${name}" is ${value}`)
+  return value
+}
+
+function hasOwn(object: object, key: string): boolean {
+  // biome-ignore lint/suspicious/noPrototypeBuiltins: Object.hasOwn needs lib ES2022 in the host
+  return Object.prototype.hasOwnProperty.call(object, key)
+}
+
+/** A plain object: not null and not an array. module.ts uses it too. */
+export function isObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value)
+}
+
+function isBlank(text: string, from: number, to: number): boolean {
+  for (let i = from; i < to; i++) {
+    if (text[i] !== " " && text[i] !== "\t") return false
+  }
+  return true
+}
+
+function fail(code: ErrorCode, message: string): never {
+  throw new MustacheCoreError(code, message)
+}
+
+function renderNodes(nodes: readonly Node[], stack: unknown[], html: boolean): string {
+  let out = ""
+  for (const node of nodes) {
+    if (typeof node === "string") {
+      out += node
+    } else if (node.type === "variable") {
+      const value = toText(lookup(stack, node.name), node.name)
+      out += html && !node.raw ? escapeHtml(value) : value
+    } else {
+      const value = lookup(stack, node.name)
+      const truthy = isTruthy(value, node.name)
+      if (node.type === "inverted") {
+        if (!truthy) out += renderNodes(node.children, stack, html)
+      } else if (Array.isArray(value)) {
+        for (const item of value) {
+          stack.push(item)
+          out += renderNodes(node.children, stack, html)
+          stack.pop()
+        }
+      } else if (value === true) {
+        out += renderNodes(node.children, stack, html)
+      } else if (truthy) {
+        stack.push(value)
+        out += renderNodes(node.children, stack, html)
+        stack.pop()
+      }
+    }
+  }
+  return out
+}
+
 export function parse(template: string): ParsedTemplate {
   const nodes: Node[] = []
   const open: { name: string; offset: number; parent: Node[] }[] = []
@@ -139,91 +227,4 @@ export function render(template: string | ParsedTemplate, data: unknown, profile
 
 export function escapeHtml(value: string): string {
   return value.replace(/[&<>"']/g, (char) => HTML_ESCAPES[char] as string)
-}
-
-function lookup(stack: readonly unknown[], name: string): unknown {
-  if (name === ".") return stack[stack.length - 1]
-  const [first = "", ...rest] = name.split(".")
-  for (let i = stack.length - 1; i >= 0; i--) {
-    const context = stack[i]
-    if (isObject(context) && hasOwn(context, first)) {
-      let value = context[first]
-      for (const key of rest) {
-        if (!isObject(value) || !hasOwn(value, key)) return undefined
-        value = value[key]
-      }
-      return value
-    }
-  }
-  return undefined
-}
-
-function isTruthy(value: unknown, name: string): boolean {
-  if (typeof value === "number") return finite(value, name) !== 0
-  if (Array.isArray(value)) return value.length > 0
-  return !(value === undefined || value === null || value === false || value === "")
-}
-
-function toText(value: unknown, name: string): string {
-  if (typeof value === "string") return value
-  if (typeof value === "number") return String(finite(value, name))
-  if (typeof value === "boolean") return value ? "true" : "false"
-  if (value === undefined || value === null) fail("missing-value", `No value for "${name}"`)
-  return fail("non-scalar-value", `"${name}" is not a string, number or boolean`)
-}
-
-function finite(value: number, name: string): number {
-  if (!Number.isFinite(value)) fail("invalid-number", `"${name}" is ${value}`)
-  return value
-}
-
-function hasOwn(object: object, key: string): boolean {
-  // biome-ignore lint/suspicious/noPrototypeBuiltins: Object.hasOwn needs lib ES2022 in the host
-  return Object.prototype.hasOwnProperty.call(object, key)
-}
-
-function isObject(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value)
-}
-
-function isBlank(text: string, from: number, to: number): boolean {
-  for (let i = from; i < to; i++) {
-    if (text[i] !== " " && text[i] !== "\t") return false
-  }
-  return true
-}
-
-function fail(code: ErrorCode, message: string): never {
-  throw new MustacheCoreError(code, message)
-}
-
-function renderNodes(nodes: readonly Node[], stack: unknown[], html: boolean): string {
-  let out = ""
-  for (const node of nodes) {
-    if (typeof node === "string") {
-      out += node
-    } else if (node.type === "variable") {
-      const value = toText(lookup(stack, node.name), node.name)
-      out += html && !node.raw ? escapeHtml(value) : value
-    } else {
-      const value = lookup(stack, node.name)
-      const truthy = isTruthy(value, node.name)
-      if (node.type === "inverted") {
-        if (!truthy) out += renderNodes(node.children, stack, html)
-      } else if (Array.isArray(value)) {
-        for (const item of value) {
-          stack.push(item)
-          out += renderNodes(node.children, stack, html)
-          stack.pop()
-        }
-      } else if (value === true) {
-        out += renderNodes(node.children, stack, html)
-      } else if (truthy) {
-        stack.push(value)
-        out += renderNodes(node.children, stack, html)
-        stack.pop()
-      }
-    }
-  }
-  return out
 }
