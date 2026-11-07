@@ -9,10 +9,10 @@ import {
   type Data,
   type ListPlaceholder,
   type MaybePlaceholder,
-  openScope,
   type Placeholder,
   placeholderInfo,
 } from "./placeholder.ts"
+import { openScope } from "./scope.ts"
 
 /**
  * Content for some renderers only (UI-22): `mso` (Outlook's Word engine), `notMso` (every other

@@ -7,7 +7,8 @@
 import { EmailKitError } from "./errors.ts"
 import type { IrNode, IrSection } from "./ir.ts"
 import { fragment, toNodes } from "./jsx-runtime.ts"
-import { openScope, type Placeholder, placeholderInfo } from "./placeholder.ts"
+import { type Placeholder, placeholderInfo } from "./placeholder.ts"
+import { openScope } from "./scope.ts"
 
 /** A message resolved for one locale: text with placeholders. */
 export type Message = IrNode
