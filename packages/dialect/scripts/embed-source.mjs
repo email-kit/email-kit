@@ -1,10 +1,25 @@
 // Writes dist/source.js: the renderer and the module runtime as TypeScript source in one string,
-// for the compiler to inline into generated modules (OUT-05). Only what follows each file's
-// marker line is kept, and exports are removed: the generated module chooses its own.
 
-import { readFileSync, writeFileSync } from "node:fs"
+import { readdirSync, readFileSync, writeFileSync } from "node:fs"
 
 const MARKER = "// --- inlined into generated modules from here ---\n"
+
+const RUNTIME_FILES = [
+  "runtime/types.ts",
+  "runtime/shared.ts",
+  "runtime/locale.ts",
+  "runtime/validate.ts",
+  "runtime/project.ts",
+  "runtime/plurals.ts",
+  "runtime/context.ts",
+  "runtime/template.ts",
+]
+
+const unlisted = readdirSync(new URL("../src/runtime/", import.meta.url))
+  .map((name) => `runtime/${name}`)
+  .filter((file) => !RUNTIME_FILES.includes(file))
+if (unlisted.length > 0)
+  throw new Error(`add ${unlisted.join(", ")} to RUNTIME_FILES in scripts/embed-source.mjs`)
 
 function inlinable(file) {
   const full = readFileSync(new URL(`../src/${file}`, import.meta.url), "utf8")
@@ -17,7 +32,7 @@ function inlinable(file) {
     .trim()
 }
 
-const source = `${inlinable("index.ts")}\n\n${inlinable("module.ts")}\n`
+const source = `${["index.ts", ...RUNTIME_FILES].map(inlinable).join("\n\n")}\n`
 if (/^(?:import|export) /m.test(source))
   throw new Error("the inlined source still has an import or export")
 
