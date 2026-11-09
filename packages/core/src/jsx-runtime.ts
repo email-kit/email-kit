@@ -29,7 +29,7 @@ export declare namespace JSX {
 
 export function jsx(type: string | Component, props: Readonly<Record<string, unknown>>): IrNode {
   if (typeof type === "function") return fragment(type(props))
-  
+
   const { children, ...attributes } = props
   return {
     kind: "element",
@@ -41,6 +41,17 @@ export function jsx(type: string | Component, props: Readonly<Record<string, unk
 
 export const jsxs: typeof jsx = jsx
 
+/**
+ * Groups children without adding an element around them. Usually written as `<>…</>`.
+ *
+ * @example
+ * ```tsx
+ * <>
+ *   <h1>Hello</h1>
+ *   <p>Welcome aboard.</p>
+ * </>
+ * ```
+ */
 export function Fragment(props: { readonly children?: Child }): IrNode {
   return fragment(props.children)
 }
