@@ -9,7 +9,7 @@ import { defineConfig } from "@email-kit/core"
 
 export default defineConfig({
   locales: { default: "en", list: ["en", "de"] },
-  platform: {
+  sender: {
     productName: "Acme",
     legalName: "Acme Ltd",
     postalAddress: "1 High Street, London",
@@ -40,7 +40,7 @@ command with [`invalid-config`](../errors.md#invalid-config), listing each probl
 | `validate` | `boolean` | `true` | `render()` validates data against the schema before rendering. `validate()` is there either way |
 | `importPath` | `string` | | How your app imports the emails, such as `@/email-kit` or `#email-kit`. `init` sets it; `email-kit new` uses it in the examples it prints |
 | `locales` | object | `{ default: "en" }` | See [Locales](#locales) |
-| `platform` | object | `{}` | See [Platform values](#platform-values) |
+| `sender` | object | `{}` | See [Sender values](#sender-values) |
 | `theme` | object | the built-in theme | See [Theme](#theme) |
 | `checks` | object | `{}` | Per-check levels. See [Checks](#checks) |
 | `customChecks` | `CustomCheck[]` | `[]` | Your team's checks. See [Team checks](#team-checks) |
@@ -65,20 +65,20 @@ locales: {
 
 Tags must be canonical BCP 47: `en`, `pt-BR`, `zh-Hant`, not `en_US` or `pt-br`.
 
-## Platform values
+## Sender values
 
 ```ts
-platform: {
+sender: {
   productName: "Acme",
   siteUrl: { runtime: true },
 }
 ```
 
-The keys are `productName`, `senderName`, `legalName`, `postalAddress`, `privacyUrl`, `helpUrl`,
+The keys are `productName`, `name`, `legalName`, `postalAddress`, `privacyUrl`, `helpUrl`,
 `supportEmail` and `siteUrl`. Each value is a non-empty string, written into the output when you
 compile, or `{ runtime: true }`, passed by your backend to
-[`createEmails()`](sending.md#runtime-platform-values) at send time. Templates read them as
-`platform.<key>`; see [Platform values](templates.md#platform-values).
+[`createEmails()`](sending.md#runtime-sender-values) at send time. Templates read them as
+`sender.<key>`; see [Sender values](templates.md#sender-values).
 
 `siteUrl`, `helpUrl` and `privacyUrl` must be `https://` URLs and `supportEmail` an email address,
 whether set here or passed at send time.

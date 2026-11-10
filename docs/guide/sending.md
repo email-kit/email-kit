@@ -35,7 +35,7 @@ email.meta    // { id: "order-shipped", locale: "en", purpose: "transactional" }
 
 | Export | |
 |---|---|
-| `emails` | Every template, by the camelCase form of its id: `order-shipped` is `emails.orderShipped`. Only when the config has no [runtime platform values](#runtime-platform-values) |
+| `emails` | Every template, by the camelCase form of its id: `order-shipped` is `emails.orderShipped`. Only when the config has no [runtime sender values](#runtime-sender-values) |
 | `createEmails(context)` | Builds the same object with the values that differ by environment. Always exported |
 | `locales` | The compiled locales, the default first |
 | `EmailRenderError`, `MustacheCoreError` | The errors `render()` and `createEmails()` throw. See [Errors](#errors) |
@@ -136,13 +136,13 @@ it renders the default. `meta.locale` says which locale was used.
 Pass the same locale you used to format dates and amounts for the recipient (see
 [Formatting dates, money and numbers](../recipes/formatting.md)).
 
-## Runtime platform values
+## Runtime sender values
 
-A platform value set to `{ runtime: true }` in the config is passed by your backend, once:
+A sender value set to `{ runtime: true }` in the config is passed by your backend, once:
 
 ```ts
 // email-kit.config.ts
-platform: { productName: "Acme", siteUrl: { runtime: true } }
+sender: { productName: "Acme", siteUrl: { runtime: true } }
 ```
 
 ```ts
@@ -176,8 +176,8 @@ import { emails } from "./email-kit/compiled/order-shipped/index.ts"
 | Code | When |
 |---|---|
 | `invalid-data` | The data doesn't match the schema |
-| `missing-context` | `createEmails()` lacks a runtime platform value, or it's empty |
-| `invalid-context` | A URL platform value passed to `createEmails()` isn't `https://`, or `supportEmail` isn't an email address |
+| `missing-context` | `createEmails()` lacks a runtime sender value, or it's empty |
+| `invalid-context` | A URL sender value passed to `createEmails()` isn't `https://`, or `supportEmail` isn't an email address |
 | `subject-line-break` | The rendered subject contains CR or LF, usually from user data. Strip line breaks before rendering |
 
 `MustacheCoreError` comes from the placeholder renderer, with the codes `missing-value`,

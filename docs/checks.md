@@ -596,14 +596,14 @@ variant instead of the compiled templates (each render then has `fixture`), or `
 
 **Rule:** Every email names who sends it: the legal name or brand.
 
-**Fix:** Add `<Footer sender={platform.legalName} …>`, with `legalName` (or `productName`) set in the config's `platform`.
+**Fix:** Add `<Footer sender={sender.legalName} …>`, with `legalName` (or `productName`) set in the config's `sender`.
 
 ### legal.postal-address
 **Default:** error
 
 **Rule:** Marketing and consent-request emails show the sender's postal address.
 
-**Fix:** Pass `address={platform.postalAddress}` to `Footer`, with `postalAddress` set in the config's `platform`.
+**Fix:** Pass `address={sender.postalAddress}` to `Footer`, with `postalAddress` set in the config's `sender`.
 
 ## Internationalisation
 

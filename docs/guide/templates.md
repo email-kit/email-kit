@@ -41,7 +41,7 @@ export default defineEmail({
       express: false,
     },
   },
-  component: ({ data, t, platform }) => (
+  component: ({ data, t, sender }) => (
     <>
       <Heading>{t("heading", { name: data.name })}</Heading>
       <Text>{t("intro", { count: data.itemCount, carrier: data.carrier })}</Text>
@@ -71,12 +71,12 @@ export default defineEmail({
       </If>
       <Button href={data.trackingUrl}>{t("track")}</Button>
       <Footer
-        reason={t("footer", { product: platform.productName })}
-        sender={platform.legalName}
-        address={platform.postalAddress}
+        reason={t("footer", { product: sender.productName })}
+        sender={sender.legalName}
+        address={sender.postalAddress}
         links={[
-          { href: platform.helpUrl, label: t("help") },
-          { href: platform.privacyUrl, label: t("privacy") },
+          { href: sender.helpUrl, label: t("help") },
+          { href: sender.privacyUrl, label: t("privacy") },
         ]}
       />
     </>
@@ -135,10 +135,10 @@ Conditions that don't depend on data are plain JavaScript, decided when the temp
 | `id` | `string` | yes | Lowercase words joined by hyphens, such as `order-shipped`. It names the output folder and becomes `emails.orderShipped` and the type `OrderShippedData`. Don't rename an id that has shipped: backends call it by name |
 | `purpose` | `"transactional"`, `"marketing"` or `"consent-request"` | yes | The legal purpose. It's recorded in the manifest and in `render()`'s `meta`, and the compile fails without it (`legal.purpose-declared`). `marketing` and `consent-request` emails must show a postal address (`legal.postal-address`); the marketing footer parts (unsubscribe) don't exist yet |
 | `schema` | a Zod 4, Valibot or ArkType 2 schema | yes | The data the email takes. `data`, `fixtures` and the generated types come from it |
-| `subject` | `(data, t, platform) => …` | yes | The subject line: text only, one line |
-| `preheader` | `(data, t, platform) => …` | no | The inbox preview text after the subject: one line. Without it `check` warns (`preheader.length`) |
+| `subject` | `(data, t, sender) => …` | yes | The subject line: text only, one line |
+| `preheader` | `(data, t, sender) => …` | no | The inbox preview text after the subject: one line. Without it `check` warns (`preheader.length`) |
 | `fixtures` | `{ [name]: data }` | yes | Named sample data. Each one must match the schema, and there must be at least one |
-| `component` | `({ data, t, locale, platform }) => …` | yes | The body |
+| `component` | `({ data, t, locale, sender }) => …` | yes | The body |
 
 The component's props:
 
@@ -147,7 +147,7 @@ The component's props:
 | `data` | The data, as placeholders typed from the schema |
 | `t` | Looks up a message in the locale being compiled. See [Messages](#messages) |
 | `locale` | The locale being compiled, such as `"de"` |
-| `platform` | Values from the config, such as `platform.productName`. See [Platform values](#platform-values) |
+| `sender` | Values from the config, such as `sender.productName`. See [Sender values](#sender-values) |
 
 You don't add `<html>`, `<head>` or a page container: the compiler writes the document around the
 body and centres it in a container of the theme's width (600px by default).
@@ -289,8 +289,8 @@ object of keys and ICU messages. `t(key, params)` looks a message up in the loca
 Every locale needs every key the template uses, and `t()` must pass exactly the parameters the
 message uses: a missing key, a missing parameter or an unused one fails the compile.
 
-A parameter can be text, a number, a data field, a platform value, or another message:
-`t("footer", { product: platform.productName })`.
+A parameter can be text, a number, a data field, a sender value, or another message:
+`t("footer", { product: sender.productName })`.
 
 ### Typed t()
 
@@ -362,13 +362,13 @@ translations:
 `email-kit check` builds both every time and runs the checks on them. To ship them in the module,
 for QA on staging, set `locales.pseudo: true` (or a list of them).
 
-## Platform values
+## Sender values
 
-`platform` holds facts about the sender that templates show: the product name, the postal
+`sender` holds facts about the sender that templates show: the product name, the postal
 address, the help URL. They're set once, in the config:
 
 ```ts
-platform: {
+sender: {
   productName: "Acme",
   legalName: "Acme Ltd",
   postalAddress: "1 High Street, London",
@@ -378,9 +378,9 @@ platform: {
 }
 ```
 
-The keys are `productName`, `senderName`, `legalName`, `postalAddress`, `privacyUrl`, `helpUrl`,
+The keys are `productName`, `name`, `legalName`, `postalAddress`, `privacyUrl`, `helpUrl`,
 `supportEmail` and `siteUrl`. A template that reads a key the config doesn't set fails the compile
-([`platform-value-missing`](../errors.md#platform-value-missing)).
+([`sender-value-missing`](../errors.md#sender-value-missing)).
 
 There are two kinds:
 
@@ -388,9 +388,9 @@ There are two kinds:
 - **`{ runtime: true }` means your backend passes it at send time.** It renders as a placeholder,
   and the generated module exports `createEmails({ siteUrl })` instead of a ready `emails` object.
   Use it for values that differ between environments, such as the site URL on staging and
-  production. See [createEmails](sending.md#runtime-platform-values).
+  production. See [createEmails](sending.md#runtime-sender-values).
 
-Data passed to `render()` can't override a platform value.
+Data passed to `render()` can't override a sender value.
 
 ## Your own components
 

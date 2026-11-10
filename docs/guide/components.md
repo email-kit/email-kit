@@ -16,7 +16,7 @@ fluid below that width. The compiler adds it, so templates start straight with c
 
 In the tables below, `Child` is anything a template can render: text, numbers, data fields,
 messages from `t()`, elements, or arrays of them. A URL prop (`href`, `src`) takes a literal
-string, a `url` field from `data`, or a platform value.
+string, a `url` field from `data`, or a sender value.
 
 Most components leave space below themselves (16px unless stated), so a template is a plain list
 of components.
@@ -82,7 +82,7 @@ A text link in the theme's `link` colour, underlined so it isn't told apart by c
 
 ```tsx
 <Text>
-  {t("help")} <Link href={platform.helpUrl}>{t("helpLink")}</Link>
+  {t("help")} <Link href={sender.helpUrl}>{t("helpLink")}</Link>
 </Text>
 ```
 
@@ -104,7 +104,7 @@ A link styled as a button. Classic Outlook draws it with square corners.
 ```tsx
 <Button href={data.trackingUrl}>{t("track")}</Button>
 <Button href={data.reviewUrl} variant="destructive">{t("review")}</Button>
-<Button href={platform.helpUrl} variant="secondary" size="sm">{t("contact")}</Button>
+<Button href={sender.helpUrl} variant="secondary" size="sm">{t("contact")}</Button>
 ```
 
 ## Image
@@ -127,7 +127,7 @@ A content image. `kind` says what the image is for, and decides which props it n
 <Image
   kind="functional"
   src="https://cdn.acme.example/logo@2x.png"
-  alt={t("logoAlt", { product: platform.productName })}
+  alt={t("logoAlt", { product: sender.productName })}
   href="https://acme.example"
   width={120}
   height={30}
@@ -260,7 +260,7 @@ it gives the whole code.
 | `label` | `Child` | | Words that name it as a code and say what it's for, such as "Your code to sign in to Acme" |
 
 ```tsx
-<OtpCode label={t("label", { product: platform.productName })} code={data.code} />
+<OtpCode label={t("label", { product: sender.productName })} code={data.code} />
 ```
 
 Mark the field with [`secret`](templates.md#field-markers) so `check` keeps it out of the subject
@@ -358,18 +358,18 @@ passes the same checks if it carries those classes.
 | Prop | Type | Default | |
 |---|---|---|---|
 | `reason` | `Child` | | Why the reader got the email, naming the account or relationship. Required |
-| `sender` | `Child` | | Who sends it: the legal name or brand, such as `platform.legalName`. Required |
-| `address` | `Child` | | The postal address, such as `platform.postalAddress` |
+| `sender` | `Child` | | Who sends it: the legal name or brand, such as `sender.legalName`. Required |
+| `address` | `Child` | | The postal address, such as `sender.postalAddress` |
 | `links` | `FooterLink[]` | | `{ href, label }` each: help or contact first, then privacy. Shown on one line, separated by a middle dot |
 
 ```tsx
 <Footer
-  reason={t("footer", { product: platform.productName })}
-  sender={platform.legalName}
-  address={platform.postalAddress}
+  reason={t("footer", { product: sender.productName })}
+  sender={sender.legalName}
+  address={sender.postalAddress}
   links={[
-    { href: platform.helpUrl, label: t("help") },
-    { href: platform.privacyUrl, label: t("privacy") },
+    { href: sender.helpUrl, label: t("help") },
+    { href: sender.privacyUrl, label: t("privacy") },
   ]}
 />
 ```

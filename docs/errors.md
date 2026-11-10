@@ -93,9 +93,9 @@ A test checks that every id the code can raise is listed here.
 **Why:** styles are fixed when the template compiles, so a `style` value can't come from `data`.
 **Fix:** choose between fixed styles with `<If>` and `<Unless>`.
 
-### platform-value-missing
-**Why:** the template reads `platform.<key>`, but the config doesn't set that platform value.
-**Fix:** set it in `email-kit.config.ts`: `platform: { productName: "Acme" }` for a fixed value, or `platform: { siteUrl: { runtime: true } }` for one the backend passes to `createEmails()` at send time.
+### sender-value-missing
+**Why:** the template reads `sender.<key>`, but the config doesn't set that sender value.
+**Fix:** set it in `email-kit.config.ts`: `sender: { productName: "Acme" }` for a fixed value, or `sender: { siteUrl: { runtime: true } }` for one the backend passes to `createEmails()` at send time.
 
 ### no-theme
 **Why:** a component called `useTheme()` (or styled with `role(…)`) outside a compile, for example from a test that called it directly.
@@ -234,5 +234,5 @@ These come from the generated module in a backend, not from the CLI.
 - **`missing-value`, `non-scalar-value`, `invalid-number`:** from the placeholder renderer, when the data doesn't match the template. See the [mustache-core spec](spec/mustache-core.md#10-errors).
 - **`invalid-data`:** with validation on (the default), the data passed to `render()` doesn't match the template's schema. The error's `issues` list each problem with its path, such as `items[1].qty: expected a number, got "2"`. Call `validate(data)` to check data without rendering, for example when it arrives from a queue.
 - **`missing-context`:** `createEmails()` was called without a value the config marks `{ runtime: true }`, or with an empty one. Pass every runtime key as a non-empty string.
-- **`invalid-context`:** a value passed to `createEmails()` isn't what that platform value has to be: `siteUrl`, `helpUrl` and `privacyUrl` must be `https://` URLs and `supportEmail` an email address, the same rules the config applies to values set there.
+- **`invalid-context`:** a value passed to `createEmails()` isn't what that sender value has to be: `siteUrl`, `helpUrl` and `privacyUrl` must be `https://` URLs and `supportEmail` an email address, the same rules the config applies to values set there.
 - **`subject-line-break`:** the rendered subject contains CR or LF, usually from user data, and could inject mail headers. Strip line breaks from the value before rendering.

@@ -61,7 +61,7 @@ The import path is saved as `importPath` in the config, so `email-kit new` print
 In a project with a `src/` folder:
 
 ```
-email-kit.config.ts                 the config: locales, platform values, import path
+email-kit.config.ts                 the config: locales, sender values, import path
 src/email-kit/
   index.ts                          re-exports ./compiled: what your app imports
   templates/welcome.tsx             a template
