@@ -5,7 +5,7 @@ In this repo the packages come from the workspace; in your app they come from np
 release, `link:` paths to a clone of this repo).
 
 ```
-email-kit.config.ts                    locales and platform values
+email-kit.config.ts                    locales and sender values
 src/email-kit/templates/welcome.tsx    the template: schema, fixtures, components, messages
 src/email-kit/messages/en/welcome.json the copy, with an ICU plural
 src/email-kit/compiled/                written by `email-kit compile` (git-ignored)

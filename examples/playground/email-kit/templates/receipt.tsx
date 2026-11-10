@@ -44,7 +44,7 @@ export default defineEmail({
   subject: (data, t) => t("subject", { order: data.orderNumber }),
   preheader: (data, t) => t("preheader", { total: data.total }),
   fixtures,
-  component: ({ data, t, platform }) => (
+  component: ({ data, t, sender }) => (
     <>
       <Image
         kind="decorative"
@@ -86,12 +86,12 @@ export default defineEmail({
         {t("help")} <Link href="https://help.playground.example">{t("helpLink")}</Link>
       </Text>
       <Footer
-        reason={t("footer", { product: platform.productName })}
-        sender={platform.legalName}
-        address={platform.postalAddress}
+        reason={t("footer", { product: sender.productName })}
+        sender={sender.legalName}
+        address={sender.postalAddress}
         links={[
-          { href: platform.helpUrl, label: t("helpCentre") },
-          { href: platform.privacyUrl, label: t("privacy") },
+          { href: sender.helpUrl, label: t("helpCentre") },
+          { href: sender.privacyUrl, label: t("privacy") },
         ]}
       />
     </>

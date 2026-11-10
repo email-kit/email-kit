@@ -21,7 +21,7 @@ export default defineConfig({
   locales: { default: "en", list: ["en", "de"] },
   // The preview script imports plain JavaScript; TypeScript projects can leave this out.
   module: "mjs",
-  platform: {
+  sender: {
     productName: "Playground Shop",
     // The footer: who sends the email, where from, and where to get help (research 05 §13)
     legalName: "Playground Shop GmbH",
