@@ -5,7 +5,7 @@ import {
   EmailKitError,
   evaluate,
   type Messages,
-  type PlatformValues,
+  type SenderValues,
   type ThemeContext,
 } from "@email-kit/core/internal"
 import { parse } from "@email-kit/dialect"
@@ -34,7 +34,7 @@ export interface CompiledEmail {
 export interface CompileOptions {
   readonly locale: string
   readonly messages: Messages
-  readonly platform?: PlatformValues
+  readonly sender?: SenderValues
   /** The resolved theme; the built-in default when left out */
   readonly theme?: Theme
   /** The schema's model, to check plural and select arguments against */

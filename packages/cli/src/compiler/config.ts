@@ -7,9 +7,9 @@ import { dirname, isAbsolute, join, relative, resolve } from "node:path"
 import type { CheckSetting, CustomCheck, ThemeConfig } from "@email-kit/core"
 import {
   EmailKitError,
-  PLATFORM_KEYS,
-  type PlatformKey,
-  type PlatformValues,
+  SENDER_KEYS,
+  type SenderKey,
+  type SenderValues,
 } from "@email-kit/core/internal"
 
 import { CATALOGUE } from "../checks/catalogue/index.ts"
@@ -38,8 +38,8 @@ export interface ResolvedConfig {
   readonly perTemplateEntries: boolean
   /** render() validates data first */
   readonly validate: boolean
-  /** Platform values: compile-time constants and the keys passed at send time */
-  readonly platform: PlatformValues
+  /** Sender values: compile-time constants and the keys passed at send time */
+  readonly sender: SenderValues
   /** The theme config, resolved by loadTheme() */
   readonly theme: ThemeConfig | undefined
   /** Per-check levels, each with its reason */
@@ -61,7 +61,7 @@ export const CONFIG_FILES: readonly string[] = [
 
 const KEYS = new Set([
   ...["root", "templates", "messages", "out", "module", "perTemplateEntries", "validate"],
-  ...["platform", "theme", "locales", "checks", "customChecks", "importPath"],
+  ...["sender", "theme", "locales", "checks", "customChecks", "importPath"],
 ])
 
 export async function loadConfig(options: {
@@ -148,7 +148,7 @@ export function resolveConfig(
   }
   const validate = config.validate ?? true
   if (typeof validate !== "boolean") problems.push("validate: must be true or false")
-  const platform = readPlatform(config.platform, problems)
+  const sender = readSender(config.sender, problems)
   checkTheme(config.theme, problems)
   const customChecks = readCustomChecks(config.customChecks, problems)
   const checks = readChecks(
@@ -178,7 +178,7 @@ export function resolveConfig(
     module: module === "mjs" ? "mjs" : "ts",
     perTemplateEntries: perTemplateEntries === true,
     validate: validate !== false,
-    platform,
+    sender,
     theme: config.theme as ThemeConfig | undefined,
     checks,
     customChecks,
@@ -187,39 +187,39 @@ export function resolveConfig(
   }
 }
 
-/** Platform values that are URLs; render() holds runtime ones to https too. */
+/** Sender values that are URLs; render() holds runtime ones to https too. */
 const URL_KEYS = new Set(["helpUrl", "privacyUrl", "siteUrl"])
 
-function readPlatform(value: unknown, problems: string[]): PlatformValues {
-  const constants: Partial<Record<PlatformKey, string>> = {}
-  const runtime: PlatformKey[] = []
+function readSender(value: unknown, problems: string[]): SenderValues {
+  const constants: Partial<Record<SenderKey, string>> = {}
+  const runtime: SenderKey[] = []
   if (value === undefined) return { constants, runtime }
   if (typeof value !== "object" || value === null || Array.isArray(value)) {
     problems.push(
-      'platform: must be an object like { productName: "Acme", siteUrl: { runtime: true } }',
+      'sender: must be an object like { productName: "Acme", siteUrl: { runtime: true } }',
     )
     return { constants, runtime }
   }
   for (const [key, option] of Object.entries(value)) {
-    if (!(PLATFORM_KEYS as readonly string[]).includes(key)) {
-      problems.push(`platform.${key}: unknown platform value (known: ${PLATFORM_KEYS.join(", ")})`)
+    if (!(SENDER_KEYS as readonly string[]).includes(key)) {
+      problems.push(`sender.${key}: unknown sender value (known: ${SENDER_KEYS.join(", ")})`)
     } else if (typeof option === "string" && option.trim() !== "") {
       if (URL_KEYS.has(key) && !/^https:\/\/[^\s/?#]+[^\s]*$/i.test(option)) {
-        problems.push(`platform.${key}: must be an https URL, like "https://example.com/…"`)
+        problems.push(`sender.${key}: must be an https URL, like "https://example.com/…"`)
       } else if (key === "supportEmail" && !/^[^\s@<>"]+@[^\s@<>"]+$/.test(option)) {
-        problems.push(`platform.${key}: must be an email address, like "help@example.com"`)
+        problems.push(`sender.${key}: must be an email address, like "help@example.com"`)
       }
-      constants[key as PlatformKey] = option
+      constants[key as SenderKey] = option
     } else if (
       typeof option === "object" &&
       option !== null &&
       Object.keys(option).length === 1 &&
       (option as { runtime?: unknown }).runtime === true
     ) {
-      runtime.push(key as PlatformKey)
+      runtime.push(key as SenderKey)
     } else {
       problems.push(
-        `platform.${key}: must be a non-empty string, or { runtime: true } to pass it at send time`,
+        `sender.${key}: must be a non-empty string, or { runtime: true } to pass it at send time`,
       )
     }
   }

@@ -23,7 +23,7 @@ export interface ModuleOptions {
   readonly locales: readonly string[]
   /** CLDR parents and scripts for the project's languages, and locales.fallback (I18N-04) */
   readonly localeData: LocaleData
-  /** Platform keys the backend passes to createEmails() (RUN-04) */
+  /** Sender keys the backend passes to createEmails() (RUN-04) */
   readonly context: readonly string[]
   /** render() validates data against the schema first (OUT-08) */
   readonly validate: boolean
@@ -93,8 +93,8 @@ export function generateModule(
 
   const contextType =
     options.context.length === 0
-      ? "/** Nothing is passed at send time: every platform value is in the templates. */\nexport type EmailContext = Record<never, never>"
-      : "/** Platform values the backend passes once, at startup, to createEmails() (RUN-04). */\n" +
+      ? "/** Nothing is passed at send time: every sender value is in the templates. */\nexport type EmailContext = Record<never, never>"
+      : "/** Sender values the backend passes once, at startup, to createEmails() (RUN-04). */\n" +
         `export interface EmailContext {\n${options.context.map((key) => `  readonly ${key}: string`).join("\n")}\n}`
   const ready =
     options.context.length === 0

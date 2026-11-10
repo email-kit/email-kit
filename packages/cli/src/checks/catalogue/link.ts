@@ -59,7 +59,7 @@ export const LINK: readonly Check[] = [
                 // The placeholder that opens the value, in the raw HTML of this tag.
                 const at = email.html.indexOf(` ${name}="{{`, offset)
                 const use = at < 0 ? undefined : fields.get(at + name.length + 3)
-                // Platform values (`_ek.context.*`) come from the config, not from data.
+                // Sender values (`_ek.context.*`) come from the config, not from data.
                 if (!use || use.name.startsWith("_ek.")) continue
                 if (use.field === "none" || use.field?.url) continue
                 problem(

@@ -14,7 +14,7 @@
     "en",
     "de"
   ],
-  "platform": {
+  "sender": {
     "constants": {
       "productName": "Shop Example"
     },

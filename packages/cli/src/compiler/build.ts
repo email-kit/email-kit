@@ -58,7 +58,7 @@ export function outputFiles(project: BuiltProject): OutputFile[] {
     module: config.module,
     perTemplateEntries: config.perTemplateEntries,
     validate: config.validate,
-    platform: config.platform,
+    sender: config.sender,
     theme: config.theme?.emit ? theme : undefined,
   })
 }

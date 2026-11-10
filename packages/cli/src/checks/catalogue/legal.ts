@@ -53,7 +53,7 @@ export const LEGAL: readonly Check[] = [
     id: "legal.sender-identity",
     level: "error",
     rule: "Every email names who sends it: the legal name or brand.",
-    fix: "Add `<Footer sender={platform.legalName} …>`, with `legalName` (or `productName`) set in the config's `platform`.",
+    fix: "Add `<Footer sender={sender.legalName} …>`, with `legalName` (or `productName`) set in the config's `sender`.",
     run: (context, report) =>
       eachEmail(
         context,
@@ -70,7 +70,7 @@ export const LEGAL: readonly Check[] = [
     id: "legal.postal-address",
     level: "error",
     rule: "Marketing and consent-request emails show the sender's postal address.",
-    fix: "Pass `address={platform.postalAddress}` to `Footer`, with `postalAddress` set in the config's `platform`.",
+    fix: "Pass `address={sender.postalAddress}` to `Footer`, with `postalAddress` set in the config's `sender`.",
     run: (context, report) =>
       eachEmail(
         context,

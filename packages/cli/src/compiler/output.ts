@@ -14,7 +14,7 @@ import {
 } from "node:fs"
 import { dirname, join, sep } from "node:path"
 
-import type { PlatformValues } from "@email-kit/core/internal"
+import type { SenderValues } from "@email-kit/core/internal"
 import { DIALECT } from "@email-kit/dialect"
 
 import { localeData } from "../i18n/locales.ts"
@@ -55,7 +55,7 @@ export function buildOutput(
     readonly module: "ts" | "mjs"
     readonly perTemplateEntries: boolean
     readonly validate: boolean
-    readonly platform: PlatformValues
+    readonly sender: SenderValues
     /** Write theme.json (THM-12) */
     readonly theme?: Theme | undefined
   },
@@ -92,7 +92,7 @@ export function buildOutput(
     locales: options.locales,
     localeData: localeData(options.locales, options.localeFallback),
     configFile: options.configFile,
-    context: options.platform.runtime,
+    context: options.sender.runtime,
     validate: options.validate,
   }
   // One module for every template, and optionally one per template (OUT-06): the same
@@ -140,9 +140,9 @@ export function buildOutput(
       profiles: { subject: "text", preheader: "text", html: "html", text: "text" },
       locales: options.locales,
       // Constants are written into the templates; runtime keys are passed to createEmails().
-      platform: {
-        constants: sortKeys(options.platform.constants),
-        runtime: options.platform.runtime,
+      sender: {
+        constants: sortKeys(options.sender.constants),
+        runtime: options.sender.runtime,
       },
       templates: manifestTemplates,
       files: owned,

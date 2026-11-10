@@ -116,13 +116,13 @@ ${schema}
   fixtures: {
     default: { name: "Ada" },
   },
-  component: ({ data, t, platform }) => (
+  component: ({ data, t, sender }) => (
     <>
       <Heading>{t("heading", { name: data.name })}</Heading>
       <Text>{t("body")}</Text>
       <Footer
-        reason={t("footer", { product: platform.productName })}
-        sender={platform.productName}
+        reason={t("footer", { product: sender.productName })}
+        sender={sender.productName}
       />
     </>
   ),

@@ -28,7 +28,7 @@ export function configFile(options: {
         ]
       : []),
     `  importPath: ${JSON.stringify(options.importPath)},`,
-    `  platform: { productName: ${JSON.stringify(options.productName)} },`,
+    `  sender: { productName: ${JSON.stringify(options.productName)} },`,
     ...(options.theme ? [`  theme: { source: ${JSON.stringify(options.theme)} },`] : []),
   ]
   return `import { defineConfig } from "@email-kit/core"
@@ -124,19 +124,19 @@ export default defineEmail({
   id: "welcome",
   purpose: "transactional",
 ${schema}
-  subject: (data, t, platform) => t("subject", { name: data.name, product: platform.productName }),
+  subject: (data, t, sender) => t("subject", { name: data.name, product: sender.productName }),
   preheader: (_data, t) => t("preheader"),
   fixtures: {
     default: { name: "Ada", startUrl: "https://example.com/start" },
   },
-  component: ({ data, t, platform }) => (
+  component: ({ data, t, sender }) => (
     <>
       <Heading>{t("heading", { name: data.name })}</Heading>
-      <Text>{t("body", { product: platform.productName })}</Text>
+      <Text>{t("body", { product: sender.productName })}</Text>
       <Button href={data.startUrl}>{t("cta")}</Button>
       <Footer
-        reason={t("footer", { product: platform.productName })}
-        sender={platform.productName}
+        reason={t("footer", { product: sender.productName })}
+        sender={sender.productName}
       />
     </>
   ),

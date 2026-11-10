@@ -29,7 +29,7 @@ export function docsUrl(id: string): string {
   return `${CHECKS_DOCS_URL}#${id.toLowerCase().replace(/[^a-z0-9 _-]/g, "")}`
 }
 
-/** A stand-in for a platform value the backend passes at send time. */
+/** A stand-in for a sender value the backend passes at send time. */
 function contextValue(key: string): string {
   if (key === "supportEmail") return "help@example.test"
   return /url|link|href/i.test(key) ? "https://example.test/" : `Example ${key}`
@@ -63,7 +63,7 @@ export async function contextOf(project: BuiltProject): Promise<CheckContext> {
 
   // The fixture sweep (P1-164): each template × locale rendered the way the generated module
   // renders it, with every fixture and generated variant.
-  const values = Object.fromEntries(config.platform.runtime.map((key) => [key, contextValue(key)]))
+  const values = Object.fromEntries(config.sender.runtime.map((key) => [key, contextValue(key)]))
   const rendered: CheckedEmail[] = []
   for (const template of project.templates) {
     const parts = Object.fromEntries(

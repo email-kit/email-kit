@@ -128,7 +128,7 @@ async function compileTemplate(
     compileEmail(definition, {
       locale,
       messages,
-      platform: config.platform,
+      sender: config.sender,
       ...(schema.model && { model: schema.model }),
       ...(theme && { theme }),
     })
