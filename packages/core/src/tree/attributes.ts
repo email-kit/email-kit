@@ -1,5 +1,3 @@
-// Turns JSX props into IR attributes: strings, placeholders, messages and inline styles with theme colours.
-
 import {
   describePath,
   type Placeholder,
@@ -12,6 +10,10 @@ import { type RoleColour, roleClass, roleOf } from "../theme/role.ts"
 import { type IrAttr, type IrNode, isIrNode } from "./ir.ts"
 import { toNodes } from "./nodes.ts"
 
+/**
+ * A value for an HTML attribute: text, a number, a data placeholder, or a message from `t()`.
+ * `true` writes the attribute without a value; `false`, `null` and `undefined` leave it out.
+ */
 export type AttrValue =
   | string
   | number
@@ -22,18 +24,26 @@ export type AttrValue =
   | Placeholder<number>
   | IrNode
 
+/**
+ * An inline style, with property names in camelCase. A value is text, a number, or a theme colour
+ * from `role()`. Numbers are written as they are, so give lengths as text: `"16px"`, not `16`.
+ */
 export type StyleValue = Readonly<Record<string, string | number | RoleColour>>
 
+/**
+ * Turns an element's props into attributes. A `style` object becomes CSS text, and each `role()`
+ * colour in it adds a class to `class` for the dark-mode CSS.
+ */
 export function toAttrs(
   tag: string,
   attributes: Readonly<Record<string, unknown>>,
 ): Record<string, IrAttr> {
   const attrs: Record<string, IrAttr> = {}
   const roleClasses: string[] = []
-  
+
   for (const [name, value] of Object.entries(attributes)) {
     if (value === null || value === undefined || value === false) continue
-    
+
     if (name === "style" && typeof value === "object" && !isIrNode(value)) {
       const { css, classes } = styleText(tag, value as StyleValue)
       attrs[name] = [css]
@@ -42,7 +52,7 @@ export function toAttrs(
       attrs[name] = attrParts(tag, name, value)
     }
   }
-  
+
   if (roleClasses.length > 0) {
     const own = attrs.class ?? []
     attrs.class = [...own, ...(own.length > 0 ? [" "] : []), roleClasses.join(" ")]
@@ -54,11 +64,10 @@ function attrParts(tag: string, name: string, value: unknown): IrAttr {
   if (value === true) return []
   if (typeof value === "string") return [value]
   if (typeof value === "number") return [String(value)]
-  
+
   const info = placeholderInfo(value)
   if (info) return [toIrPlaceholder(info)]
   if (isIrNode(value)) {
-    // A translated message used as an attribute (alt, title): text and placeholders only.
     return toNodes(value).flatMap((node) => {
       const parts = node.kind === "fragment" ? node.children : [node]
       return parts.map((part) => {
@@ -94,7 +103,8 @@ function styleText(tag: string, style: StyleValue): { css: string; classes: stri
         return `${property}:${useTheme().roles[name]}`
       }
       return `${property}:${value as string | number}`
-    }).join(";")
-    
+    })
+    .join(";")
+
   return { css, classes }
 }
