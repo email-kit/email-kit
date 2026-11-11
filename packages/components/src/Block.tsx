@@ -5,17 +5,19 @@ import { PRESENTATION } from "./style.ts"
 export interface BlockProps {
   /** The space below the content, in pixels. Take it from the theme, such as `space.stack.md`. */
   readonly bottom: number
+  /** Aligns the content in the cell. Leave it out to follow the text direction. */
+  readonly align?: "left" | "center" | undefined
   /** The component's content. */
   readonly children?: Child
 }
 
 /**
- * Wraps a component in a one-cell table with space below it. The space is cell padding, not a
- * margin: classic Outlook, Gmail and Yahoo support margins only in part, and classic Outlook
- * spreads backgrounds into them. Only for this package's components, which each set their own
- * spacing, so it isn't exported.
+ * Wraps a component in a one-cell table with space below it, and optionally aligns it. The space
+ * is cell padding, not a margin: classic Outlook, Gmail and Yahoo support margins only in part,
+ * and classic Outlook spreads backgrounds into them. Only for this package's components, which
+ * each set their own spacing, so it isn't exported.
  *
- * @param props - The space below, and the content.
+ * @param props - The space below, the alignment, and the content.
  *
  * @example
  * ```tsx
@@ -34,7 +36,9 @@ export function Block(props: BlockProps): IrNode {
     <table {...PRESENTATION}>
       <tbody>
         <tr>
-          <td style={{ padding: `0 0 ${props.bottom}px` }}>{props.children}</td>
+          <td align={props.align} style={{ padding: `0 0 ${props.bottom}px` }}>
+            {props.children}
+          </td>
         </tr>
       </tbody>
     </table>

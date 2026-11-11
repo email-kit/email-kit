@@ -249,7 +249,7 @@ describe("Image", () => {
       />
     ))
     expect(email.body).toMatch(
-      /<td align="center"><a href="https:\/\/shop\.example\/orders" target="_blank" rel="noopener" style="text-decoration:none"><img /,
+      /<td align="center" style="padding:0 0 16px"><a href="https:\/\/shop\.example\/orders" target="_blank" rel="noopener" style="text-decoration:none"><img /,
     )
     expect(email.text).toContain("View your order: https://shop.example/orders")
   })

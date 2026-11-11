@@ -261,7 +261,7 @@ function summaryRows(
   )
 }
 
-/** The physical side of `start` or `end`, which classic Outlook needs in place of logical values. */
+/** The physical side of `start` or `end`. Classic Outlook doesn't understand the logical values. */
 function side(align: "start" | "end", dir: "ltr" | "rtl"): "left" | "right" {
   return (align === "start") === (dir === "ltr") ? "left" : "right"
 }

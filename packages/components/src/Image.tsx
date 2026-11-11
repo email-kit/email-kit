@@ -8,7 +8,7 @@ import {
 } from "@email-kit/core"
 
 import { Block } from "./Block.tsx"
-import { font, PRESENTATION } from "./style.ts"
+import { font } from "./style.ts"
 
 interface ImageBase {
   /**
@@ -119,18 +119,8 @@ export function Image(props: ImageProps): IrNode {
     />
   )
   return (
-    <Block bottom={theme.space.stack.md}>
-      {props.align ? (
-        <table {...PRESENTATION}>
-          <tbody>
-            <tr>
-              <td align={props.align}>{link(props, img)}</td>
-            </tr>
-          </tbody>
-        </table>
-      ) : (
-        link(props, img)
-      )}
+    <Block bottom={theme.space.stack.md} align={props.align}>
+      {link(props, img)}
     </Block>
   )
 }
