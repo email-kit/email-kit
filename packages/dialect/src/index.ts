@@ -1,15 +1,23 @@
-// mustache-core@1 reference renderer. the conformance
-// suite in conformance/mustache-core/ is the authority on behaviour.
-//
-// This file is self-contained on purpose: no imports and only standard ECMAScript up to ES2020,
-// because the compiler inlines its source into every generated module, which compiles
-// under the host's tsconfig. Keep it small. Everything below the marker is inlined.
+/**
+ * mustache-core@1, the placeholder language of compiled email-kit templates: its parser and
+ * reference renderer. The conformance suite in conformance/mustache-core/ decides how it behaves.
+ *
+ * Everything below the marker line, here and in runtime/, is copied into every generated module,
+ * which compiles under the host project's tsconfig. So that code has no imports beyond these
+ * files, uses nothing newer than ES2020, and stays small.
+ *
+ * @packageDocumentation
+ */
 
 // --- inlined into generated modules from here ---
 
+/** The placeholder language compiled templates are written in, and its version. */
 export const DIALECT = "mustache-core@1" as const
+
+/** How values are written: escaped for `html`, as they are for `text`. */
 export type Profile = "html" | "text"
 
+/** The characters escaped in HTML, and what replaces them. */
 export const HTML_ESCAPES: Readonly<Record<string, string>> = {
   "&": "&amp;",
   "<": "&lt;",
@@ -18,6 +26,7 @@ export const HTML_ESCAPES: Readonly<Record<string, string>> = {
   "'": "&#39;",
 }
 
+/** What kind of problem a `MustacheCoreError` reports. */
 export type ErrorCode =
   | "unclosed-tag"
   | "unsupported-tag"
@@ -29,7 +38,12 @@ export type ErrorCode =
   | "non-scalar-value"
   | "invalid-number"
 
+/**
+ * A template that can't be parsed, or data that can't fill it, such as a missing value. The
+ * templates email-kit compiles always parse, so with them it means the data is wrong.
+ */
 export class MustacheCoreError extends Error {
+  /** What kind of problem it is, such as `"missing-value"`. */
   readonly code: ErrorCode
 
   constructor(code: ErrorCode, message: string) {
@@ -39,20 +53,24 @@ export class MustacheCoreError extends Error {
   }
 }
 
+/** A piece of a parsed template: literal text, a `{{variable}}` or a section. */
 export type Node = string | VariableNode | SectionNode
 
+/** `{{name}}`, escaped in HTML, or `{{{name}}}` when `raw`, never escaped. */
 export interface VariableNode {
   readonly type: "variable"
   readonly name: string
   readonly raw: boolean
 }
 
+/** `{{#name}}…{{/name}}`, or `{{^name}}…{{/name}}` when `inverted`. */
 export interface SectionNode {
   readonly type: "section" | "inverted"
   readonly name: string
   readonly children: readonly Node[]
 }
 
+/** A template parsed once, to render many times. */
 export interface ParsedTemplate {
   readonly nodes: readonly Node[]
 }
@@ -62,6 +80,10 @@ const UNSUPPORTED_SIGIL = /^[!>=&<$]/
 const PADDING = /^[ \t]+|[ \t]+$/g
 const LINE_END = /[ \t]*(?:\r?\n|$)/y
 
+/**
+ * Finds `name` in the innermost context that has its first part, then follows the rest of the
+ * path in that context only. `.` is the innermost context itself.
+ */
 function lookup(stack: readonly unknown[], name: string): unknown {
   if (name === ".") return stack[stack.length - 1]
   const [first = "", ...rest] = name.split(".")
@@ -79,12 +101,14 @@ function lookup(stack: readonly unknown[], name: string): unknown {
   return undefined
 }
 
+/** Whether a section shows. Missing, `null`, `false`, `""`, `0` and an empty list don't. */
 function isTruthy(value: unknown, name: string): boolean {
   if (typeof value === "number") return finite(value, name) !== 0
   if (Array.isArray(value)) return value.length > 0
   return !(value === undefined || value === null || value === false || value === "")
 }
 
+/** A value as text. A missing value, or one that isn't a string, number or boolean, throws. */
 function toText(value: unknown, name: string): string {
   if (typeof value === "string") return value
   if (typeof value === "number") return String(finite(value, name))
@@ -103,7 +127,7 @@ function hasOwn(object: object, key: string): boolean {
   return Object.prototype.hasOwnProperty.call(object, key)
 }
 
-/** A plain object: not null and not an array. module.ts uses it too. */
+/** A plain object: not `null` and not an array. */
 export function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value)
 }
@@ -119,6 +143,7 @@ function fail(code: ErrorCode, message: string): never {
   throw new MustacheCoreError(code, message)
 }
 
+/** Renders nodes against a stack of contexts, the innermost last. */
 function renderNodes(nodes: readonly Node[], stack: unknown[], html: boolean): string {
   let out = ""
   for (const node of nodes) {
@@ -150,6 +175,10 @@ function renderNodes(nodes: readonly Node[], stack: unknown[], html: boolean): s
   return out
 }
 
+/**
+ * Parses a template. A section tag alone on its line removes the whole line, so sections leave no
+ * blank lines behind. Bad syntax throws a `MustacheCoreError` with its offset.
+ */
 export function parse(template: string): ParsedTemplate {
   const nodes: Node[] = []
   const open: { name: string; offset: number; parent: Node[] }[] = []
@@ -220,11 +249,13 @@ export function parse(template: string): ParsedTemplate {
   return { nodes }
 }
 
+/** Fills a template with data. Values are escaped for the `html` profile only. */
 export function render(template: string | ParsedTemplate, data: unknown, profile: Profile): string {
   const { nodes } = typeof template === "string" ? parse(template) : template
   return renderNodes(nodes, [data], profile !== "text")
 }
 
+/** Escapes `&`, `<`, `>`, `"` and `'` for HTML. */
 export function escapeHtml(value: string): string {
   return value.replace(/[&<>"']/g, (char) => HTML_ESCAPES[char] as string)
 }

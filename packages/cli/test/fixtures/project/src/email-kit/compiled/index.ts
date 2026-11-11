@@ -76,9 +76,13 @@ export { type DataIssue, DIALECT, EmailRenderError, MustacheCoreError }
 // The mustache-core renderer and module runtime, inlined so this module has no dependencies.
 // Spec: https://github.com/email-kit/email-kit/blob/main/docs/spec/mustache-core.md
 
+/** The placeholder language compiled templates are written in, and its version. */
 const DIALECT = "mustache-core@1" as const
+
+/** How values are written: escaped for `html`, as they are for `text`. */
 type Profile = "html" | "text"
 
+/** The characters escaped in HTML, and what replaces them. */
 const HTML_ESCAPES: Readonly<Record<string, string>> = {
   "&": "&amp;",
   "<": "&lt;",
@@ -87,6 +91,7 @@ const HTML_ESCAPES: Readonly<Record<string, string>> = {
   "'": "&#39;",
 }
 
+/** What kind of problem a `MustacheCoreError` reports. */
 type ErrorCode =
   | "unclosed-tag"
   | "unsupported-tag"
@@ -98,7 +103,12 @@ type ErrorCode =
   | "non-scalar-value"
   | "invalid-number"
 
+/**
+ * A template that can't be parsed, or data that can't fill it, such as a missing value. The
+ * templates email-kit compiles always parse, so with them it means the data is wrong.
+ */
 class MustacheCoreError extends Error {
+  /** What kind of problem it is, such as `"missing-value"`. */
   readonly code: ErrorCode
 
   constructor(code: ErrorCode, message: string) {
@@ -108,20 +118,24 @@ class MustacheCoreError extends Error {
   }
 }
 
+/** A piece of a parsed template: literal text, a `{{variable}}` or a section. */
 type Node = string | VariableNode | SectionNode
 
+/** `{{name}}`, escaped in HTML, or `{{{name}}}` when `raw`, never escaped. */
 interface VariableNode {
   readonly type: "variable"
   readonly name: string
   readonly raw: boolean
 }
 
+/** `{{#name}}…{{/name}}`, or `{{^name}}…{{/name}}` when `inverted`. */
 interface SectionNode {
   readonly type: "section" | "inverted"
   readonly name: string
   readonly children: readonly Node[]
 }
 
+/** A template parsed once, to render many times. */
 interface ParsedTemplate {
   readonly nodes: readonly Node[]
 }
@@ -131,6 +145,10 @@ const UNSUPPORTED_SIGIL = /^[!>=&<$]/
 const PADDING = /^[ \t]+|[ \t]+$/g
 const LINE_END = /[ \t]*(?:\r?\n|$)/y
 
+/**
+ * Finds `name` in the innermost context that has its first part, then follows the rest of the
+ * path in that context only. `.` is the innermost context itself.
+ */
 function lookup(stack: readonly unknown[], name: string): unknown {
   if (name === ".") return stack[stack.length - 1]
   const [first = "", ...rest] = name.split(".")
@@ -148,12 +166,14 @@ function lookup(stack: readonly unknown[], name: string): unknown {
   return undefined
 }
 
+/** Whether a section shows. Missing, `null`, `false`, `""`, `0` and an empty list don't. */
 function isTruthy(value: unknown, name: string): boolean {
   if (typeof value === "number") return finite(value, name) !== 0
   if (Array.isArray(value)) return value.length > 0
   return !(value === undefined || value === null || value === false || value === "")
 }
 
+/** A value as text. A missing value, or one that isn't a string, number or boolean, throws. */
 function toText(value: unknown, name: string): string {
   if (typeof value === "string") return value
   if (typeof value === "number") return String(finite(value, name))
@@ -172,7 +192,7 @@ function hasOwn(object: object, key: string): boolean {
   return Object.prototype.hasOwnProperty.call(object, key)
 }
 
-/** A plain object: not null and not an array. module.ts uses it too. */
+/** A plain object: not `null` and not an array. */
 function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value)
 }
@@ -188,6 +208,7 @@ function fail(code: ErrorCode, message: string): never {
   throw new MustacheCoreError(code, message)
 }
 
+/** Renders nodes against a stack of contexts, the innermost last. */
 function renderNodes(nodes: readonly Node[], stack: unknown[], html: boolean): string {
   let out = ""
   for (const node of nodes) {
@@ -219,6 +240,10 @@ function renderNodes(nodes: readonly Node[], stack: unknown[], html: boolean): s
   return out
 }
 
+/**
+ * Parses a template. A section tag alone on its line removes the whole line, so sections leave no
+ * blank lines behind. Bad syntax throws a `MustacheCoreError` with its offset.
+ */
 function parse(template: string): ParsedTemplate {
   const nodes: Node[] = []
   const open: { name: string; offset: number; parent: Node[] }[] = []
@@ -289,15 +314,18 @@ function parse(template: string): ParsedTemplate {
   return { nodes }
 }
 
+/** Fills a template with data. Values are escaped for the `html` profile only. */
 function render(template: string | ParsedTemplate, data: unknown, profile: Profile): string {
   const { nodes } = typeof template === "string" ? parse(template) : template
   return renderNodes(nodes, [data], profile !== "text")
 }
 
+/** Escapes `&`, `<`, `>`, `"` and `'` for HTML. */
 function escapeHtml(value: string): string {
   return value.replace(/[&<>"']/g, (char) => HTML_ESCAPES[char] as string)
 }
 
+/** One email in one locale, as templates with `{{placeholders}}`. */
 interface TemplateParts {
   readonly subject: string
   readonly preheader: string
@@ -305,6 +333,10 @@ interface TemplateParts {
   readonly text: string
 }
 
+/**
+ * A template's data schema, cut down to what validating and rendering need: types, `enum`,
+ * nullability, limits such as `maxLength`, and fields marked as URLs.
+ */
 interface Model {
   readonly type: "string" | "number" | "integer" | "boolean" | "array" | "object"
   readonly nullable?: true
@@ -316,15 +348,20 @@ interface Model {
   readonly required?: readonly string[]
 }
 
+/** One way the data doesn't match the schema. */
 interface DataIssue {
+  /** Where, such as `order.items[2].price`, or `data` for the data itself. */
   readonly path: string
+  /** What's wrong, such as `expected a number, got string "12"`. */
   readonly message: string
 }
 
+/** A rendered email, and which template and locale it came from. */
 interface RenderedParts extends TemplateParts {
   readonly meta: { readonly id: string; readonly locale: string; readonly purpose: string }
 }
 
+/** One entry of the generated `emails` object. */
 interface RuntimeTemplate {
   readonly meta: {
     readonly id: string
@@ -336,8 +373,15 @@ interface RuntimeTemplate {
   render(data: unknown, options?: { readonly locale?: string }): RenderedParts
 }
 
+/**
+ * Why an email couldn't be rendered: `invalid-data` when the data doesn't match the schema,
+ * `missing-context` or `invalid-context` for a bad value passed to `createEmails()`, and
+ * `subject-line-break` when data puts a line break in the subject.
+ */
 class EmailRenderError extends Error {
+  /** What kind of problem it is, such as `"invalid-data"`. */
   readonly code: string
+  /** For `invalid-data`: each field that doesn't match the schema. */
   readonly issues: readonly DataIssue[]
 
   constructor(code: string, message: string, issues: readonly DataIssue[] = []) {
@@ -348,13 +392,16 @@ class EmailRenderError extends Error {
   }
 }
 
+/** Whether an object has its own `key`, set to something other than `undefined`. */
 function has(record: Record<string, unknown>, key: string): boolean {
   // biome-ignore lint/suspicious/noPrototypeBuiltins: Object.hasOwn needs lib ES2022 in the host
   return Object.prototype.hasOwnProperty.call(record, key) && record[key] !== undefined
 }
 
+/** An https URL with a host. */
 const HTTPS_URL: RegExp = /^https:\/\/[^\s/?#]+[^\s]*$/i
 
+/** A value for an error message: a short quoted string, `null`, `a list` or `an object`. */
 function describe(value: unknown): string {
   if (value === null) return "null"
   if (Array.isArray(value)) return "a list"
@@ -363,15 +410,25 @@ function describe(value: unknown): string {
   return typeof value === "object" ? "an object" : `${typeof value} ${String(value)}`
 }
 
-/** CLDR data for resolving a requested locale. */
+/** CLDR data for resolving a requested locale. Tags are lowercase. */
 interface LocaleData {
+  /**
+   * The next locale to try after one, from CLDR and the config's fallbacks: `es-mx` → `es-419`.
+   */
   readonly parents: Readonly<Record<string, string>>
+  /** Each language's usual script: `sr` → `cyrl`. */
   readonly scripts: Readonly<Record<string, string>>
+  /** A region's script, where it differs from the language's: `zh-tw` → `hant`. */
   readonly regions: Readonly<Record<string, string>>
 }
 
+/** No CLDR data: only exact matches and dropping the last part of the tag. */
 const NO_LOCALE_DATA: LocaleData = { parents: {}, scripts: {}, regions: {} }
 
+/**
+ * Picks the compiled locale for a requested one. It tries the tag, then its parents (`pt-AO` →
+ * `pt-PT` → `pt`), and falls back to the first available locale, the default.
+ */
 function resolveLocale(
   requested: string | undefined,
   available: readonly string[],
@@ -397,6 +454,10 @@ function resolveLocale(
   return fallback
 }
 
+/**
+ * The tag without its last part, or `undefined` when that would change the script: `zh-Hant`
+ * doesn't fall back to `zh`, which is written in Hans.
+ */
 function truncate(tag: string, data: LocaleData): string | undefined {
   const parts = tag.split("-")
   parts.pop()
@@ -412,6 +473,7 @@ function counted(n: number, word: string): string {
   return `${n} ${word}${n === 1 ? "" : "s"}`
 }
 
+/** Checks data against a template's model, and returns every problem with its path. */
 function validate(model: Model, value: unknown, path = ""): DataIssue[] {
   const issues: DataIssue[] = []
   const at = path || "data"
@@ -520,6 +582,10 @@ function validate(model: Model, value: unknown, path = ""): DataIssue[] {
   return issues
 }
 
+/**
+ * A copy of the data with only the fields the schema has, and `null` for missing optional fields,
+ * so a tag never finds a same-named field of an outer object instead.
+ */
 function project(model: Model, value: unknown): unknown {
   if (model.type === "array") {
     return Array.isArray(value) ? value.map((item) => project(model.items as Model, item)) : value
@@ -538,13 +604,20 @@ function project(model: Model, value: unknown): unknown {
   return out
 }
 
+/** The flag name for a select value, safe in a tag: `"pro-plan"` → `v_pro_2d_plan`. */
 function selectKey(value: string): string {
   return `v_${value.replace(/[^A-Za-z0-9]/gu, (c) => `_${(c.codePointAt(0) as number).toString(16)}_`)}`
 }
 
 type Tree = Record<string, unknown>
+/** The data key that holds the flags, and the sender values passed at send time. */
 const EK = "_ek"
 
+/**
+ * Adds the plural and select flags that compiled messages test, under `_ek` on each object in the
+ * data: `{ plural: { count: { one: true, exact_1: true } }, select: { plan: { v_pro: true } } }`.
+ * Flags from outer objects are copied in, so a list item can test a field of its parent.
+ */
 function prepare(
   model: Model,
   value: unknown,
@@ -602,6 +675,10 @@ function collect(
 const URL_CONTEXT_KEYS: readonly string[] = ["helpUrl", "privacyUrl", "siteUrl"]
 const EMAIL_ADDRESS = /^[^\s@<>"]+@[^\s@<>"]+$/
 
+/**
+ * Reads the sender values passed to `createEmails()`. Each must be a non-empty string; URLs must be
+ * https, and `supportEmail` an email address.
+ */
 function readContext(
   keys: readonly string[],
   context: unknown,
@@ -634,6 +711,7 @@ function readContext(
 
 const parsedTemplates = new Map<string, ParsedTemplate>()
 
+/** Renders a template, parsing each one only the first time. */
 function fill(template: string, data: unknown, profile: "html" | "text"): string {
   let parsed = parsedTemplates.get(template)
   if (parsed === undefined) {
@@ -643,6 +721,11 @@ function fill(template: string, data: unknown, profile: "html" | "text"): string
   return render(parsed, data, profile)
 }
 
+/**
+ * Makes one entry of the generated `emails` object. Its `render()` validates the data when
+ * `checkData` is on, picks the locale, keeps only the schema's fields, adds the plural and select
+ * flags and the sender values, and fills the four parts.
+ */
 function createTemplate(
   id: string,
   purpose: string,

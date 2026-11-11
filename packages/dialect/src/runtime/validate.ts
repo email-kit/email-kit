@@ -1,5 +1,3 @@
-// Checking data against a template's model.
-
 import { isObject } from "../index.ts"
 import { describe, HTTPS_URL, has } from "./shared.ts"
 import type { DataIssue, Model } from "./types.ts"
@@ -10,6 +8,7 @@ function counted(n: number, word: string): string {
   return `${n} ${word}${n === 1 ? "" : "s"}`
 }
 
+/** Checks data against a template's model, and returns every problem with its path. */
 export function validate(model: Model, value: unknown, path = ""): DataIssue[] {
   const issues: DataIssue[] = []
   const at = path || "data"

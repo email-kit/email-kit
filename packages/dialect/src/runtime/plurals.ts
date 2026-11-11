@@ -1,17 +1,22 @@
-// Pre-computing plural and select flags into the data's reserved `_ek` key.
-
 import { isObject } from "../index.ts"
 import type { Model } from "./types.ts"
 
 // --- inlined into generated modules from here ---
 
+/** The flag name for a select value, safe in a tag: `"pro-plan"` → `v_pro_2d_plan`. */
 export function selectKey(value: string): string {
   return `v_${value.replace(/[^A-Za-z0-9]/gu, (c) => `_${(c.codePointAt(0) as number).toString(16)}_`)}`
 }
 
 type Tree = Record<string, unknown>
+/** The data key that holds the flags, and the sender values passed at send time. */
 export const EK = "_ek"
 
+/**
+ * Adds the plural and select flags that compiled messages test, under `_ek` on each object in the
+ * data: `{ plural: { count: { one: true, exact_1: true } }, select: { plan: { v_pro: true } } }`.
+ * Flags from outer objects are copied in, so a list item can test a field of its parent.
+ */
 export function prepare(
   model: Model,
   value: unknown,

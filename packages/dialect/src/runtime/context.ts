@@ -1,5 +1,3 @@
-// Checking the site-wide values passed to createEmails().
-
 import { isObject } from "../index.ts"
 import { describe, HTTPS_URL } from "./shared.ts"
 import { EmailRenderError } from "./types.ts"
@@ -9,6 +7,10 @@ import { EmailRenderError } from "./types.ts"
 const URL_CONTEXT_KEYS: readonly string[] = ["helpUrl", "privacyUrl", "siteUrl"]
 const EMAIL_ADDRESS = /^[^\s@<>"]+@[^\s@<>"]+$/
 
+/**
+ * Reads the sender values passed to `createEmails()`. Each must be a non-empty string; URLs must be
+ * https, and `supportEmail` an email address.
+ */
 export function readContext(
   keys: readonly string[],
   context: unknown,

@@ -1,5 +1,3 @@
-// createTemplate(): one entry of the generated `emails` object, and its render().
-
 import { isObject, type ParsedTemplate, parse, render } from "../index.ts"
 import { type LocaleData, NO_LOCALE_DATA, resolveLocale } from "./locale.ts"
 import { EK, prepare } from "./plurals.ts"
@@ -11,6 +9,7 @@ import { validate } from "./validate.ts"
 
 const parsedTemplates = new Map<string, ParsedTemplate>()
 
+/** Renders a template, parsing each one only the first time. */
 function fill(template: string, data: unknown, profile: "html" | "text"): string {
   let parsed = parsedTemplates.get(template)
   if (parsed === undefined) {
@@ -20,6 +19,11 @@ function fill(template: string, data: unknown, profile: "html" | "text"): string
   return render(parsed, data, profile)
 }
 
+/**
+ * Makes one entry of the generated `emails` object. Its `render()` validates the data when
+ * `checkData` is on, picks the locale, keeps only the schema's fields, adds the plural and select
+ * flags and the sender values, and fills the four parts.
+ */
 export function createTemplate(
   id: string,
   purpose: string,

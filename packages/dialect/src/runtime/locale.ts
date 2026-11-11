@@ -1,18 +1,26 @@
-// Choosing the compiled locale for a requested one, over CLDR data.
-
 import { has } from "./shared.ts"
 
 // --- inlined into generated modules from here ---
 
-/** CLDR data for resolving a requested locale. */
+/** CLDR data for resolving a requested locale. Tags are lowercase. */
 export interface LocaleData {
+  /**
+   * The next locale to try after one, from CLDR and the config's fallbacks: `es-mx` → `es-419`.
+   */
   readonly parents: Readonly<Record<string, string>>
+  /** Each language's usual script: `sr` → `cyrl`. */
   readonly scripts: Readonly<Record<string, string>>
+  /** A region's script, where it differs from the language's: `zh-tw` → `hant`. */
   readonly regions: Readonly<Record<string, string>>
 }
 
+/** No CLDR data: only exact matches and dropping the last part of the tag. */
 export const NO_LOCALE_DATA: LocaleData = { parents: {}, scripts: {}, regions: {} }
 
+/**
+ * Picks the compiled locale for a requested one. It tries the tag, then its parents (`pt-AO` →
+ * `pt-PT` → `pt`), and falls back to the first available locale, the default.
+ */
 export function resolveLocale(
   requested: string | undefined,
   available: readonly string[],
@@ -38,6 +46,10 @@ export function resolveLocale(
   return fallback
 }
 
+/**
+ * The tag without its last part, or `undefined` when that would change the script: `zh-Hant`
+ * doesn't fall back to `zh`, which is written in Hans.
+ */
 function truncate(tag: string, data: LocaleData): string | undefined {
   const parts = tag.split("-")
   parts.pop()
