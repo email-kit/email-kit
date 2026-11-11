@@ -7,7 +7,7 @@ import { render } from "@email-kit/dialect"
 import { beforeAll, describe, expect, it } from "vitest"
 
 import { compileEmail } from "../src/compiler/compile.ts"
-import { PREHEADER_FILLER, renderDocument } from "../src/compiler/document.ts"
+import { msoFontFamily, PREHEADER_FILLER, renderDocument } from "../src/compiler/document.ts"
 import { loadTemplate } from "../src/compiler/load.ts"
 
 const template = fileURLToPath(
@@ -104,10 +104,19 @@ describe("document skeleton (research 01 §2)", () => {
     expect(html).not.toContain("xmlns:v")
   })
 
-  it("has an MSO-only font override with a known family", () => {
+  it("has an MSO-only font override with the body stack's fallback family", () => {
     expect(head()).toMatch(
-      /<!--\[if mso\]><style>[^<]*font-family: Arial, Helvetica, sans-serif !important;[^<]*<\/style><!\[endif\]-->/,
+      /<!--\[if mso\]><style>[^<]*font-family: Arial, sans-serif !important;[^<]*<\/style><!\[endif\]-->/,
     )
+  })
+
+  it("gives classic Outlook the stack's fallback family, then its generic family", () => {
+    const serif = { families: ["Lora", "Georgia", "serif"], msoFallback: "Georgia" }
+    expect(msoFontFamily(serif)).toBe("Georgia, serif")
+    const mono = { families: ["Fira Code", "Courier New", "monospace"], msoFallback: "Courier New" }
+    expect(msoFontFamily(mono)).toBe("'Courier New', monospace")
+    const noGeneric = { families: ["Inter", "Verdana"], msoFallback: "Verdana" }
+    expect(msoFontFamily(noGeneric)).toBe("Verdana")
   })
 
   it("has exactly one <style>, in <head>, with the data-detector reset", () => {

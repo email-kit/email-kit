@@ -18,6 +18,7 @@
 
 import { type IrNode, parseRoleClass, roleClass } from "@email-kit/core/internal"
 
+import type { FontStack } from "../theme/theme.ts"
 import { renderAttributeValue, renderHtml } from "./html.ts"
 
 export interface DocumentOptions {
@@ -28,6 +29,8 @@ export interface DocumentOptions {
   readonly body: IrNode
   /** Classic Outlook (Word) is a target: the DPI fix and the MSO font override (CFG-05). */
   readonly outlookClassic: boolean
+  /** The `font-family` classic Outlook gets for all text, from `msoFontFamily()`. Defaults to Arial. */
+  readonly outlookFont?: string | undefined
   /** Only for templates that ship a dark palette (research 02 D2, D6). */
   readonly colorScheme?: "light dark" | "light only" | undefined
   /** Enhancement rules for the head <style> (BLD-03); declarations are inline already. */
@@ -79,8 +82,17 @@ export function darkRules(html: string, dark: Readonly<Record<string, string>>):
   ]
 }
 
-/** The fallback family Word uses instead of Times New Roman (research 01 §7). */
-export const MSO_FONT_STACK = "Arial, Helvetica, sans-serif"
+/**
+ * The `font-family` for classic Outlook: the stack's `msoFallback`, then its generic family. Word
+ * doesn't fall back through a list, so when the first family isn't installed it uses Times New
+ * Roman instead.
+ */
+export function msoFontFamily(stack: FontStack): string {
+  const quote = (family: string) => (/\s/.test(family) ? `'${family}'` : family)
+  const last = stack.families.at(-1)
+  const generic = last !== undefined && last !== stack.msoFallback ? [last] : []
+  return [stack.msoFallback, ...generic].map(quote).join(", ")
+}
 
 /**
  * Pads the preheader so body copy doesn't leak into the inbox preview: goodemailcode's current
@@ -134,7 +146,7 @@ export function renderDocument(doc: DocumentOptions): string {
     ...(doc.outlookClassic
       ? [
           DPI,
-          `<!--[if mso]><style>body, table, td, th, p, a, li, h1, h2, h3, h4, h5, h6 { font-family: ${MSO_FONT_STACK} !important; }</style><![endif]-->`,
+          `<!--[if mso]><style>body, table, td, th, p, a, li, h1, h2, h3, h4, h5, h6 { font-family: ${doc.outlookFont ?? "Arial, sans-serif"} !important; }</style><![endif]-->`,
         ]
       : []),
     `<style>\n${styles.join("\n")}\n</style>`,

@@ -12,8 +12,9 @@ export interface ThemeContext {
 
   readonly typography: {
     /**
-     * The font families of each stack, and `msoFallback`: the one family classic Outlook uses,
-     * since it can't fall back through a list.
+     * The font families of each stack, and `msoFallback`: its last named family. Classic Outlook
+     * can't fall back through a list, so all its text uses the `msoFallback` of the `body` step's
+     * stack.
      */
     readonly stacks: Readonly<
       Record<FontStackName, { readonly families: readonly string[]; readonly msoFallback: string }>

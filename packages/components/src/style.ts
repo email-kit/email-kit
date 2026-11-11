@@ -1,15 +1,19 @@
-// Shared style helpers. Components take every value from the theme (UI-01): sizes from the type
-// scale, colours through role(), spacing from the space scale.
-
 import { type ThemeContext, type TypeStep, useDirection, useTheme } from "@email-kit/core"
 
-/** A non-breaking space, as an escape: keeps empty cells from collapsing in Outlook. */
+/** A non-breaking space. An empty cell holds one, or Outlook collapses it. */
 export const NBSP = "\u00a0"
 
 /**
- * The font for a type step: the family stack (multi-word names in single quotes, so the inline
- * style attribute stays valid, research 05 §7), px size and line height, and Word's exact
- * line-height rule (research 05 §2).
+ * The inline styles for a step of the theme's type scale: font family, size, line height, weight
+ * and letter spacing, plus the rule that makes classic Outlook keep the line height exactly.
+ *
+ * @param step - The type-scale step, such as `"body"` or `"caption"`.
+ * @param theme - The theme, when you already have it from `useTheme()`.
+ *
+ * @example
+ * ```tsx
+ * <p style={{ ...font("caption"), color: role("mutedInk") }}>Sent to ada@example.com</p>
+ * ```
  */
 export function font(
   step: TypeStep,
@@ -27,7 +31,10 @@ export function font(
   }
 }
 
-/** The attributes of a layout table: Word lays out by them (research 01 §10.5). */
+/**
+ * The attributes of a table used for layout: not announced as a table by screen readers, full
+ * width, with no gaps or borders. Classic Outlook lays tables out by these, not by CSS.
+ */
 export const PRESENTATION = {
   role: "presentation",
   width: "100%",
@@ -37,9 +44,12 @@ export const PRESENTATION = {
 } as const
 
 /**
- * In a right-to-left email, a text cell carries `dir` and an explicit alignment
- * (i18n.rtl-explicit): Orange strips `dir` from tables and cells, and Outlook mishandles
- * inherited direction. Left-to-right output is unchanged.
+ * The attributes and style for a text cell. In a right-to-left email, the cell gets its own `dir`
+ * and right alignment, since some clients drop `dir` from tables and classic Outlook doesn't
+ * inherit it reliably. In a left-to-right email, both are empty.
+ *
+ * @param dir - The direction of the cell's text in a right-to-left email: `"ltr"` for content such
+ *   as a one-time code.
  */
 export function textCell(dir: "rtl" | "ltr" = "rtl"): {
   readonly attrs: { readonly dir?: "rtl" | "ltr" }

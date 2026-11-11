@@ -109,7 +109,8 @@ export interface ThemeConfig {
   readonly typography?: {
     /**
      * Font families for each stack, ending in a generic family such as `sans-serif`. Classic
-     * Outlook uses the last named family.
+     * Outlook can't fall back through a list, so all its text uses the last named family of the
+     * stack the `body` step uses.
      */
     readonly stacks?: Readonly<Partial<Record<FontStackName, readonly string[]>>>
 

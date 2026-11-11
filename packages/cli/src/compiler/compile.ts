@@ -12,7 +12,7 @@ import { parse } from "@email-kit/dialect"
 import { pluralRules } from "../i18n/plurals.ts"
 import { loadTheme, type Theme } from "../theme/theme.ts"
 import { checkDerived } from "./derived.ts"
-import { renderDocument } from "./document.ts"
+import { msoFontFamily, renderDocument } from "./document.ts"
 import type { Field } from "./schema.ts"
 import { renderLine, renderTextPart } from "./text.ts"
 
@@ -90,6 +90,7 @@ export function compileEmail<T>(
     body: ir.body,
     // Classic Outlook stays a target by default until the targets config (CFG-05, M1.2).
     outlookClassic: true,
+    outlookFont: msoFontFamily(theme.typography.stacks[theme.typography.scale.body.stack]),
     dark: theme.dark === "authored" ? theme.roles.dark : undefined,
     ground: { canvas: theme.roles.light.canvas, ink: theme.roles.light.ink },
     container: {
