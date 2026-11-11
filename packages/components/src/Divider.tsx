@@ -2,7 +2,17 @@ import { type IrNode, role, useTheme } from "@email-kit/core"
 
 import { NBSP, PRESENTATION } from "./style.ts"
 
-/** A horizontal rule (UI-13): a 1 px filled cell, which every client draws the same. */
+/**
+ * A horizontal line between blocks, in the theme's `divider` colour, with space above and below.
+ * It's a thin filled cell rather than `<hr>`, which clients draw differently.
+ *
+ * @example
+ * ```tsx
+ * <Text>Thanks for your order.</Text>
+ * <Divider />
+ * <Text>Questions? Reply to this email.</Text>
+ * ```
+ */
 export function Divider(): IrNode {
   const theme = useTheme()
   const line = `${theme.borderWidth.hairline}px`

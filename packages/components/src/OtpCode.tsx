@@ -4,24 +4,32 @@ import { Block } from "./Block.tsx"
 import { font, PRESENTATION, textCell } from "./style.ts"
 
 export interface OtpCodeProps {
-  /** The code: contiguous digits or letters, with no spaces or hyphens inside it */
+  /** The code, such as `482913`. Give it with no spaces or hyphens: the gaps are added by style. */
   readonly code: Child
-  /** Words naming it as a code and its purpose, such as "Your code to sign in to Acme" */
+  /**
+   * The text above the code, saying what it's for, such as "Your code to sign in to Acme". Screen
+   * readers read it before the code.
+   */
   readonly label: Child
 }
 
 /**
- * A one-time code (UI-19): the label, then the code once, as plain contiguous text in a large
- * monospaced display. Spacing comes from letter-spacing, never from splitting the digits, so
- * copy and paste, Gmail's "Copy code" and Apple Mail's AutoFill read it whole (research 04 §5.1,
- * 05 §9). No `aria-label`: the label is real text next to the code (05 ⚠6).
+ * A one-time code, such as a sign-in or verification code, in large spaced-out type under a label.
+ * The code stays one piece of text, so copy and paste, Gmail's "Copy code" and Apple's code
+ * AutoFill get it whole. It reads left to right in right-to-left emails too.
+ *
+ * @param props - The code, and the label above it.
+ *
+ * @example
+ * ```tsx
+ * <OtpCode label={t("label", { product: sender.productName })} code={data.code} />
+ * ```
  */
 export function OtpCode(props: OtpCodeProps): IrNode {
   const theme = useTheme()
   const { stack } = theme.space
   const otp = theme.components.otp
   const cell = textCell()
-  // A code reads left to right, whatever the language around it.
   const code = textCell("ltr")
   return (
     <>

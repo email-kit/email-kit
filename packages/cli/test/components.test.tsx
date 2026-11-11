@@ -93,6 +93,12 @@ describe("KeyValue", () => {
     expect(email.text).toContain("Order: A-1042\n\nDate: 30 October\n")
   })
 
+  it("leaves the usual gap below the last inline row, like every other block", () => {
+    const email = compile(() => <KeyValue items={items} />)
+    expect(email.count('<td style="padding:0 0 8px">')).toBe(1)
+    expect(email.body).toMatch(/<td style="padding:0 0 16px"><p [^>]*><span[^>]*>Date:/)
+  })
+
   it("puts stacked labels above values in HTML, and Label: value in the text part", () => {
     const email = compile(() => <KeyValue layout="stacked" items={items} />)
     expect(email.body).toMatch(/>Order<\/p>\n?<p [^>]*><span[^>]*>A-1042<\/span><\/p>/)
@@ -307,6 +313,8 @@ describe("DataTable", () => {
     // Cells also carry dir, which some clients need on the cell itself (i18n.rtl-explicit).
     expect(email.body).toMatch(/<caption dir="rtl" style="[^"]*text-align:right;/)
     expect(email.body).toMatch(/<th dir="rtl" scope="col" width="60" style="[^"]*text-align:left;/)
+    expect(email.body).toMatch(/<th dir="rtl" scope="col" style="padding:8px 0 8px 8px;/)
+    expect(email.body).not.toContain("padding:8px 8px 8px 0")
   })
 
   it("lists each row as Header: value lines in the text part", () => {

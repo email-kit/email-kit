@@ -4,13 +4,32 @@ import { Block } from "./Block.tsx"
 import { font, textCell } from "./style.ts"
 
 export interface HeadingProps {
+  /** The heading's text. */
   readonly children?: Child
-  /** One h1 per email, then h2 and h3 without skipping (research 05 §1). Default: 1 */
+  /**
+   * The heading level, which sets both the tag (`h1` to `h3`) and the size. Use one level 1
+   * heading per email, then 2 and 3 without skipping a level, so screen reader users can follow
+   * the outline. Defaults to 1.
+   */
   readonly level?: 1 | 2 | 3
+  /**
+   * The alignment. Leave it out to align with the language: left, or right in right-to-left
+   * emails.
+   */
   readonly align?: "left" | "center" | "right"
 }
 
-/** A heading (UI-07): the h1–h3 steps of the type scale. */
+/**
+ * A heading, styled from the theme's type scale, with the theme's gap below it.
+ *
+ * @param props - The text, its level and its alignment.
+ *
+ * @example
+ * ```tsx
+ * <Heading>{t("heading", { name: data.customerName })}</Heading>
+ * <Heading level={2}>Your order</Heading>
+ * ```
+ */
 export function Heading(props: HeadingProps): IrNode {
   const theme = useTheme()
   const cell = textCell()

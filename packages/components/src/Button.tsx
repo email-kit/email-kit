@@ -3,23 +3,43 @@ import { type Child, type IrNode, role, type TextValue, useTheme } from "@email-
 import { font, PRESENTATION } from "./style.ts"
 
 export interface ButtonProps {
+  /** Where the button goes: a URL, or a URL field from data. */
   readonly href: TextValue
-  /** A verb-first label of three words or fewer (research 05 §6) */
+  /** The label: a short action that starts with a verb, such as "View order". */
   readonly children?: Child
-  /** One primary action per email. Default: `primary` */
+  /**
+   * The colours, from the theme: `primary` for the main action, `secondary` for others, or
+   * `destructive` for one that deletes or cancels something. Use one `primary` button per email.
+   * Defaults to `primary`.
+   */
   readonly variant?: "primary" | "secondary" | "destructive"
-  /** `sm` is for secondary actions only: it is under 44 px. Default: `md` */
+  /**
+   * The height and padding, from the theme. `md` and `lg` are at least 44px tall, big enough to tap
+   * easily. `sm` is smaller, so keep it for secondary actions. Defaults to `md`.
+   */
   readonly size?: "sm" | "md" | "lg"
+  /** Whether the button fills the content width. Defaults to `false`. */
   readonly fullWidth?: boolean
-  /** Advisory text: a tooltip, never the only description of the action */
+  /**
+   * A tooltip, shown on hover in some clients. Screen readers may skip it, so make the label clear
+   * on its own.
+   */
   readonly title?: Child
 }
 
 /**
- * A bulletproof link button (UI-10). Outlook's Word engine ignores padding on links, so the cell
- * carries it there (`mso-padding-alt`, `bgcolor`); everywhere else the padded link fills the cell
- * and the whole button is clickable. Word draws square corners. The height is the label's line
- * height plus the padding, at least 44 px for `md` and `lg` (`tokens.button-height`).
+ * A link styled as a button, which works in every client: the whole button is clickable, and
+ * classic Outlook still gets its colour and padding. Classic Outlook draws it with square corners.
+ *
+ * @param props - The URL, the label, and the button's style.
+ *
+ * @example
+ * ```tsx
+ * <Button href={data.orderUrl}>{t("viewOrder")}</Button>
+ * <Button href={data.cancelUrl} variant="destructive" size="sm">
+ *   {t("cancelOrder")}
+ * </Button>
+ * ```
  */
 export function Button(props: ButtonProps): IrNode {
   const theme = useTheme()

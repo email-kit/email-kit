@@ -1,5 +1,9 @@
-// @email-kit/components: email-safe components that take every value from the theme (UI-01).
-// The page container is part of every compiled document; Row and Column wait for ADR 0001.
+/**
+ * Email components that work across email clients, classic Outlook included, and take their
+ * colours, fonts and spacing from your theme.
+ *
+ * @packageDocumentation
+ */
 
 export { Button, type ButtonProps } from "./Button.tsx"
 export { Callout, type CalloutProps } from "./Callout.tsx"
@@ -24,7 +28,7 @@ export {
 export { KeyValue, type KeyValueItem, type KeyValueProps } from "./KeyValue.tsx"
 export { LineItems, type LineItemsProps } from "./LineItems.tsx"
 export { Link, type LinkProps } from "./Link.tsx"
-export { List, ListItem, type ListProps } from "./List.tsx"
+export { List, ListItem, type ListItemProps, type ListProps } from "./List.tsx"
 export { OtpCode, type OtpCodeProps } from "./OtpCode.tsx"
 export { Section, type SectionProps } from "./Section.tsx"
 export { Spacer, type SpacerProps } from "./Spacer.tsx"

@@ -4,16 +4,29 @@ import { Block } from "./Block.tsx"
 import { font, PRESENTATION, textCell } from "./style.ts"
 
 export interface CalloutProps {
+  /** The kind of notice, which sets its colours from the theme. */
   readonly tone: "info" | "success" | "warning" | "error"
-  /** Carries the meaning in words, so colour is never the only signal (`a11y.colour-only`) */
+  /**
+   * The title, in bold. Say what kind of notice it is in words, such as "Payment failed", so the
+   * meaning doesn't rely on colour.
+   */
   readonly title: Child
-  /** Inline content: text and links */
+  /** The text under the title, which can hold links and data. */
   readonly children?: Child
 }
 
 /**
- * A notice (UI-20): the status surface with its border, and the title and body in the status ink,
- * the pair the theme checks for contrast. Decorative icons arrive with `Image` (P1-130).
+ * A notice in a coloured box, such as a warning or a confirmation, with a bold title and optional
+ * text under it. Its colours come from the theme, which checks them for contrast.
+ *
+ * @param props - The kind of notice, its title and its text.
+ *
+ * @example
+ * ```tsx
+ * <Callout tone="warning" title={t("notYouTitle")}>
+ *   {t("notYou")}
+ * </Callout>
+ * ```
  */
 export function Callout(props: CalloutProps): IrNode {
   const theme = useTheme()
@@ -37,7 +50,6 @@ export function Callout(props: CalloutProps): IrNode {
                 borderRadius: `${theme.radius.card}px`,
               }}
             >
-              {/* Inside a coloured cell, a margin would show Word's background bleed. */}
               <p
                 {...cell.attrs}
                 style={{

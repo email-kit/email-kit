@@ -8,48 +8,92 @@ import {
 } from "@email-kit/core"
 
 import { Block } from "./Block.tsx"
-import { font } from "./style.ts"
+import { font, PRESENTATION } from "./style.ts"
 
 interface ImageBase {
-  /** An absolute `https:` URL to a PNG, JPEG or GIF */
+  /**
+   * The image's address: an `https:` URL to a PNG, JPEG or GIF file, or a URL field from data.
+   * SVG, WebP and AVIF don't show in some versions of Outlook.
+   */
   readonly src: TextValue
-  /** The display width in px; serve about twice as many pixels for sharp HiDPI screens */
+  /**
+   * The width it's shown at, in pixels. For sharp images on high-resolution screens, make the file
+   * about twice as wide.
+   */
   readonly width: number
+  /** The height it's shown at, in pixels. Its space is kept while the image loads or is blocked. */
   readonly height: number
-  /** Scale down to the container's width on narrow screens. Default: false */
+  /** Whether it shrinks to fit narrow screens, keeping its shape. Defaults to `false`. */
   readonly fluid?: boolean
-  /** The theme's image radius. Word draws square corners. Default: false */
+  /**
+   * Whether it gets the theme's rounded corners. Classic Outlook shows square corners. Defaults to
+   * `false`.
+   */
   readonly rounded?: boolean
+  /**
+   * The alignment. Leave it out to align with the text: left, or right in right-to-left emails.
+   */
   readonly align?: "left" | "center"
 }
 
-/** Adds nothing a reader needs: `alt=""`, so screen readers skip it. */
+/** An image that adds nothing a reader needs, such as a banner. Screen readers skip it. */
 export interface DecorativeImage extends ImageBase {
   readonly kind: "decorative"
 }
 
-/** Carries content: the alt says what the image shows (text in an image: the exact text). */
+/** An image that shows something the reader needs, such as a product photo or a chart. */
 export interface InformativeImage extends ImageBase {
   readonly kind: "informative"
+  /** What the image shows. For an image of text, the text itself. */
   readonly alt: Child
 }
 
-/** A linked image: the alt names the destination or action, never "image of". */
+/** An image that's a link, such as a logo linking to your site. */
 export interface FunctionalImage extends ImageBase {
   readonly kind: "functional"
+  /** Where the link goes or what it does, such as "Acme home page", not "image of a logo". */
   readonly alt: Child
+  /** Where the link goes: a URL, or a URL field from data. */
   readonly href: TextValue
 }
 
+/**
+ * The props of an `Image`. `kind` says what the image is for, which decides whether it needs `alt`
+ * text and an `href`.
+ */
 export type ImageProps = DecorativeImage | InformativeImage | FunctionalImage
 
 const FORMATS = /\.(png|jpe?g|gif)$/i
 
 /**
- * A content image (UI-11). Integer `width` and `height` attributes, because Word ignores CSS
- * widths on images and blocked images keep their space; `display:block` against the baseline
- * gap; styled alt text for classic Outlook, which blocks images by default (research 01 §6.2,
- * 02 A15, A16). Literal URLs are checked here; data-driven ones by the URL policy (P1-181).
+ * An image, with the theme's gap below it. Classic Outlook and some other clients block images
+ * until the reader allows them, so the `alt` text shows in their place, in small muted type.
+ *
+ * @param props - What the image is for, its URL and size, and how to show it.
+ *
+ * @throws {EmailKitError} If `width` or `height` isn't a whole number above 0, if an informative
+ *   or functional image has empty `alt` text, or if a written-out `src` isn't an `https:` URL to a
+ *   PNG, JPEG or GIF file.
+ *
+ * @example
+ * ```tsx
+ * <Image
+ *   kind="functional"
+ *   src="https://example.com/logo.png"
+ *   alt="Acme home page"
+ *   href="https://example.com"
+ *   width={120}
+ *   height={40}
+ * />
+ * <Image
+ *   kind="informative"
+ *   src={data.productImage}
+ *   alt={data.productName}
+ *   width={536}
+ *   height={300}
+ *   fluid
+ * />
+ * ```
  */
 export function Image(props: ImageProps): IrNode {
   const theme = useTheme()
@@ -64,12 +108,11 @@ export function Image(props: ImageProps): IrNode {
       border="0"
       style={{
         display: "block",
-        ...(props.fluid ? { width: "100%", maxWidth: `${props.width}px`, height: "auto" } : {}),
+        ...(props.fluid && { width: "100%", maxWidth: `${props.width}px`, height: "auto" }),
         border: "0",
         outline: "none",
         textDecoration: "none",
         ...(props.rounded && { borderRadius: `${theme.radius.image}px` }),
-        // Shown in place of a blocked image, on the client's ground.
         ...font("bodySm", theme),
         color: role("mutedInk"),
       }}
@@ -77,11 +120,11 @@ export function Image(props: ImageProps): IrNode {
   )
   return (
     <Block bottom={theme.space.stack.md}>
-      {props.align === "center" ? (
-        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+      {props.align ? (
+        <table {...PRESENTATION}>
           <tbody>
             <tr>
-              <td align="center">{link(props, img)}</td>
+              <td align={props.align}>{link(props, img)}</td>
             </tr>
           </tbody>
         </table>
