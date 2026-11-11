@@ -32,12 +32,17 @@ export interface EmailProps<T, Id extends string = string> {
   readonly t: TypedTranslate<Id>
   /** The locale being compiled, such as `"en"` or `"pt-BR"`. */
   readonly locale: string
-  /** Facts about who sends the email, from email-kit.config.ts: product name, postal address, site URL… */
+  /**
+   * Facts about who sends the email, from email-kit.config.ts: product name, postal address, site
+   * URL…
+   */
   readonly sender: Sender
 }
 
+/** An email template made with `defineEmail()`. */
 export interface EmailDefinition<T = unknown> {
   readonly id: string
+  /** Why the email is sent: `"transactional"`, `"marketing"` or `"consent-request"`. */
   readonly purpose: Purpose
   readonly schema: StandardSchemaV1<unknown, T>
   readonly subject: (data: Data<T>, t: Translate, sender: Sender) => Child
@@ -47,22 +52,31 @@ export interface EmailDefinition<T = unknown> {
   readonly component: (props: EmailProps<T>) => Child
 }
 
+/** What `defineEmail()` takes. */
 export type EmailDefinitionInput<S extends StandardSchemaV1, Id extends string = string> = Omit<
   EmailDefinition<StandardSchemaV1.InferOutput<S>>,
   "id" | "schema" | "subject" | "preheader" | "component"
 > & {
+  /**
+   * A unique name in lowercase words joined by hyphens, such as `"order-confirmation"`. Your app
+   * sends it as `emails.orderConfirmation`.
+   */
   readonly id: Id
+  /** The shape of the email's data, from Zod, Valibot, ArkType or any Standard Schema library. */
   readonly schema: S
+  /** Returns the subject line. */
   readonly subject: (
     data: Data<StandardSchemaV1.InferOutput<S>>,
     t: TypedTranslate<Id>,
     sender: Sender,
   ) => Child
+  /** Returns the short preview text that inboxes show after the subject. */
   readonly preheader?: (
     data: Data<StandardSchemaV1.InferOutput<S>>,
     t: TypedTranslate<Id>,
     sender: Sender,
   ) => Child
+  /** Returns the email's content as JSX. */
   readonly component: (props: EmailProps<StandardSchemaV1.InferOutput<S>, Id>) => Child
 }
 
@@ -126,6 +140,7 @@ export function defineEmail<S extends StandardSchemaV1, const Id extends string 
   }) as unknown as EmailDefinition<StandardSchemaV1.InferOutput<S>>
 }
 
+/** Whether a value was made with `defineEmail()`, even by another installed copy of email-kit. */
 export function isEmailDefinition(value: unknown): value is EmailDefinition {
   return typeof value === "object" && value !== null && DEFINITION in value
 }

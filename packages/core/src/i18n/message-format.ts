@@ -16,6 +16,7 @@ export type Part =
       readonly cases: ReadonlyMap<string, readonly Part[]>
     }
 
+/** A `plural` or `select` part. */
 export type Choice = Extract<Part, { kind: "plural" | "select" }>
 
 /**

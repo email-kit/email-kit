@@ -1,4 +1,9 @@
-// email-kit's own JSX runtime, used through `/** @jsxImportSource @email-kit/core */`.
+/**
+ * email-kit's JSX runtime. TypeScript and bundlers import it on their own when `jsxImportSource`
+ * is `@email-kit/core`; templates don't import it.
+ *
+ * @packageDocumentation
+ */
 
 import { type AttrValue, type StyleValue, toAttrs } from "./tree/attributes.ts"
 import type { IrNode } from "./tree/ir.ts"
@@ -6,6 +11,7 @@ import { type Child, fragment, toNodes } from "./tree/nodes.ts"
 
 export type { AttrValue, Child, StyleValue }
 
+/** The props of an HTML element in a template: its attributes, `style` and `children`. */
 export interface IntrinsicProps {
   readonly children?: Child
   readonly style?: string | StyleValue
@@ -15,6 +21,7 @@ export interface IntrinsicProps {
 // biome-ignore lint/suspicious/noExplicitAny: component props are checked by TypeScript at the call site
 type Component = (props: any) => Child
 
+/** The JSX types for templates: every element is an `IrNode`, and any HTML tag is allowed. */
 export declare namespace JSX {
   type Element = IrNode
   type ElementType = string | Component
@@ -27,6 +34,10 @@ export declare namespace JSX {
   }
 }
 
+/**
+ * Turns one JSX element into IR: a component is called with its props, and an HTML tag becomes an
+ * element. Compiled JSX calls it.
+ */
 export function jsx(type: string | Component, props: Readonly<Record<string, unknown>>): IrNode {
   if (typeof type === "function") return fragment(type(props))
 
@@ -39,6 +50,7 @@ export function jsx(type: string | Component, props: Readonly<Record<string, unk
   }
 }
 
+/** The same as `jsx()`. Compiled JSX calls it for elements with several children. */
 export const jsxs: typeof jsx = jsx
 
 /**

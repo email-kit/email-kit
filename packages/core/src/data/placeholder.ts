@@ -88,6 +88,7 @@ export function placeholderInfo(value: unknown): PlaceholderInfo | undefined {
   return (value as unknown as Record<symbol, PlaceholderInfo | undefined>)[INFO]
 }
 
+/** The IR node for a placeholder: `{{path}}`. */
 export function toIrPlaceholder(info: PlaceholderInfo): IrPlaceholder {
   return { kind: "placeholder", path: info.path, scope: info.scope }
 }

@@ -1,3 +1,4 @@
+/** A value set only while `run()` runs, made with `globalSlot()`. */
 export interface GlobalSlot<T> {
   /** The current value, or `undefined` outside `run()`. */
   get(): T | undefined

@@ -1,6 +1,3 @@
-// Control flow: data-dependent branches and lists become mustache-core sections.
-// Conditions that don't depend on data are plain JavaScript and are decided at compile time.
-
 import {
   createPlaceholder,
   type Data,

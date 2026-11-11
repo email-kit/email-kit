@@ -90,13 +90,13 @@ export interface ThemeConfig {
    * Default: email-kit's built-in neutral theme.
    */
   readonly source?: string | { readonly light: string; readonly dark?: string } | ThemeVariables
-  
+
   /**
    * For a `.resolver.json` source only: the context to use for each of its other modifiers, such
    * as `{ brand: "acme" }`.
    */
   readonly input?: Readonly<Record<string, string>>
-  
+
   /**
    * Colours for particular roles, replacing what the source gives. A value is a CSS colour or a
    * `{token}` from the source, for both modes or per mode:
@@ -105,36 +105,35 @@ export interface ThemeConfig {
   readonly roles?: Readonly<
     Partial<Record<ThemeRole, string | { readonly light?: string; readonly dark?: string }>>
   >
-  
+
   readonly typography?: {
-  
     /**
      * Font families for each stack, ending in a generic family such as `sans-serif`. Classic
      * Outlook uses the last named family.
      */
     readonly stacks?: Readonly<Partial<Record<FontStackName, readonly string[]>>>
-  
+
     /** Changes to steps of the type scale: `{ h1: { sizePx: 32 } }`. */
     readonly scale?: Readonly<Partial<Record<TypeStep, Partial<TypeStyle>>>>
   }
-  
+
   /**
    * The base corner radius in pixels. The other radii are scaled from it. Default: the source's
    * radius, or `10`.
    */
   readonly radius?: number
-  
+
   readonly layout?: {
     /** The email's content width in pixels. Default: `600`. */
     readonly container?: number
   }
-  
+
   /**
    * `"authored"` writes dark-mode CSS from the source's dark colours. `"none"` writes no dark
    * mode. Default: `"authored"` when the source has dark colours, otherwise `"none"`.
    */
   readonly dark?: "authored" | "none"
-  
+
   /** Also write the resolved theme to `theme.json` in the output folder. Default: `false`. */
   readonly emit?: boolean
 }

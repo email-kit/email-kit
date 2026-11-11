@@ -27,6 +27,7 @@ export type MessageParam = string | number | Placeholder<string> | Placeholder<n
  */
 export type Translate = (key: string, params?: Readonly<Record<string, MessageParam>>) => Message
 
+/** A locale's messages for one template, by key, written as ICU messages. */
 export type Messages = Readonly<Record<string, string>>
 
 /**

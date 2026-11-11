@@ -1,6 +1,8 @@
-// The Standard Schema v1 interface (https://standardschema.dev, MIT). Copied rather than imported,
-// as the spec recommends for libraries, so @email-kit/core has no dependencies.
-
+/**
+ * The shared interface that schema libraries such as Zod, Valibot and ArkType implement, so
+ * `defineEmail()` accepts a schema from any of them. Standard Schema v1, from
+ * https://standardschema.dev (MIT), copied in so that @email-kit/core has no dependencies.
+ */
 export interface StandardSchemaV1<Input = unknown, Output = Input> {
   readonly "~standard": StandardSchemaV1.Props<Input, Output>
 }

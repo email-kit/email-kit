@@ -25,6 +25,7 @@ export interface Sender {
   readonly siteUrl: TextValue
 }
 
+/** The name of one sender value, such as `"productName"`. */
 export type SenderKey = keyof Sender
 
 const KEYS: Readonly<Record<SenderKey, true>> = {
@@ -38,16 +39,24 @@ const KEYS: Readonly<Record<SenderKey, true>> = {
   siteUrl: true,
 }
 
+/** Every sender key. */
 export const SENDER_KEYS: readonly SenderKey[] = Object.keys(KEYS) as SenderKey[]
 
 /** The top-level data key for the values `render()` adds, such as runtime sender values. */
 export const RESERVED_KEY = "_ek"
 
+/** The sender values from the config. */
 export interface SenderValues {
+  /** The values set as fixed text. */
   readonly constants: Readonly<Partial<Record<SenderKey, string>>>
+  /** The keys set to `{ runtime: true }`, which the backend passes when it sends. */
   readonly runtime: readonly SenderKey[]
 }
 
+/**
+ * Makes the `sender` a template gets. Each value is its fixed text or a placeholder; reading one
+ * the config doesn't set throws.
+ */
 export function createSender(values: SenderValues): Sender {
   const sender: Partial<Record<SenderKey, TextValue>> = {}
   for (const key of SENDER_KEYS) {
