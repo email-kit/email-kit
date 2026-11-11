@@ -9,7 +9,7 @@ import type { FontStackName, ThemeRole, TypeStep, TypeStyle } from "./theme.ts"
 export interface ThemeContext {
   /** The light colour of each role, as a CSS colour. To colour a style, use `role()` instead. */
   readonly roles: Readonly<Record<ThemeRole, string>>
-  
+
   readonly typography: {
     /**
      * The font families of each stack, and `msoFallback`: the one family classic Outlook uses,
@@ -18,7 +18,7 @@ export interface ThemeContext {
     readonly stacks: Readonly<
       Record<FontStackName, { readonly families: readonly string[]; readonly msoFallback: string }>
     >
-    
+
     /** The style of each step of the type scale. */
     readonly scale: Readonly<Record<TypeStep, TypeStyle>>
   }
@@ -26,13 +26,13 @@ export interface ThemeContext {
   readonly space: {
     /** Side padding on small screens. */
     readonly gutterMobile: number
-    
+
     /** Side padding on large screens. */
     readonly gutterDesktop: number
-    
+
     /** Gaps between stacked blocks, such as paragraphs and headings. */
     readonly stack: { readonly sm: number; readonly md: number; readonly lg: number }
-    
+
     /** The gap between sections. */
     readonly section: number
   }
@@ -47,14 +47,14 @@ export interface ThemeContext {
       number
     >
   >
-  
+
   readonly borderWidth: { readonly hairline: number; readonly strong: number }
-  
+
   readonly layout: {
     /** The email's content width. */
     readonly container: number
   }
-  
+
   readonly components: {
     /**
      * Each button size's minimum height, side padding (`padX`), top and bottom padding (`padY`)
@@ -71,10 +71,10 @@ export interface ThemeContext {
         }
       >
     >
-  
+
     /** Whether links are underlined. */
     readonly link: { readonly underline: boolean }
-  
+
     /** The text style and background of one-time codes. */
     readonly otp: { readonly font: TypeStep; readonly surface: "codeSurface" }
   }
