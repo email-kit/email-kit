@@ -1,7 +1,7 @@
 import { type Child, type IrNode, role, useTheme } from "@email-kit/core"
 
 import { Block } from "./Block.tsx"
-import { font, PRESENTATION, textCell } from "./style.ts"
+import { PRESENTATION, textBlock } from "./style.ts"
 
 export interface OtpCodeProps {
   /** The code, such as `482913`. Give it with no spaces or hyphens: the gaps are added by style. */
@@ -29,15 +29,12 @@ export function OtpCode(props: OtpCodeProps): IrNode {
   const theme = useTheme()
   const { stack } = theme.space
   const otp = theme.components.otp
-  const cell = textCell()
-  const code = textCell("ltr")
+  const label = textBlock("body", "ink")
+  const code = textBlock(otp.font, "ink", "ltr")
   return (
     <>
       <Block bottom={stack.sm}>
-        <p
-          {...cell.attrs}
-          style={{ margin: "0", ...cell.style, ...font("body", theme), color: role("ink") }}
-        >
+        <p {...label.attrs} style={label.style}>
           {props.label}
         </p>
       </Block>
@@ -55,14 +52,7 @@ export function OtpCode(props: OtpCodeProps): IrNode {
               >
                 <p
                   {...code.attrs}
-                  style={{
-                    margin: "0",
-                    ...code.style,
-                    ...font(otp.font, theme),
-                    color: role("ink"),
-                    WebkitUserSelect: "all",
-                    userSelect: "all",
-                  }}
+                  style={{ ...code.style, WebkitUserSelect: "all", userSelect: "all" }}
                 >
                   {props.code}
                 </p>

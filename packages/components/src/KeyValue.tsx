@@ -1,6 +1,6 @@
 import { type Child, Conditional, type IrNode, role, useTheme } from "@email-kit/core"
 
-import { font, PRESENTATION, textCell } from "./style.ts"
+import { PRESENTATION, textBlock } from "./style.ts"
 
 /** One row of a `KeyValue`. */
 export interface KeyValueItem {
@@ -69,13 +69,9 @@ interface RowProps {
 }
 
 function InlineRow({ item }: RowProps): IrNode {
-  const theme = useTheme()
-  const cell = textCell()
+  const text = textBlock("body", "ink")
   return (
-    <p
-      {...cell.attrs}
-      style={{ margin: "0", ...cell.style, ...font("body", theme), color: role("ink") }}
-    >
+    <p {...text.attrs} style={text.style}>
       <span style={{ color: role("mutedInk") }}>{item.label}:</span> {value(item)}
     </p>
   )
@@ -83,21 +79,15 @@ function InlineRow({ item }: RowProps): IrNode {
 
 /** The label above the value in HTML, and `Label: value` on one line in the plain-text part. */
 function StackedRow({ item }: RowProps): IrNode {
-  const theme = useTheme()
-  const cell = textCell()
+  const label = textBlock("caption", "mutedInk")
+  const text = textBlock("body", "ink")
   return (
     <>
       <Conditional when="htmlOnly">
-        <p
-          {...cell.attrs}
-          style={{ margin: "0", ...cell.style, ...font("caption", theme), color: role("mutedInk") }}
-        >
+        <p {...label.attrs} style={label.style}>
           {item.label}
         </p>
-        <p
-          {...cell.attrs}
-          style={{ margin: "0", ...cell.style, ...font("body", theme), color: role("ink") }}
-        >
+        <p {...text.attrs} style={text.style}>
           {value(item)}
         </p>
       </Conditional>

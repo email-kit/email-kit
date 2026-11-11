@@ -1,9 +1,10 @@
 // One template × one locale → the four parts of an email, as mustache-core templates (P0-03).
 
-import type { EmailDefinition } from "@email-kit/core"
+import type { EmailDefinition, FontStackName } from "@email-kit/core"
 import {
   EmailKitError,
   evaluate,
+  fontClass,
   type Messages,
   type SenderValues,
   type ThemeContext,
@@ -12,7 +13,7 @@ import { parse } from "@email-kit/dialect"
 import { pluralRules } from "../i18n/plurals.ts"
 import { loadTheme, type Theme } from "../theme/theme.ts"
 import { checkDerived } from "./derived.ts"
-import { msoFontFamily, renderDocument } from "./document.ts"
+import { type DocumentOptions, msoFontFamily, renderDocument } from "./document.ts"
 import type { Field } from "./schema.ts"
 import { renderLine, renderTextPart } from "./text.ts"
 
@@ -61,6 +62,21 @@ export function isRtl(locale: string): boolean {
   return RTL.has(locale.split("-")[0] ?? "")
 }
 
+/**
+ * The fonts classic Outlook gets: the body text's stack for all text, and each stack's own for the
+ * elements with its class.
+ */
+function outlookFonts(theme: Theme): Pick<DocumentOptions, "outlookFont" | "outlookClassFonts"> {
+  const { stacks, scale } = theme.typography
+  const names = Object.keys(stacks) as FontStackName[]
+  return {
+    outlookFont: msoFontFamily(stacks[scale.body.stack]),
+    outlookClassFonts: Object.fromEntries(
+      names.map((name) => [fontClass(name), msoFontFamily(stacks[name])]),
+    ),
+  }
+}
+
 export function compileEmail<T>(
   definition: EmailDefinition<T>,
   options: CompileOptions,
@@ -90,7 +106,7 @@ export function compileEmail<T>(
     body: ir.body,
     // Classic Outlook stays a target by default until the targets config (CFG-05, M1.2).
     outlookClassic: true,
-    outlookFont: msoFontFamily(theme.typography.stacks[theme.typography.scale.body.stack]),
+    ...outlookFonts(theme),
     dark: theme.dark === "authored" ? theme.roles.dark : undefined,
     ground: { canvas: theme.roles.light.canvas, ink: theme.roles.light.ink },
     container: {

@@ -41,6 +41,7 @@ export type {
 export { Fragment } from "./jsx-runtime.ts"
 export { EmailKitError } from "./shared/errors.ts"
 export { type ThemeContext, useDirection, useTheme } from "./theme/context.ts"
+export type { FontStackValue } from "./theme/font-stack.ts"
 export { type RoleColour, role } from "./theme/role.ts"
 export type {
   FontStackName,

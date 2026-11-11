@@ -6,6 +6,7 @@ import {
 } from "../data/placeholder.ts"
 import { EmailKitError } from "../shared/errors.ts"
 import { useTheme } from "../theme/context.ts"
+import { type FontStackValue, familyList, fontClass, fontStackOf } from "../theme/font-stack.ts"
 import { type RoleColour, roleClass, roleOf } from "../theme/role.ts"
 import { type IrAttr, type IrNode, isIrNode } from "./ir.ts"
 import { toNodes } from "./nodes.ts"
@@ -25,14 +26,16 @@ export type AttrValue =
   | IrNode
 
 /**
- * An inline style, with property names in camelCase. A value is text, a number, or a theme colour
- * from `role()`. Numbers are written as they are, so give lengths as text: `"16px"`, not `16`.
+ * An inline style, with property names in camelCase. A value is text, a number, a theme colour
+ * from `role()`, or a theme font from `font()`. Numbers are written as they are, so give lengths as
+ * text: `"16px"`, not `16`.
  */
-export type StyleValue = Readonly<Record<string, string | number | RoleColour>>
+export type StyleValue = Readonly<Record<string, string | number | RoleColour | FontStackValue>>
 
 /**
- * Turns an element's props into attributes. A `style` object becomes CSS text, and each `role()`
- * colour in it adds a class to `class` for the dark-mode CSS.
+ * Turns an element's props into attributes. A `style` object becomes CSS text. Each `role()`
+ * colour in it adds a class for the dark-mode CSS, and a font stack other than the body's adds a
+ * class for classic Outlook's font rule.
  */
 export function toAttrs(
   tag: string,
@@ -101,6 +104,12 @@ function styleText(tag: string, style: StyleValue): { css: string; classes: stri
       if (name) {
         classes.push(roleClass(property, name))
         return `${property}:${useTheme().roles[name]}`
+      }
+      const stack = fontStackOf(value)
+      if (stack) {
+        const { typography } = useTheme()
+        if (stack !== typography.scale.body.stack) classes.push(fontClass(stack))
+        return `${property}:${familyList(typography.stacks[stack].families)}`
       }
       return `${property}:${value as string | number}`
     })

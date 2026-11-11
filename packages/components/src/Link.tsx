@@ -14,7 +14,7 @@ export interface LinkProps {
 
 /**
  * A link inside text, in the theme's link colour. It's underlined unless the theme turns that off,
- * so readers can tell it from text without relying on colour.
+ * so readers can tell it from text without relying on colour. In webmail it opens in a new tab.
  *
  * @param props - The URL, the link text and an optional tooltip.
  *
@@ -30,6 +30,8 @@ export function Link(props: LinkProps): IrNode {
   return (
     <a
       href={props.href}
+      target="_blank"
+      rel="noopener"
       title={props.title}
       style={{ color: role("link"), textDecoration: underline ? "underline" : "none" }}
     >

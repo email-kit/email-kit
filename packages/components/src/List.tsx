@@ -1,6 +1,6 @@
-import { type Child, type IrNode, role, useTheme } from "@email-kit/core"
+import { type Child, type IrNode, useTheme } from "@email-kit/core"
 
-import { font, textCell } from "./style.ts"
+import { textBlock } from "./style.ts"
 
 export interface ListProps {
   /** The items: `ListItem`s, or an `<Each>` that makes one for each item in a data list. */
@@ -58,18 +58,9 @@ export interface ListItemProps {
  * ```
  */
 export function ListItem(props: ListItemProps): IrNode {
-  const theme = useTheme()
-  const cell = textCell()
+  const text = textBlock("body", "ink")
   return (
-    <li
-      {...cell.attrs}
-      style={{
-        margin: `0 0 ${theme.space.stack.sm}px`,
-        ...cell.style,
-        ...font("body", theme),
-        color: role("ink"),
-      }}
-    >
+    <li {...text.attrs} style={{ ...text.style, margin: `0 0 ${useTheme().space.stack.sm}px` }}>
       {props.children}
     </li>
   )

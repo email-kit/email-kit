@@ -1,11 +1,22 @@
-import { type ThemeContext, type TypeStep, useDirection, useTheme } from "@email-kit/core"
+import {
+  type FontStackValue,
+  type RoleColour,
+  role,
+  type ThemeContext,
+  type ThemeRole,
+  type TypeStep,
+  useDirection,
+  useTheme,
+} from "@email-kit/core"
+import { fontStack } from "@email-kit/core/internal"
 
 /** A non-breaking space. An empty cell holds one, or Outlook collapses it. */
 export const NBSP = "\u00a0"
 
 /**
  * The inline styles for a step of the theme's type scale: font family, size, line height, weight
- * and letter spacing, plus the rule that makes classic Outlook keep the line height exactly.
+ * and letter spacing, plus the rule that makes classic Outlook keep the line height exactly. If the
+ * step's font stack isn't the body text's, classic Outlook still gets a font from that stack.
  *
  * @param step - The type-scale step, such as `"body"` or `"caption"`.
  * @param theme - The theme, when you already have it from `useTheme()`.
@@ -18,11 +29,10 @@ export const NBSP = "\u00a0"
 export function font(
   step: TypeStep,
   theme: ThemeContext = useTheme(),
-): Record<string, string | number> {
+): Record<string, string | number | FontStackValue> {
   const type = theme.typography.scale[step]
-  const families = theme.typography.stacks[type.stack].families
   return {
-    fontFamily: families.map((family) => (/\s/.test(family) ? `'${family}'` : family)).join(", "),
+    fontFamily: fontStack(type.stack),
     fontSize: `${type.sizePx}px`,
     lineHeight: `${type.lineHeightPx}px`,
     fontWeight: type.weight,
@@ -58,4 +68,34 @@ export function textCell(dir: "rtl" | "ltr" = "rtl"): {
   return useDirection() === "rtl"
     ? { attrs: { dir }, style: { textAlign: "right" } }
     : { attrs: {}, style: {} }
+}
+
+/**
+ * The attributes and style for a block of text, such as a paragraph or a heading: no margin, a
+ * step of the type scale, a theme colour, and the right-to-left handling of `textCell()`. Spread
+ * `attrs` onto the element, and add to `style` after spreading it.
+ *
+ * @param step - The type-scale step.
+ * @param colour - The role of the text colour, such as `"ink"`.
+ * @param dir - As for `textCell()`: `"ltr"` for content that reads left to right in any language.
+ *
+ * @example
+ * ```tsx
+ * const text = textBlock("body", "ink")
+ * <p {...text.attrs} style={{ ...text.style, fontWeight: 700 }}>{props.title}</p>
+ * ```
+ */
+export function textBlock(
+  step: TypeStep,
+  colour: ThemeRole,
+  dir: "rtl" | "ltr" = "rtl",
+): {
+  readonly attrs: { readonly dir?: "rtl" | "ltr" }
+  readonly style: Readonly<Record<string, string | number | RoleColour | FontStackValue>>
+} {
+  const cell = textCell(dir)
+  return {
+    attrs: cell.attrs,
+    style: { margin: "0", ...cell.style, ...font(step), color: role(colour) },
+  }
 }

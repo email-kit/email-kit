@@ -77,6 +77,14 @@ describe("OtpCode", () => {
     expect(email.body).toContain('class="ek-bg--codeSurface"')
     expect(email.html).toMatch(/\[data-ogsb\] \.ek-bg--codeSurface \{/)
   })
+
+  it("keeps its monospaced font in classic Outlook, through a class the font rule targets", () => {
+    expect(email.body).toMatch(/<p [^>]*class="ek-font--mono ek-c--ink">\{\{code\}\}<\/p>/)
+    expect(email.html).toContain(
+      "{ font-family: Arial, sans-serif !important; } .ek-font--mono { font-family: 'Courier New', monospace !important; }</style><![endif]-->",
+    )
+    expect(email.body.match(/ek-font--/g)).toHaveLength(1)
+  })
 })
 
 describe("KeyValue", () => {

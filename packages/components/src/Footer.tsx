@@ -2,7 +2,7 @@ import { type Child, type IrNode, role, type TextValue, useTheme } from "@email-
 
 import { Block } from "./Block.tsx"
 import { Link } from "./Link.tsx"
-import { font, PRESENTATION, textCell } from "./style.ts"
+import { PRESENTATION, textBlock } from "./style.ts"
 
 /** A link in a `Footer`. */
 export interface FooterLink {
@@ -104,15 +104,10 @@ interface FooterLineProps {
 
 /** One part of the footer: a paragraph in footer type, with the class `email-kit check` finds. */
 function FooterLine(props: FooterLineProps): IrNode {
-  const theme = useTheme()
-  const cell = textCell()
+  const text = textBlock("footer", "mutedInk")
   return (
-    <Block bottom={props.last ? 0 : theme.space.stack.sm}>
-      <p
-        {...cell.attrs}
-        class={`ek-footer-${props.part}`}
-        style={{ margin: "0", ...cell.style, ...font("footer", theme), color: role("mutedInk") }}
-      >
+    <Block bottom={props.last ? 0 : useTheme().space.stack.sm}>
+      <p {...text.attrs} class={`ek-footer-${props.part}`} style={text.style}>
         {props.children}
       </p>
     </Block>

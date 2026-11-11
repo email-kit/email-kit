@@ -29,8 +29,16 @@ export interface DocumentOptions {
   readonly body: IrNode
   /** Classic Outlook (Word) is a target: the DPI fix and the MSO font override (CFG-05). */
   readonly outlookClassic: boolean
-  /** The `font-family` classic Outlook gets for all text, from `msoFontFamily()`. Defaults to Arial. */
+  /**
+   * The `font-family` classic Outlook gets for all text, from `msoFontFamily()`. Defaults to
+   * Arial.
+   */
   readonly outlookFont?: string | undefined
+  /**
+   * The `font-family` classic Outlook gets for elements with each font class, such as
+   * `ek-font--mono`, from `msoFontFamily()`. Only classes the body uses get a rule.
+   */
+  readonly outlookClassFonts?: Readonly<Record<string, string>> | undefined
   /** Only for templates that ship a dark palette (research 02 D2, D6). */
   readonly colorScheme?: "light dark" | "light only" | undefined
   /** Enhancement rules for the head <style> (BLD-03); declarations are inline already. */
@@ -112,6 +120,18 @@ const DATA_DETECTOR_RESET =
   "font-size: inherit !important; font-family: inherit !important; font-weight: inherit !important; " +
   "line-height: inherit !important; }"
 
+/**
+ * Classic Outlook's font rules: the body font for all text, then a rule for each font class the
+ * body uses. A class beats a tag name, so those elements keep their own stack's font.
+ */
+function msoFontRules(doc: DocumentOptions, body: string): string[] {
+  const all = `body, table, td, th, p, a, li, h1, h2, h3, h4, h5, h6 { font-family: ${doc.outlookFont ?? "Arial, sans-serif"} !important; }`
+  const classes = Object.entries(doc.outlookClassFonts ?? {})
+    .filter(([name]) => body.includes(name))
+    .map(([name, family]) => `.${name} { font-family: ${family} !important; }`)
+  return [all, ...classes]
+}
+
 export function renderDocument(doc: DocumentOptions): string {
   const body = renderHtml(doc.body).trimEnd()
   const ground = doc.ground
@@ -144,10 +164,7 @@ export function renderDocument(doc: DocumentOptions): string {
     ...(colorScheme ? [`<meta name="color-scheme" content="${colorScheme}">`] : []),
     `<title>${renderHtml(doc.subject)}</title>`,
     ...(doc.outlookClassic
-      ? [
-          DPI,
-          `<!--[if mso]><style>body, table, td, th, p, a, li, h1, h2, h3, h4, h5, h6 { font-family: ${doc.outlookFont ?? "Arial, sans-serif"} !important; }</style><![endif]-->`,
-        ]
+      ? [DPI, `<!--[if mso]><style>${msoFontRules(doc, body).join(" ")}</style><![endif]-->`]
       : []),
     `<style>\n${styles.join("\n")}\n</style>`,
     "</head>",

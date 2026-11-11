@@ -1,7 +1,7 @@
-import { type Child, type IrNode, role, type ThemeRole, useTheme } from "@email-kit/core"
+import { type Child, type IrNode, type ThemeRole, useTheme } from "@email-kit/core"
 
 import { Block } from "./Block.tsx"
-import { font, textCell } from "./style.ts"
+import { textBlock } from "./style.ts"
 
 export interface TextProps {
   /** The paragraph's text, which can hold links and data. */
@@ -43,20 +43,10 @@ const TONES: Readonly<Record<NonNullable<TextProps["tone"]>, ThemeRole>> = {
  * ```
  */
 export function Text(props: TextProps): IrNode {
-  const theme = useTheme()
-  const cell = textCell()
+  const text = textBlock(props.size ?? "body", TONES[props.tone ?? "default"])
   return (
-    <Block bottom={theme.space.stack.md}>
-      <p
-        {...cell.attrs}
-        style={{
-          margin: "0",
-          ...cell.style,
-          ...font(props.size ?? "body", theme),
-          color: role(TONES[props.tone ?? "default"]),
-          ...(props.align && { textAlign: props.align }),
-        }}
-      >
+    <Block bottom={useTheme().space.stack.md}>
+      <p {...text.attrs} style={{ ...text.style, ...(props.align && { textAlign: props.align }) }}>
         {props.children}
       </p>
     </Block>

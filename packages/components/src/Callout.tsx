@@ -1,7 +1,8 @@
 import { type Child, type IrNode, role, useTheme } from "@email-kit/core"
+import { toNodes } from "@email-kit/core/internal"
 
 import { Block } from "./Block.tsx"
-import { font, PRESENTATION, textCell } from "./style.ts"
+import { PRESENTATION, textBlock } from "./style.ts"
 
 export interface CalloutProps {
   /** The kind of notice, which sets its colours from the theme. */
@@ -11,7 +12,11 @@ export interface CalloutProps {
    * meaning doesn't rely on colour.
    */
   readonly title: Child
-  /** The text under the title, which can hold links and data. */
+  /**
+   * The text under the title, which can hold links and data. Leave it out for a title on its own.
+   * For text that's only sometimes there, wrap the whole `Callout` in `<If>`: an `<If>` inside it
+   * still leaves the gap under the title.
+   */
   readonly children?: Child
 }
 
@@ -32,8 +37,9 @@ export function Callout(props: CalloutProps): IrNode {
   const theme = useTheme()
   const { stack } = theme.space
   const status = `status.${props.tone}` as const
-  const hasBody = props.children !== undefined
-  const cell = textCell()
+  const hasBody = !isEmpty(props.children)
+  const title = textBlock("body", `${status}.ink`)
+  const body = textBlock("bodySm", `${status}.ink`)
   return (
     <Block bottom={stack.md}>
       <table {...PRESENTATION}>
@@ -51,28 +57,17 @@ export function Callout(props: CalloutProps): IrNode {
               }}
             >
               <p
-                {...cell.attrs}
+                {...title.attrs}
                 style={{
-                  margin: "0",
-                  ...cell.style,
-                  ...(hasBody && { paddingBottom: `${stack.sm}px` }),
-                  ...font("body", theme),
+                  ...title.style,
                   fontWeight: 700,
-                  color: role(`${status}.ink`),
+                  ...(hasBody && { paddingBottom: `${stack.sm}px` }),
                 }}
               >
                 {props.title}
               </p>
               {hasBody && (
-                <p
-                  {...cell.attrs}
-                  style={{
-                    margin: "0",
-                    ...cell.style,
-                    ...font("bodySm", theme),
-                    color: role(`${status}.ink`),
-                  }}
-                >
+                <p {...body.attrs} style={body.style}>
                   {props.children}
                 </p>
               )}
@@ -81,5 +76,12 @@ export function Callout(props: CalloutProps): IrNode {
         </tbody>
       </table>
     </Block>
+  )
+}
+
+/** Whether a child renders nothing, such as `null`, `false`, `""` or an empty fragment. */
+function isEmpty(child: Child): boolean {
+  return toNodes(child).every(
+    (node) => node.kind === "fragment" && node.children.every((inner) => isEmpty(inner)),
   )
 }
