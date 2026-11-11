@@ -56,32 +56,9 @@ export async function run(args: readonly string[], io: Io): Promise<number> {
     .option("--config <path>", "Name the config file something other than email-kit.config.ts")
     .option("--force", "Overwrite an existing config")
     .option("--no-install", "Don't run the package manager after adding the dependencies")
-    .action(
-      (options: {
-        yes?: boolean
-        dir?: string
-        config?: string
-        force?: boolean
-        install?: boolean
-      }) => {
-        pending = (async () => {
-          try {
-            return await init(
-              { cwd: io.cwd, ...options },
-              {
-                out: io.out,
-                err: io.err,
-                prompter: io.prompter ?? terminalPrompter,
-                ...(io.color !== undefined && { color: io.color }),
-              },
-            )
-          } catch (error) {
-            io.err(formatError(error, io))
-            return 1
-          }
-        })()
-      },
-    )
+    .action((options: InitFlags) => {
+      pending = initCommand(options, io)
+    })
   cli
     .command("new <id>", "Add a template, with its messages in every locale and a fixture")
     .option("--config <path>", "Use this config file instead of ./email-kit.config.ts")
@@ -140,6 +117,14 @@ interface CompileFlags {
   readonly verbose?: boolean
 }
 
+interface InitFlags {
+  readonly yes?: boolean
+  readonly dir?: string
+  readonly config?: string
+  readonly force?: boolean
+  readonly install?: boolean
+}
+
 interface CheckFlags {
   readonly config?: string
   readonly json?: boolean
@@ -190,6 +175,24 @@ async function tokensCommand(options: { config?: string }, io: Io): Promise<numb
     const findings = checkPermutations(theme, config.theme, config.dir)
     io.out(formatTokens(theme, findings))
     return findings.some((finding) => finding.level === "error") ? 1 : 0
+  } catch (error) {
+    io.err(formatError(error, io))
+    return 1
+  }
+}
+
+/** `email-kit init`: asks in the terminal unless `io` brings its own prompter. */
+async function initCommand(options: InitFlags, io: Io): Promise<number> {
+  try {
+    return await init(
+      { cwd: io.cwd, ...options },
+      {
+        out: io.out,
+        err: io.err,
+        prompter: io.prompter ?? terminalPrompter,
+        ...(io.color !== undefined && { color: io.color }),
+      },
+    )
   } catch (error) {
     io.err(formatError(error, io))
     return 1
