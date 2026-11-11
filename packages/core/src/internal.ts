@@ -1,77 +1,31 @@
-// Compiler-facing API: not for template authors, and not covered by semver until v1.
+/**
+ * What the email-kit CLI needs from core. It isn't for templates, and it can change in any
+ * release.
+ *
+ * @packageDocumentation
+ */
 
-import type { EmailDefinition } from "./define.ts"
-import { createTranslate, type Messages, type PluralSupport } from "./i18n.ts"
-import type { IrNode } from "./ir.ts"
-import { fragment } from "./jsx-runtime.ts"
-import { createPlaceholder, type Data } from "./placeholder.ts"
-import { createPlatform, type PlatformValues } from "./platform.ts"
-import { withScopes } from "./scope.ts"
-import { type ThemeContext, withDirection, withTheme } from "./theme-context.ts"
-
-export { isEmailDefinition } from "./define.ts"
-export { EmailKitError, isEmailKitError } from "./errors.ts"
 export {
-  expansion,
-  type Messages,
-  messageArguments,
-  type PluralSupport,
-  pseudoMessage,
-  selectKey,
-} from "./i18n.ts"
-export * from "./ir.ts"
-export {
-  PLATFORM_KEYS,
-  type PlatformKey,
-  type PlatformValues,
   RESERVED_KEY,
-} from "./platform.ts"
-export { parseRoleClass, roleClass, type ThemeContext } from "./theme-context.ts"
-
-export interface EvaluatedEmail {
-  readonly subject: IrNode
-  readonly preheader: IrNode | undefined
-  readonly body: IrNode
-}
-
-export interface EvaluateOptions {
-  readonly locale: string
-  readonly messages: Messages
-  readonly platform?: PlatformValues
-  /** The resolved theme components read with useTheme() */
-  readonly theme?: ThemeContext
-  /** The locale's CLDR plural rules, for {n, plural, …} (ADR 0003) */
-  readonly plurals?: PluralSupport
-  /** Called with each message key t() resolves, for i18n.unused-keys */
-  readonly onMessage?: (key: string) => void
-  /** The locale's writing direction, read with useDirection(). Default: `ltr` */
-  readonly dir?: "ltr" | "rtl"
-}
-
-/** Runs a template once for one locale, with `data` as placeholders, and returns its IR. */
-export function evaluate<T>(
-  definition: EmailDefinition<T>,
-  options: EvaluateOptions,
-): EvaluatedEmail {
-  return withDirection(options.dir ?? "ltr", () =>
-    withTheme(options.theme, () =>
-      withScopes(() => {
-        const data = createPlaceholder(0) as Data<T>
-        const t = createTranslate(
-          options.locale,
-          options.messages,
-          options.plurals,
-          options.onMessage,
-        )
-        const platform = createPlatform(options.platform ?? { constants: {}, runtime: [] })
-        return {
-          subject: fragment(definition.subject(data, t, platform)),
-          preheader: definition.preheader
-            ? fragment(definition.preheader(data, t, platform))
-            : undefined,
-          body: fragment(definition.component({ data, t, locale: options.locale, platform })),
-        }
-      }),
-    ),
-  )
-}
+  SENDER_KEYS,
+  type SenderKey,
+  type SenderValues,
+} from "./config/sender.ts"
+export { isEmailDefinition } from "./definition/define.ts"
+export { type EvaluatedEmail, type EvaluateOptions, evaluate } from "./definition/evaluate.ts"
+export { messageArguments } from "./i18n/message-format.ts"
+export { pseudoMessage } from "./i18n/pseudo.ts"
+export type { Messages, PluralSupport } from "./i18n/translate.ts"
+export { EmailKitError, isEmailKitError } from "./shared/errors.ts"
+export type { ThemeContext } from "./theme/context.ts"
+export { parseRoleClass, roleClass } from "./theme/role.ts"
+export type {
+  IrAttr,
+  IrConditional,
+  IrElement,
+  IrFragment,
+  IrNode,
+  IrPlaceholder,
+  IrSection,
+  IrText,
+} from "./tree/ir.ts"
