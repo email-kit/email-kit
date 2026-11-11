@@ -1,22 +1,22 @@
-import { type Child, type IrNode, type PlatformText, role, useTheme } from "@email-kit/core"
+import { type Child, type IrNode, role, type TextValue, useTheme } from "@email-kit/core"
 
 import { Block } from "./Block.tsx"
 import { Link } from "./Link.tsx"
 import { font, PRESENTATION, textCell } from "./style.ts"
 
 export interface FooterLink {
-  readonly href: PlatformText
+  readonly href: TextValue
   readonly label: Child
 }
 
 export interface FooterProps {
-  /** Who sends the email: the legal name or brand, such as `platform.legalName` */
+  /** Who sends the email: the legal name or brand, such as `sender.legalName` */
   readonly sender: Child
   /** Why the reader got it, naming the account or relationship (research 03, 05 §13) */
   readonly reason: Child
-  /** The postal address, such as `platform.postalAddress` */
+  /** The postal address, such as `sender.postalAddress` */
   readonly address?: Child
-  /** Help or contact first, then privacy, such as `{ href: platform.helpUrl, label: t("help") }` */
+  /** Help or contact first, then privacy, such as `{ href: sender.helpUrl, label: t("help") }` */
   readonly links?: readonly FooterLink[]
 }
 

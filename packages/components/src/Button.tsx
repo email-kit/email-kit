@@ -1,9 +1,9 @@
-import { type Child, type IrNode, type PlatformText, role, useTheme } from "@email-kit/core"
+import { type Child, type IrNode, role, type TextValue, useTheme } from "@email-kit/core"
 
 import { font, PRESENTATION } from "./style.ts"
 
 export interface ButtonProps {
-  readonly href: PlatformText
+  readonly href: TextValue
   /** A verb-first label of three words or fewer (research 05 §6) */
   readonly children?: Child
   /** One primary action per email. Default: `primary` */

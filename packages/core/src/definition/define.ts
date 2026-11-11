@@ -1,4 +1,4 @@
-import type { Platform } from "../config/platform.ts"
+import type { Sender } from "../config/sender.ts"
 import type { Data } from "../data/placeholder.ts"
 import type { Translate, TypedTranslate } from "../i18n/translate.ts"
 import { EmailKitError } from "../shared/errors.ts"
@@ -32,16 +32,16 @@ export interface EmailProps<T, Id extends string = string> {
   readonly t: TypedTranslate<Id>
   /** The locale being compiled, such as `"en"` or `"pt-BR"`. */
   readonly locale: string
-  /** Facts about the sender from email-kit.config.ts: product name, postal address, site URL… */
-  readonly platform: Platform
+  /** Facts about who sends the email, from email-kit.config.ts: product name, postal address, site URL… */
+  readonly sender: Sender
 }
 
 export interface EmailDefinition<T = unknown> {
   readonly id: string
   readonly purpose: Purpose
   readonly schema: StandardSchemaV1<unknown, T>
-  readonly subject: (data: Data<T>, t: Translate, platform: Platform) => Child
-  readonly preheader?: (data: Data<T>, t: Translate, platform: Platform) => Child
+  readonly subject: (data: Data<T>, t: Translate, sender: Sender) => Child
+  readonly preheader?: (data: Data<T>, t: Translate, sender: Sender) => Child
   /** Named sample data, used for previews and checks. */
   readonly fixtures: Readonly<Record<string, T>>
   readonly component: (props: EmailProps<T>) => Child
@@ -56,12 +56,12 @@ export type EmailDefinitionInput<S extends StandardSchemaV1, Id extends string =
   readonly subject: (
     data: Data<StandardSchemaV1.InferOutput<S>>,
     t: TypedTranslate<Id>,
-    platform: Platform,
+    sender: Sender,
   ) => Child
   readonly preheader?: (
     data: Data<StandardSchemaV1.InferOutput<S>>,
     t: TypedTranslate<Id>,
-    platform: Platform,
+    sender: Sender,
   ) => Child
   readonly component: (props: EmailProps<StandardSchemaV1.InferOutput<S>, Id>) => Child
 }

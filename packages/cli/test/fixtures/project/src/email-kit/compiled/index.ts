@@ -61,7 +61,7 @@ export interface EmailTemplate<Id extends TemplateId, Data> {
   validate(data: unknown): readonly DataIssue[]
 }
 
-/** Platform values the backend passes once, at startup, to createEmails() (RUN-04). */
+/** Sender values the backend passes once, at startup, to createEmails() (RUN-04). */
 export interface EmailContext {
   readonly siteUrl: string
 }

@@ -190,8 +190,8 @@ describe("messages", () => {
   })
 })
 
-describe("platform values", () => {
-  const withPlatform = (component: (props: EmailProps<Order>) => unknown) => {
+describe("sender values", () => {
+  const withSender = (component: (props: EmailProps<Order>) => unknown) => {
     const definition = defineEmail({
       id: "order-confirmation",
       purpose: "transactional",
@@ -204,12 +204,12 @@ describe("platform values", () => {
       evaluate(definition, {
         locale: "en",
         messages: {},
-        platform: { constants: { productName: "Acme" }, runtime: ["siteUrl"] },
+        sender: { constants: { productName: "Acme" }, runtime: ["siteUrl"] },
       }).body
   }
 
   it("gives constants as text and runtime keys as reserved placeholders", () => {
-    expect(withPlatform(({ platform }) => [platform.productName, platform.siteUrl])()).toEqual({
+    expect(withSender(({ sender }) => [sender.productName, sender.siteUrl])()).toEqual({
       kind: "fragment",
       children: [
         { kind: "text", value: "Acme" },
@@ -218,9 +218,9 @@ describe("platform values", () => {
     })
   })
 
-  it("explains a platform value the config doesn't set", () => {
-    expect(withPlatform(({ platform }) => platform.postalAddress)).toThrow(
-      expect.objectContaining({ code: "platform-value-missing" }),
+  it("explains a sender value the config doesn't set", () => {
+    expect(withSender(({ sender }) => sender.postalAddress)).toThrow(
+      expect.objectContaining({ code: "sender-value-missing" }),
     )
   })
 })

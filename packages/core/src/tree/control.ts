@@ -24,7 +24,7 @@ import { type Child, toNodes } from "./nodes.ts"
  *
  * @example
  * ```tsx
- * <Conditional when="textOnly">View this email online: {platform.siteUrl}</Conditional>
+ * <Conditional when="textOnly">View this email online: {sender.siteUrl}</Conditional>
  * ```
  */
 export function Conditional(props: {

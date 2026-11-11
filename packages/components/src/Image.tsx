@@ -2,8 +2,8 @@ import {
   type Child,
   EmailKitError,
   type IrNode,
-  type PlatformText,
   role,
+  type TextValue,
   useTheme,
 } from "@email-kit/core"
 
@@ -12,7 +12,7 @@ import { font } from "./style.ts"
 
 interface ImageBase {
   /** An absolute `https:` URL to a PNG, JPEG or GIF */
-  readonly src: PlatformText
+  readonly src: TextValue
   /** The display width in px; serve about twice as many pixels for sharp HiDPI screens */
   readonly width: number
   readonly height: number
@@ -38,7 +38,7 @@ export interface InformativeImage extends ImageBase {
 export interface FunctionalImage extends ImageBase {
   readonly kind: "functional"
   readonly alt: Child
-  readonly href: PlatformText
+  readonly href: TextValue
 }
 
 export type ImageProps = DecorativeImage | InformativeImage | FunctionalImage

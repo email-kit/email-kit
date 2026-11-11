@@ -1,7 +1,7 @@
-import { type Child, type IrNode, type PlatformText, role, useTheme } from "@email-kit/core"
+import { type Child, type IrNode, role, type TextValue, useTheme } from "@email-kit/core"
 
 export interface LinkProps {
-  readonly href: PlatformText
+  readonly href: TextValue
   readonly children?: Child
   /** Advisory text: a tooltip, never the only description of the link */
   readonly title?: Child
