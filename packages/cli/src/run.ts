@@ -1,6 +1,3 @@
-// The `email-kit` command runner (CLI-01, CLI-07, CLI-08): `init`, `new`, `compile` (alias
-// `generate`), `check` and `tokens`; `dev` arrives with the studio.
-
 import { cac } from "cac"
 
 import { CATALOGUE } from "./checks/catalogue/index.ts"
@@ -23,15 +20,18 @@ export { VERSION }
 
 export interface Io {
   readonly cwd: string
-  /** ANSI colours in error output */
+  /** Whether error output uses ANSI colours. */
   readonly color?: boolean
-  /** Answers for init's questions; a terminal prompt when left out */
+  /** Answers `init`'s questions. Leave it out to ask in the terminal. */
   readonly prompter?: Prompter
   out(text: string): void
   err(text: string): void
 }
 
-/** Runs the CLI with the given arguments (without `node` and the script path). Returns the exit code. */
+/**
+ * Runs the `email-kit` command with the given arguments, without `node` and the script path:
+ * `compile` (or `generate`), `init`, `new`, `check` or `tokens`. Returns the exit code.
+ */
 export async function run(args: readonly string[], io: Io): Promise<number> {
   const cli = cac("email-kit")
   let pending: Promise<number> | undefined
@@ -148,7 +148,11 @@ interface CheckFlags {
 
 const REPORTERS = { human: formatHuman, json: formatJson, github: formatGithub } as const
 
-// P1-169, CLI-04: exits 1 on any error, 0 with warnings and notes only.
+/**
+ * `email-kit check`: compiles in memory, pseudo-locales included, and runs the built-in and custom
+ * checks. Returns 1 if any finding is an error, 0 if there are only warnings and notes. A compile
+ * that fails on a check the compiler enforces is reported as that check's findings.
+ */
 async function checkCommand(options: CheckFlags, io: Io): Promise<number> {
   const name = options.json ? "json" : (options.reporter ?? "human")
   if (!(name in REPORTERS)) {
@@ -168,7 +172,6 @@ async function checkCommand(options: CheckFlags, io: Io): Promise<number> {
     if (output) io.out(output)
     return findings.some((finding) => finding.level === "error") ? 1 : 0
   } catch (error) {
-    // A compile that fails on a compiler-enforced check is reported as that check's findings.
     const { findings, rest } = compileFindings(error)
     if (findings.length > 0) io.out(REPORTERS[name as keyof typeof REPORTERS](findings))
     for (const other of rest) io.err(formatError(other, io))
@@ -176,7 +179,10 @@ async function checkCommand(options: CheckFlags, io: Io): Promise<number> {
   }
 }
 
-// P1-114, CLI-09: exits 1 when a tokens.* check fails at error level.
+/**
+ * `email-kit tokens`: prints the theme's colour roles with their contrast, and its findings.
+ * Returns 1 if a `tokens.*` check fails at error level.
+ */
 async function tokensCommand(options: { config?: string }, io: Io): Promise<number> {
   try {
     const config = await loadConfig({ cwd: io.cwd, config: options.config })
@@ -190,6 +196,7 @@ async function tokensCommand(options: { config?: string }, io: Io): Promise<numb
   }
 }
 
+/** `email-kit compile`: once, or on every change with `--watch` until Ctrl+C. */
 async function compileCommand(options: CompileFlags, io: Io): Promise<number> {
   if (options.quiet && options.verbose) {
     io.err("✗ --quiet and --verbose can't be used together")
