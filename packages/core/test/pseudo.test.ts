@@ -2,7 +2,8 @@
 
 import { describe, expect, it } from "vitest"
 
-import { expansion, messageArguments, pseudoMessage } from "../src/i18n.ts"
+import { messageArguments } from "../src/i18n/message-format.ts"
+import { expansion, pseudoMessage } from "../src/i18n/pseudo.ts"
 
 const EN = ["one", "other"]
 const AR = ["zero", "one", "two", "few", "many", "other"]
