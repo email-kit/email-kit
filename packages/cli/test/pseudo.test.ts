@@ -48,8 +48,8 @@ describe("email-kit check builds the pseudo-locales", () => {
       template: (s) =>
         s
           .replace(
-            "component: ({ data, t, platform }) => (",
-            "component: ({ data, t, platform, locale }) => (",
+            "component: ({ data, t, sender }) => (",
+            "component: ({ data, t, sender, locale }) => (",
           )
           .replace(
             "<Card>",
@@ -68,8 +68,8 @@ describe("email-kit check builds the pseudo-locales", () => {
       template: (s) =>
         s
           .replace(
-            "component: ({ data, t, platform }) => (",
-            "component: ({ data, t, platform, locale }) => (",
+            "component: ({ data, t, sender }) => (",
+            "component: ({ data, t, sender, locale }) => (",
           )
           .replace("<Card>", '<Card>\n      {locale === "ar-XB" && t("missingKey")}'),
     })

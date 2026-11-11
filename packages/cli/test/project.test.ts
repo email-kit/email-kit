@@ -132,7 +132,7 @@ describe("email-kit compile", () => {
     )
   })
 
-  it("fills platform values: constants at compile time, runtime keys from createEmails()", async () => {
+  it("fills sender values: constants at compile time, runtime keys from createEmails()", async () => {
     const dir = copyProject()
     await compile({ cwd: dir })
     // The constant is text in the compiled template; the runtime key is a placeholder.
@@ -140,7 +140,7 @@ describe("email-kit compile", () => {
       'Sent by Shop Example. <a href="{{_ek.context.siteUrl}}" style=',
     )
     const manifest = JSON.parse(read(dir, "manifest.json"))
-    expect(manifest.platform).toEqual({
+    expect(manifest.sender).toEqual({
       constants: { productName: "Shop Example" },
       runtime: ["siteUrl"],
     })
@@ -167,7 +167,7 @@ describe("email-kit compile", () => {
     const dir = copyProject()
     writeFileSync(
       join(dir, "email-kit.config.ts"),
-      'import { defineConfig } from "@email-kit/core"\nexport default defineConfig({ locales: { default: "en" }, platform: { productName: "Shop Example", siteUrl: "https://shop.example" } })\n',
+      'import { defineConfig } from "@email-kit/core"\nexport default defineConfig({ locales: { default: "en" }, sender: { productName: "Shop Example", siteUrl: "https://shop.example" } })\n',
     )
     await compile({ cwd: dir })
     expect(read(dir, "index.ts")).toContain("export type EmailContext = Record<never, never>")
@@ -235,7 +235,7 @@ describe("email-kit compile", () => {
     writeFileSync(join(compiledDir(dir), "NOTES.md"), "mine")
     writeFileSync(
       join(dir, "email-kit.config.ts"),
-      'import { defineConfig } from "@email-kit/core"\nexport default defineConfig({ locales: { default: "en" }, platform: { productName: "Shop Example", siteUrl: { runtime: true } } })\n',
+      'import { defineConfig } from "@email-kit/core"\nexport default defineConfig({ locales: { default: "en" }, sender: { productName: "Shop Example", siteUrl: { runtime: true } } })\n',
     )
     const result = await compile({ cwd: dir })
     expect(result.files.deleted).toEqual([
@@ -323,20 +323,20 @@ describe("config validation", () => {
     expect(config.locales).toEqual(["de", "en", "pt-BR"])
   })
 
-  it("validates platform values", () => {
+  it("validates sender values", () => {
     expect(
-      resolve({ platform: { productName: "", siteUrl: { runtime: "yes" }, phone: "1" } }),
+      resolve({ sender: { productName: "", siteUrl: { runtime: "yes" }, phone: "1" } }),
     ).toThrow(
       [
         "has 3 problems:",
-        "  • platform.productName: must be a non-empty string, or { runtime: true } to pass it at send time",
-        "  • platform.siteUrl: must be a non-empty string, or { runtime: true } to pass it at send time",
-        "  • platform.phone: unknown platform value (known: productName, senderName, legalName, postalAddress, privacyUrl, helpUrl, supportEmail, siteUrl)",
+        "  • sender.productName: must be a non-empty string, or { runtime: true } to pass it at send time",
+        "  • sender.siteUrl: must be a non-empty string, or { runtime: true } to pass it at send time",
+        "  • sender.phone: unknown sender value (known: productName, name, legalName, postalAddress, privacyUrl, helpUrl, supportEmail, siteUrl)",
       ].join("\n"),
     )
     expect(
       resolve({
-        platform: {
+        sender: {
           siteUrl: "http://shop.example",
           helpUrl: "help.shop.example",
           supportEmail: "help",
@@ -345,16 +345,16 @@ describe("config validation", () => {
     ).toThrow(
       [
         "has 3 problems:",
-        '  • platform.siteUrl: must be an https URL, like "https://example.com/…"',
-        '  • platform.helpUrl: must be an https URL, like "https://example.com/…"',
-        '  • platform.supportEmail: must be an email address, like "help@example.com"',
+        '  • sender.siteUrl: must be an https URL, like "https://example.com/…"',
+        '  • sender.helpUrl: must be an https URL, like "https://example.com/…"',
+        '  • sender.supportEmail: must be an email address, like "help@example.com"',
       ].join("\n"),
     )
     const config = resolveConfig(
-      { platform: { siteUrl: { runtime: true }, helpUrl: { runtime: true }, productName: "Acme" } },
+      { sender: { siteUrl: { runtime: true }, helpUrl: { runtime: true }, productName: "Acme" } },
       { file, cacheDir: TMP },
     )
-    expect(config.platform).toEqual({
+    expect(config.sender).toEqual({
       constants: { productName: "Acme" },
       runtime: ["helpUrl", "siteUrl"],
     })
@@ -370,7 +370,7 @@ describe("config validation", () => {
     ).toThrow(
       [
         "has 6 problems:",
-        "  • templets: unknown option (known: root, templates, messages, out, module, perTemplateEntries, validate, platform, theme, locales, checks, customChecks, importPath)",
+        "  • templets: unknown option (known: root, templates, messages, out, module, perTemplateEntries, validate, sender, theme, locales, checks, customChecks, importPath)",
         "  • out: must not overlap the templates folder (src/email-kit/templates)",
         '  • locales.list[0]: "en_US" isn\'t a BCP 47 locale tag, such as "en" or "pt-BR"',
         '  • locales.list[1]: write "pt-br" as "pt-BR"',

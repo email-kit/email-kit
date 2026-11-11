@@ -84,7 +84,7 @@ describe("Next.js with src/", () => {
       "src/email-kit/templates/welcome.tsx",
     ])
     expect(read(dir, "email-kit.config.ts")).toBe(
-      'import { defineConfig } from "@email-kit/core"\n\nexport default defineConfig({\n  locales: { default: "en" },\n  importPath: "@/email-kit",\n  platform: { productName: "Shop Web" },\n})\n',
+      'import { defineConfig } from "@email-kit/core"\n\nexport default defineConfig({\n  locales: { default: "en" },\n  importPath: "@/email-kit",\n  sender: { productName: "Shop Web" },\n})\n',
     )
     expect(read(dir, "src/email-kit/index.ts")).toContain('export * from "./compiled"')
     // tsconfig already has jsx and an @/* alias that covers src/email-kit: unchanged.

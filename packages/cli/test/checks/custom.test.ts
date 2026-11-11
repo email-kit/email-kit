@@ -14,7 +14,7 @@ const FIXTURE = fileURLToPath(new URL("../fixtures/project/", import.meta.url))
 const TMP = fileURLToPath(new URL("../.tmp/custom-test/", import.meta.url))
 afterAll(() => rmSync(TMP, { recursive: true, force: true }))
 
-/** The fixture project with this config body after `defineConfig({ locales…, platform…,`. */
+/** The fixture project with this config body after `defineConfig({ locales…, sender…,`. */
 function project(extra: string): string {
   mkdirSync(TMP, { recursive: true })
   const dir = mkdtempSync(join(TMP, "project-"))
@@ -55,7 +55,7 @@ const shopLink = defineCheck({
 
 export default defineConfig({
   locales: { default: "en" },
-  platform: { productName: "Shop Example", siteUrl: { runtime: true } },
+  sender: { productName: "Shop Example", siteUrl: { runtime: true } },
   ${extra}
 })
 `,

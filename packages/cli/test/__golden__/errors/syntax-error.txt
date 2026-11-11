@@ -1,7 +1,7 @@
 ✗ src/email-kit/templates/order-confirmation.tsx:35:17 [syntax-error]
   Expected `...` but found `Identifier`
 
-    33 |   component: ({ data, t, platform }) => (
+    33 |   component: ({ data, t, sender }) => (
     34 |     <Card
   > 35 |       <Heading>{t("heading", { name: data.customerName })}</Heading>
        |                 ^

@@ -34,7 +34,7 @@ beforeAll(async () => {
   html = compileEmail(definition, {
     locale: "en",
     messages,
-    platform: { constants: { productName: "Shop Example" }, runtime: ["siteUrl"] },
+    sender: { constants: { productName: "Shop Example" }, runtime: ["siteUrl"] },
   }).html
 })
 

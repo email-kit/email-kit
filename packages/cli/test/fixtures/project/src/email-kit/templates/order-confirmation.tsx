@@ -30,7 +30,7 @@ export default defineEmail({
       discount: "10%",
     },
   },
-  component: ({ data, t, platform }) => (
+  component: ({ data, t, sender }) => (
     <Card>
       <Heading>{t("heading", { name: data.customerName })}</Heading>
       <Text>{t("orderLine", { order: data.orderNumber })}</Text>
@@ -51,13 +51,10 @@ export default defineEmail({
         {t("view")}
       </Button>
       <Text size="caption" tone="muted">
-        {t("footer", { product: platform.productName })}{" "}
-        <Link href={platform.siteUrl}>{t("visit")}</Link>
+        {t("footer", { product: sender.productName })}{" "}
+        <Link href={sender.siteUrl}>{t("visit")}</Link>
       </Text>
-      <Footer
-        reason={t("reason", { product: platform.productName })}
-        sender={platform.productName}
-      />
+      <Footer reason={t("reason", { product: sender.productName })} sender={sender.productName} />
     </Card>
   ),
 })

@@ -31,7 +31,7 @@ beforeAll(async () => {
     compiled[locale] = compileEmail(loaded.definition, {
       locale,
       messages: messages(locale),
-      platform: { constants: { productName: "Shop Example" }, runtime: ["siteUrl"] },
+      sender: { constants: { productName: "Shop Example" }, runtime: ["siteUrl"] },
     })
   }
 })
