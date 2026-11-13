@@ -1,5 +1,3 @@
-// `email-kit compile`: config → every template × locale → the output folder (P1-087).
-
 import { basename, relative } from "node:path"
 import { checkPermutations } from "../theme/check.ts"
 import { loadTheme, type Theme } from "../theme/theme.ts"
@@ -9,45 +7,49 @@ import { buildOutput, type OutputFile, type WriteResult, writeOutput } from "./o
 import { type CompiledTemplate, compileProject } from "./project.ts"
 
 export interface CompileOptions {
-  /** Where to look for email-kit.config.ts */
+  /** The folder to look for `email-kit.config.ts` in. */
   readonly cwd: string
-  /** An explicit config file, relative to `cwd` */
+  /** A config file to use instead, relative to `cwd`. */
   readonly config?: string | undefined
-}
-
-export interface CompileResult {
-  readonly config: ResolvedConfig
-  readonly templates: readonly CompiledTemplate[]
-  readonly files: WriteResult
-  readonly theme: Theme
-  /** tokens.* findings; `email-kit tokens` lists them and `email-kit check` gates on them */
-  readonly themeFindings: readonly TokenFinding[]
-}
-
-export async function compile(options: CompileOptions): Promise<CompileResult> {
-  return compileWithConfig(await loadConfig(options))
 }
 
 /** A project compiled in memory: what `compile` writes and what `check` inspects. */
 export interface BuiltProject {
   readonly config: ResolvedConfig
+  /** Every template, each with its email in every locale. */
   readonly templates: readonly CompiledTemplate[]
+  /** The resolved theme. */
   readonly theme: Theme
+  /** The theme's `tokens.*` findings. `email-kit tokens` lists them; `check` reports them. */
   readonly themeFindings: readonly TokenFinding[]
 }
 
+/** A compiled project and what writing it changed in the output folder. */
+export interface CompileResult extends BuiltProject {
+  /** The files written, left unchanged and removed. */
+  readonly files: WriteResult
+}
+
+/** `email-kit compile`: loads the config, then compiles the project into its output folder. */
+export async function compile(options: CompileOptions): Promise<CompileResult> {
+  return compileWithConfig(await loadConfig(options))
+}
+
+/**
+ * Compiles every template in every locale, in memory, after loading the theme and checking each of
+ * its permutations. `compile` writes the result to the output folder, and `check` inspects it.
+ * `pseudo` adds the pseudo-locales.
+ */
 export async function buildProject(
   config: ResolvedConfig,
   options: { readonly pseudo?: boolean } = {},
 ): Promise<BuiltProject> {
-  // Every theme permutation is resolved and validated on compile (THM-10).
   const theme = loadTheme(config.theme, config.dir)
   const themeFindings = checkPermutations(theme, config.theme, config.dir)
   const templates = await compileProject(config, theme, options)
   return { config, templates, theme, themeFindings }
 }
 
-/** Compiles with an already loaded config. */
 /** Every file a compile writes into the output folder, for `compile` and `output.drift`. */
 export function outputFiles(project: BuiltProject): OutputFile[] {
   const { config, templates, theme } = project
@@ -63,19 +65,13 @@ export function outputFiles(project: BuiltProject): OutputFile[] {
   })
 }
 
+/** Compiles a project from a config that is already loaded, and writes it to the output folder. */
 export async function compileWithConfig(config: ResolvedConfig): Promise<CompileResult> {
   const project = await buildProject(config)
-  const { templates, theme, themeFindings } = project
-  return {
-    config,
-    templates,
-    files: writeOutput(config.out, outputFiles(project)),
-    theme,
-    themeFindings,
-  }
+  return { ...project, files: writeOutput(config.out, outputFiles(project)) }
 }
 
-/** One line for the terminal (CLI-03). */
+/** The one-line summary `compile` prints. */
 export function summarize({ config, templates, files, themeFindings }: CompileResult): string {
   const count = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`
   const total = files.written.length + files.unchanged.length
@@ -93,7 +89,7 @@ export function summarize({ config, templates, files, themeFindings }: CompileRe
   )
 }
 
-/** `--verbose`: every template × locale with its sizes, then the files that changed (CLI-07). */
+/** What `--verbose` prints: each template's size in each locale, then the files that changed. */
 export function describeResult({ templates, files }: CompileResult): string {
   const kb = (text: string) => `${(Buffer.byteLength(text, "utf8") / 1024).toFixed(1)} KB`
   const width = Math.max(0, ...templates.map((t) => t.id.length))
