@@ -1,107 +1,87 @@
-// The shared parse of a compiled email (P1-165, CHK-07): the DOM with source offsets, the HTML
-// inside `<!--[if mso]>` comments parsed too (Word reads it), and every `<style>` through postcss.
-
 import { type ChildNode, type Document, type Element, isComment, isTag, isText } from "domhandler"
 import { parseDocument } from "htmlparser2"
 import postcss, { type Root } from "postcss"
 
+import { type Position, positionsIn } from "./position.ts"
+
+/** A node of a parsed email, with where it is. */
 export interface Located<T> {
   readonly node: T
-  /** Absolute offset of the node in the HTML */
+  /** The node's offset in the email's HTML. */
   readonly offset: number
-  /** Inside an `[if mso]` comment: only Word sees it */
+  /** Whether it's inside an `<!--[if mso]>` comment, which only classic Outlook reads. */
   readonly mso: boolean
 }
 
+/** A compiled email, parsed once for every check. */
 export interface ParsedEmail {
   readonly document: Document
-  /** Every element in document order, Word-only ones included */
+  /** Every element in document order, those only classic Outlook reads included. */
   readonly elements: readonly Located<Element>[]
+  /** Every `<style>` block, parsed with postcss. */
   readonly styles: readonly Located<Root>[]
+  /** The text of every comment, conditional comments included. */
   readonly comments: readonly Located<string>[]
-  position(offset: number): { line: number; column: number }
-  offsetOf(node: ChildNode): number
+  /** The line and column of an offset in the HTML. */
+  position(offset: number): Position
 }
 
-const MSO = /^\[if ([^\]]+)\]>([\s\S]*)<!\[endif\]$/
+/** A conditional comment: its condition, and the HTML inside it. */
+const CONDITIONAL = /^\[if ([^\]]+)\]>([\s\S]*)<!\[endif\]$/
 
+/**
+ * Parses a compiled email once, for every check: the DOM with source offsets, and every `<style>`
+ * through postcss. The HTML inside an `<!--[if mso]>…<![endif]-->` comment is parsed too, since
+ * classic Outlook reads it. An `[if !mso]><!` comment instead shows what follows to other clients.
+ */
 export function parseEmail(html: string): ParsedEmail {
-  const document = parseDocument(html, { withStartIndices: true, withEndIndices: true })
+  const options = { withStartIndices: true, withEndIndices: true }
+  const document = parseDocument(html, options)
   const elements: Located<Element>[] = []
   const styles: Located<Root>[] = []
   const comments: Located<string>[] = []
-  const offsets = new WeakMap<ChildNode, number>()
 
+  /** Walks nodes whose offsets count from `base`, as a comment's inner HTML does. */
   const walk = (nodes: readonly ChildNode[], base: number, mso: boolean) => {
     for (const node of nodes) {
       const offset = base + (node.startIndex ?? 0)
-      offsets.set(node, offset)
       if (isTag(node)) {
         elements.push({ node, offset, mso })
-        if (node.name === "style") {
-          const text = node.children.find(isText)
-          if (text) {
-            const start = base + (text.startIndex ?? 0)
-            offsets.set(text, start)
-            styles.push({ node: postcss.parse(text.data), offset: start, mso })
+        if (node.name !== "style") walk(node.children, base, mso)
+        else {
+          const css = node.children.find(isText)
+          if (css) {
+            const start = base + (css.startIndex ?? 0)
+            styles.push({ node: postcss.parse(css.data), offset: start, mso })
           }
-        } else {
-          walk(node.children, base, mso)
         }
       } else if (isComment(node)) {
         comments.push({ node: node.data, offset, mso })
-        const match = MSO.exec(node.data)
-        // `[if mso]>…<![endif]`: HTML for Word only. `[if !mso]><!` reveals what follows instead.
-        if (
-          match &&
-          /\bmso\b/.test(match[1] as string) &&
-          !(match[1] as string).trimStart().startsWith("!")
-        ) {
-          const inner = parseDocument(match[2] as string, {
-            withStartIndices: true,
-            withEndIndices: true,
-          })
-          walk(inner.children, offset + "<!--".length + `[if ${match[1]}]>`.length, true)
+        const [, condition = "", inner = ""] = CONDITIONAL.exec(node.data) ?? []
+        if (/\bmso\b/.test(condition) && !condition.trimStart().startsWith("!")) {
+          const opening = `<!--[if ${condition}]>`.length
+          walk(parseDocument(inner, options).children, offset + opening, true)
         }
       }
     }
   }
   walk(document.children, 0, false)
-
-  const lines = [0]
-  for (let i = 0; i < html.length; i++) if (html[i] === "\n") lines.push(i + 1)
-  return {
-    document,
-    elements,
-    styles,
-    comments,
-    position(offset) {
-      let low = 0
-      let high = lines.length - 1
-      while (low < high) {
-        const mid = (low + high + 1) >> 1
-        if ((lines[mid] as number) <= offset) low = mid
-        else high = mid - 1
-      }
-      return { line: low + 1, column: offset - (lines[low] as number) + 1 }
-    },
-    offsetOf: (node) => offsets.get(node) ?? 0,
-  }
+  return { document, elements, styles, comments, position: positionsIn(html) }
 }
 
-/** The element's attribute, or undefined. */
+/** The element's attribute, or `undefined`. */
 export function attr(element: Element, name: string): string | undefined {
   return element.attribs[name]
 }
 
-/** Ancestors up to the document, nearest first. */
+/** The element's ancestors up to the document, nearest first. */
 export function ancestors(element: Element): Element[] {
   const out: Element[] = []
   for (let node = element.parent; node && isTag(node); node = node.parent) out.push(node)
   return out
 }
 
-/** Contains a mustache tag: the value is data, known only when rendered (fixture sweep). */
+/** Whether a value holds a mustache tag: it's data, known only once rendered (fixture sweep). */
 export function isData(value: string): boolean {
   return value.includes("{{")
 }

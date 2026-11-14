@@ -1,13 +1,13 @@
-// Team checks (P1-166, CHK-08): a defineCheck() from the config runs like a built-in check. It
-// sees plain data (CheckEmail), and its problems map back to the engine's emails, so findings
-// get the same subject, location, levels and reporters.
-
 import type { CheckEmail, CustomCheck } from "@email-kit/core"
 import { EmailKitError } from "@email-kit/core/internal"
 
 import { text } from "./catalogue/util.ts"
 import type { Check, CheckedEmail } from "./types.ts"
 
+/**
+ * An email as a team check sees it: plain data from the public `CheckEmail` type, with its
+ * elements' names, attributes and text, so a check needs none of email-kit's parsers.
+ */
 function publicEmail(email: CheckedEmail): CheckEmail {
   const elements = email.parsed.elements.map(({ node, offset, mso }) => ({
     name: node.name,
@@ -28,6 +28,12 @@ function publicEmail(email: CheckedEmail): CheckEmail {
   }
 }
 
+/**
+ * Wraps a project's own check, from `defineCheck()`, so it runs like a built-in one. It sees plain
+ * data (`CheckEmail`), and the problems it reports map back to the engine's emails, so its
+ * findings get the same subject, location, levels and reporters. It has no entry on email-kit's
+ * docs page, so its `docs` link is its own or none.
+ */
 export function fromCustom(custom: CustomCheck): Check {
   return {
     id: custom.id as Check["id"],
@@ -35,7 +41,6 @@ export function fromCustom(custom: CustomCheck): Check {
     rule: custom.rule,
     fix: custom.fix,
     ...(custom.on && { on: custom.on }),
-    // Never email-kit's docs page: it has no entry for a team's check.
     docs: custom.docs ?? "",
     run(context, report) {
       const originals = new Map<CheckEmail, CheckedEmail>()

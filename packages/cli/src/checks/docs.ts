@@ -1,10 +1,10 @@
-// docs/checks.md, generated from the catalogue (P1-168, CHK-10): one entry per check id, with its
-// default level, the rule and the fix. A test keeps the committed page in step.
-
-import { TOKEN_CHECKS } from "../theme/validate.ts"
+import { TOKEN_CHECKS, TOKEN_FIX } from "../theme/validate/index.ts"
 import { CATALOGUE } from "./catalogue/index.ts"
 
+/** How the page names each level. */
 const LEVEL = { error: "error", warn: "warning", info: "note" } as const
+
+/** The page's sections: each id family and its heading, in page order. */
 const FAMILIES: readonly [string, string][] = [
   ["tokens", "Theme and tokens"],
   ["source", "Sources"],
@@ -25,11 +25,13 @@ const FAMILIES: readonly [string, string][] = [
   ["output", "Output"],
 ]
 
+/**
+ * The checks reference page, generated from the catalogue: one entry for each check id, with its
+ * default level, rule and fix. A test keeps the committed page in step.
+ */
 export function checksMarkdown(): string {
-  const tokenFix =
-    "Adjust the colour or the role in the theme; `email-kit tokens` lists every pair."
   const entries = [
-    ...TOKEN_CHECKS.map((check) => ({ ...check, fix: tokenFix })),
+    ...TOKEN_CHECKS.map((check) => ({ ...check, fix: TOKEN_FIX })),
     ...CATALOGUE.map(({ id, level, rule, fix, outlookClassic, on, compiler }) => ({
       id,
       level,

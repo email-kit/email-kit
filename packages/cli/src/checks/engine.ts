@@ -1,171 +1,36 @@
-// The check engine (P1-140, CHK-01): runs the catalogue over a built project, applies the
-// per-id config (CHK-02, CFG-06) and the targets (CHK-05), and shapes every finding (CHK-04).
-// Checks see the compiled templates, the renders of the fixture sweep (CHK-06), or both. The
-// theme's tokens.* findings join as they are.
-
-import { spawnSync } from "node:child_process"
-
 import type { CheckSetting } from "@email-kit/core"
 import { isEmailKitError } from "@email-kit/core/internal"
-import { createTemplate } from "@email-kit/dialect/module"
 
-import { type BuiltProject, outputFiles } from "../compiler/build.ts"
-import type { CompiledEmail } from "../compiler/compile.ts"
-import { modelOf } from "../compiler/emit/types.ts"
-import { fixturesWithVariants } from "../compiler/fixtures.ts"
-import { CompileError } from "../compiler/problems.ts"
-import { pluralRules } from "../i18n/plurals.ts"
+import { CompileError } from "../compiler/problems/index.ts"
 import { isPseudo } from "../i18n/pseudo.ts"
-import { relativePath } from "../paths.ts"
+import { TOKEN_FIX } from "../theme/validate/index.ts"
 import { CATALOGUE } from "./catalogue/index.ts"
-import { parseEmail } from "./parse.ts"
-import { type SourceFile, sourceFile } from "./source.ts"
-import type { Check, CheckContext, CheckedEmail, Finding, Level, Problem } from "./types.ts"
+import type { Check, CheckContext, Finding, Problem, Subject } from "./types.ts"
 
-export const CHECKS_DOCS_URL = "https://github.com/email-kit/email-kit/blob/main/docs/checks.md"
+/** The checks reference page. */
+const CHECKS_DOCS_URL = "https://github.com/email-kit/email-kit/blob/main/docs/checks.md"
 
-/** GitHub's heading anchor for an id: dots go, hyphens stay (`img.alt` → `#imgalt`). */
+/** A check's entry on the reference page. GitHub's anchor drops dots: `img.alt` → `#imgalt`. */
 export function docsUrl(id: string): string {
   return `${CHECKS_DOCS_URL}#${id.toLowerCase().replace(/[^a-z0-9 _-]/g, "")}`
 }
 
-/** A stand-in for a sender value the backend passes at send time. */
-function contextValue(key: string): string {
-  if (key === "supportEmail") return "help@example.test"
-  return /url|link|href/i.test(key) ? "https://example.test/" : `Example ${key}`
-}
-
-export async function contextOf(project: BuiltProject): Promise<CheckContext> {
-  const { config } = project
-  const fileOf = (id: string, locale: string) =>
-    relativePath(config.dir, `${config.out}/${id}/${locale}.html`)
-  const checked = (id: string, email: CompiledEmail): CheckedEmail => ({
-    template: id,
-    locale: email.locale,
-    file: fileOf(id, email.locale),
-    subject: email.subject,
-    preheader: email.preheader,
-    html: email.html,
-    text: email.text,
-    parsed: parseEmail(email.html),
-  })
-  const emails = project.templates.flatMap((t) => t.emails.map((email) => checked(t.id, email)))
-  const pseudo = project.templates.flatMap((t) =>
-    t.pseudo.flatMap((build) => (build.email ? [checked(t.id, build.email)] : [])),
-  )
-  const pseudoErrors = project.templates.flatMap((t) =>
-    t.pseudo.flatMap((build) =>
-      build.error === undefined
-        ? []
-        : [{ template: t.id, locale: build.locale, message: build.error }],
-    ),
-  )
-
-  // The fixture sweep (P1-164): each template × locale rendered the way the generated module
-  // renders it, with every fixture and generated variant.
-  const values = Object.fromEntries(config.sender.runtime.map((key) => [key, contextValue(key)]))
-  const rendered: CheckedEmail[] = []
-  for (const template of project.templates) {
-    const parts = Object.fromEntries(
-      template.emails.map((e) => [
-        e.locale,
-        { subject: e.subject, preheader: e.preheader, html: e.html, text: e.text },
-      ]),
-    )
-    const runtime = createTemplate(
-      template.id,
-      template.purpose,
-      modelOf(template.model),
-      config.locales,
-      parts,
-      values,
-      false,
-      Object.fromEntries(config.locales.map((locale) => [locale, pluralRules(locale).category])),
-    )
-    const fixtures = await fixturesWithVariants(template.schema, template.model, template.fixtures)
-    for (const fixture of fixtures) {
-      for (const locale of config.locales) {
-        const email = runtime.render(fixture.data, { locale })
-        rendered.push({
-          template: template.id,
-          locale,
-          file: fileOf(template.id, locale),
-          subject: email.subject,
-          preheader: email.preheader,
-          html: email.html,
-          text: email.text,
-          parsed: parseEmail(email.html),
-          fixture: fixture.name,
-        })
-      }
-    }
-  }
-
-  // Each project file once, with the templates that bundle it.
-  const users = new Map<string, string[]>()
-  for (const template of project.templates) {
-    for (const file of template.sources) users.set(file, [...(users.get(file) ?? []), template.id])
-  }
-  const sources: SourceFile[] = [...users].map(([file, ids]) => sourceFile(file, config.dir, ids))
-  const source = config.theme?.source
-  return {
-    emails,
-    rendered,
-    pseudo,
-    pseudoErrors,
-    messages: project.templates.flatMap((t) => {
-      const used = new Set(t.emails.flatMap((email) => email.messageKeys))
-      return t.localeMessages.map((m) => ({
-        template: t.id,
-        locale: m.locale,
-        file: relativePath(config.dir, m.file),
-        messages: m.messages,
-        used,
-      }))
-    }),
-    output: {
-      dir: relativePath(config.dir, config.out),
-      absolute: config.out,
-      expected: outputFiles(project),
-      gitignored:
-        spawnSync("git", ["check-ignore", "-q", config.out], { cwd: config.dir }).status === 0,
-    },
-    templates: project.templates.map((t) => ({
-      id: t.id,
-      purpose: t.purpose,
-      model: t.model,
-      file: relativePath(config.dir, t.file),
-      fixtures: Object.keys(t.fixtures),
-    })),
-    sources,
-    theme: project.theme,
-    themeFindings: project.themeFindings,
-    // Classic Outlook stays a target until the targets config (CFG-05).
-    outlookClassic: true,
-    themeFile: typeof source === "string" ? source : undefined,
-  }
-}
-
+/**
+ * Runs the checks, each at the level the config sets, then adds the theme's `tokens.*` findings.
+ * A check sees the compiled templates, the renders, or both, as its `on` says. The pseudo-locales
+ * go through the template checks too, for `i18n.expansion`. Repeats are then dropped, as
+ * `dedupe()` describes.
+ */
 export function runChecks(
   context: CheckContext,
   settings: Readonly<Record<string, CheckSetting>> = {},
   checks: readonly Check[] = CATALOGUE,
 ): Finding[] {
   const findings: Finding[] = []
-  const levelOf = (id: string, level: Level): Level | "off" => settings[id]?.level ?? level
   for (const check of checks) {
     if (check.outlookClassic && !context.outlookClassic) continue
-    if (levelOf(check.id, check.level) === "off") continue
-    const on = check.on ?? "template"
-    const passes: CheckContext[] = [
-      ...(on === "render" ? [] : [context]),
-      ...(on === "template" ? [] : [{ ...context, emails: context.rendered }]),
-      // i18n.expansion: the pseudo-locales pass the static checks too.
-      ...(on === "render" || context.pseudo.length === 0
-        ? []
-        : [{ ...context, emails: context.pseudo }]),
-    ]
-    for (const pass of passes) {
+    if ((settings[check.id]?.level ?? check.level) === "off") continue
+    for (const pass of passesOf(check, context)) {
       check.run(pass, (problem) => {
         const level = settings[check.id]?.level ?? problem.level ?? check.level
         if (level === "off") return
@@ -180,53 +45,79 @@ export function runChecks(
       })
     }
   }
-  for (const finding of context.themeFindings) {
-    const level = levelOf(finding.id, finding.level === "warning" ? "warn" : finding.level)
-    if (level === "off") continue
-    const where = [finding.permutation, finding.mode].filter(Boolean).join(", ")
-    findings.push({
-      id: finding.id,
-      level,
-      subject: context.themeFile ? { file: context.themeFile } : {},
-      message: where ? `${finding.message} (${where})` : finding.message,
-      fix: "Adjust the colour or the role in the theme; `email-kit tokens` lists every pair.",
-      docs: docsUrl(finding.id),
-    })
+  findings.push(...tokenFindings(context, settings))
+  return dedupe(findings, context)
+}
+
+/**
+ * The contexts a check runs in, one per pass, each with its own `emails`: the compiled templates,
+ * the renders, and the pseudo-locales, which only the template checks see.
+ */
+function passesOf(check: Check, context: CheckContext): CheckContext[] {
+  const on = check.on ?? "template"
+  const passes: CheckContext[] = []
+  if (on !== "render") passes.push(context)
+  if (on !== "template") passes.push({ ...context, emails: context.rendered })
+  if (on !== "render" && context.pseudo.length > 0) {
+    passes.push({ ...context, emails: context.pseudo })
   }
-  // A static problem shows in the template and in every render: keep the first, which has the
-  // line number. Problems that come from data differ per fixture and stay.
+  return passes
+}
+
+/** The theme's `tokens.*` findings, at the levels the config sets, on the theme file. */
+function tokenFindings(
+  context: CheckContext,
+  settings: Readonly<Record<string, CheckSetting>>,
+): Finding[] {
+  return context.themeFindings.flatMap((finding): Finding[] => {
+    const level =
+      settings[finding.id]?.level ?? (finding.level === "warning" ? "warn" : finding.level)
+    if (level === "off") return []
+    const where = [finding.permutation, finding.mode].filter(Boolean).join(", ")
+    return [
+      {
+        id: finding.id,
+        level,
+        subject: context.themeFile ? { file: context.themeFile } : {},
+        message: where ? `${finding.message} (${where})` : finding.message,
+        fix: TOKEN_FIX,
+        docs: docsUrl(finding.id),
+      },
+    ]
+  })
+}
+
+/**
+ * Drops repeated findings:
+ * - a finding in a pseudo-locale that doesn't ship, when a real locale has it too;
+ * - a render's finding that its compiled template has too: the template's, which has the line,
+ *   is kept. Problems that come from data differ by fixture, so they stay;
+ * - a finding seen before, at the same place.
+ */
+function dedupe(findings: readonly Finding[], context: CheckContext): Finding[] {
+  const shipped = new Set(context.emails.map((email) => email.locale))
+  const what = (f: Finding) => `${f.id}|${f.subject.template}|${f.message}`
+  const where = (f: Finding) =>
+    `${f.id}|${f.subject.template}|${f.subject.locale}|${f.subject.file}|${f.message}`
+  const inRealLocale = new Set(findings.filter((f) => !isPseudo(f.subject.locale ?? "")).map(what))
+  const inTemplate = new Set(findings.filter((f) => f.subject.fixture === undefined).map(where))
   const seen = new Set<string>()
-  const located = new Set(
-    findings
-      .filter((f) => f.subject.fixture === undefined)
-      .map(
-        (f) => `${f.id}|${f.subject.template}|${f.subject.locale}|${f.subject.file}|${f.message}`,
-      ),
-  )
-  // A pseudo-locale finding the real locales already have adds nothing: keep only the new ones.
-  const real = new Set(
-    findings
-      .filter((f) => !isPseudo(f.subject.locale ?? ""))
-      .map((f) => `${f.id}|${f.subject.template}|${f.message}`),
-  )
   return findings.filter((f) => {
-    if (
-      isPseudo(f.subject.locale ?? "") &&
-      !context.emails.some((e) => e.locale === f.subject.locale)
-    ) {
-      if (real.has(`${f.id}|${f.subject.template}|${f.message}`)) return false
-    }
-    const base = `${f.id}|${f.subject.template}|${f.subject.locale}|${f.subject.file}|${f.message}`
-    // A render repeats a static problem the template already shows, with its line: drop it.
-    if (f.subject.fixture !== undefined && located.has(base)) return false
-    const key = `${base}|${f.subject.line}|${f.subject.column}|${f.subject.fixture}`
+    const locale = f.subject.locale ?? ""
+    if (isPseudo(locale) && !shipped.has(locale) && inRealLocale.has(what(f))) return false
+    if (f.subject.fixture !== undefined && inTemplate.has(where(f))) return false
+    const key = `${where(f)}|${f.subject.line}|${f.subject.column}|${f.subject.fixture}`
     if (seen.has(key)) return false
     seen.add(key)
     return true
   })
 }
 
-function subjectOf(problem: Problem): Finding["subject"] {
+/**
+ * Where a problem is: a line in a source file or in a compiled email. A render isn't a file on
+ * disk, so its offsets don't point into the compiled HTML, and only its fixture is given.
+ */
+function subjectOf(problem: Problem): Subject {
   if (problem.subject) return problem.subject
   if (problem.source) {
     const { file, templates } = problem.source
@@ -240,14 +131,22 @@ function subjectOf(problem: Problem): Finding["subject"] {
   const email = problem.email
   if (!email) return {}
   const base = { template: email.template, locale: email.locale, file: email.file }
-  // A render isn't a file on disk: its offsets don't point into the compiled HTML.
   if (email.fixture !== undefined) return { ...base, fixture: email.fixture }
   const position = problem.at === undefined ? undefined : email.parsed.position(problem.at)
   return { ...base, ...(position && { line: position.line, column: position.column }) }
 }
 
+/** Where a compiler problem is, when it says. */
+interface CompilerProblem {
+  readonly code: string
+  readonly message: string
+  readonly file?: string
+  readonly line?: number
+  readonly column?: number
+}
+
 /**
- * A failed compile as findings (Appendix A's compiler-enforced checks): each problem with a code
+ * A failed compile as findings, for the checks the compiler enforces: each problem with a code
  * a check claims becomes that check's finding, with the compiler's location. Problems no check
  * claims are returned for printing as they are.
  */
@@ -255,43 +154,40 @@ export function compileFindings(
   error: unknown,
   checks: readonly Check[] = CATALOGUE,
 ): { findings: Finding[]; rest: unknown[] } {
-  const problems: {
-    code: string
-    message: string
-    file?: string
-    line?: number
-    column?: number
-  }[] =
-    error instanceof CompileError
-      ? [...error.problems]
-      : isEmailKitError(error)
-        ? [{ code: error.code, message: error.message }]
-        : []
-  if (problems.length === 0) return { findings: [], rest: [error] }
-  const findings: Finding[] = []
-  const rest: unknown[] = []
-  for (const problem of problems) {
-    const check = checks.find(
-      (c) =>
-        c.compiler?.codes.includes(problem.code) &&
-        (!c.compiler.match || c.compiler.match.test(problem.message)),
+  const claimant = ({ code, message }: CompilerProblem) =>
+    checks.find(
+      (check) =>
+        check.compiler?.codes.includes(code) &&
+        (!check.compiler.match || check.compiler.match.test(message)),
     )
-    if (!check) {
-      rest.push(error instanceof CompileError ? new CompileError([problem as never]) : error)
-      continue
+  const finding = (check: Check, problem: CompilerProblem): Finding => ({
+    id: check.id,
+    level: check.level,
+    subject: {
+      ...(problem.file !== undefined && { file: problem.file }),
+      ...(problem.line !== undefined && { line: problem.line }),
+      ...(problem.column !== undefined && { column: problem.column }),
+    },
+    message: problem.message,
+    fix: check.fix,
+    docs: docsUrl(check.id),
+  })
+
+  if (error instanceof CompileError) {
+    if (error.problems.length === 0) return { findings: [], rest: [error] }
+    const findings: Finding[] = []
+    const rest: unknown[] = []
+    for (const problem of error.problems) {
+      const check = claimant(problem)
+      if (check) findings.push(finding(check, problem))
+      else rest.push(new CompileError([problem]))
     }
-    findings.push({
-      id: check.id,
-      level: check.level,
-      subject: {
-        ...(problem.file !== undefined && { file: problem.file }),
-        ...(problem.line !== undefined && { line: problem.line }),
-        ...(problem.column !== undefined && { column: problem.column }),
-      },
-      message: problem.message,
-      fix: check.fix,
-      docs: docsUrl(check.id),
-    })
+    return { findings, rest }
   }
-  return { findings, rest }
+  if (isEmailKitError(error)) {
+    const problem = { code: error.code, message: error.message }
+    const check = claimant(problem)
+    if (check) return { findings: [finding(check, problem)], rest: [] }
+  }
+  return { findings: [], rest: [error] }
 }
