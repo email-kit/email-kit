@@ -1,4 +1,4 @@
-// The i18n.* checks (P1-172) and caller-formatted values (P1-157, I18N-07).
+// The i18n.* checks, and values the caller formats.
 
 import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs"
 import { join, sep } from "node:path"
@@ -115,7 +115,7 @@ describe("i18n.rtl-explicit", () => {
   })
 })
 
-describe("caller-formatted values (I18N-07)", () => {
+describe("caller-formatted values", () => {
   it("carries the formatted() hint into schema.json and the data types", async () => {
     const dir = project({
       [TEMPLATE]: (s) =>

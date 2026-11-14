@@ -7,10 +7,11 @@ import { fileURLToPath } from "node:url"
 import { afterAll, describe, expect, it } from "vitest"
 
 import { CATALOGUE } from "../../src/checks/catalogue/index.ts"
-import { contextOf, runChecks } from "../../src/checks/engine.ts"
+import { contextOf } from "../../src/checks/context.ts"
+import { runChecks } from "../../src/checks/engine.ts"
 import type { CheckContext, Finding } from "../../src/checks/types.ts"
 import { buildProject, compile } from "../../src/compiler/build.ts"
-import { loadConfig } from "../../src/compiler/config.ts"
+import { loadConfig } from "../../src/compiler/config/index.ts"
 import { run } from "../../src/run.ts"
 
 const FIXTURE = fileURLToPath(new URL("../fixtures/project/", import.meta.url))

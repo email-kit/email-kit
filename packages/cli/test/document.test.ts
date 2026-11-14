@@ -8,7 +8,7 @@ import { beforeAll, describe, expect, it } from "vitest"
 
 import { compileEmail } from "../src/compiler/compile.ts"
 import { msoFontFamily, PREHEADER_FILLER, renderDocument } from "../src/compiler/document.ts"
-import { loadTemplate } from "../src/compiler/load.ts"
+import { loadTemplate } from "../src/compiler/load/index.ts"
 
 const template = fileURLToPath(
   new URL("fixtures/project/src/email-kit/templates/order-confirmation.tsx", import.meta.url),

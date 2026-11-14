@@ -19,7 +19,7 @@ import { EmailKitError } from "@email-kit/core/internal"
 import { afterAll, describe, expect, it } from "vitest"
 
 import { compile } from "../src/compiler/build.ts"
-import { formatError, toProblem } from "../src/compiler/problems.ts"
+import { formatError, toProblem } from "../src/compiler/problems/index.ts"
 
 const FIXTURE = fileURLToPath(new URL("fixtures/project/", import.meta.url))
 const TMP = fileURLToPath(new URL(".tmp/errors-test/", import.meta.url))

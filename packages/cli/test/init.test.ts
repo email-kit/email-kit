@@ -1,5 +1,5 @@
-// P1-200 to P1-210, TST-05: `email-kit init` in temp projects of each layout, with --yes and
-// --no-install (the packages resolve from this repository).
+// `email-kit init` in temp projects of each layout, with --yes and --no-install (the packages
+// resolve from this repository), and `email-kit new`.
 
 import { execFileSync } from "node:child_process"
 import {
@@ -102,7 +102,7 @@ describe("Next.js with src/", () => {
       },
     })
     expect(read(dir, ".gitattributes")).toBe("src/email-kit/compiled/** linguist-generated=true\n")
-    // INIT-11: compiled once, then the next steps.
+    // Compiled once, then the next steps.
     expect(existsSync(join(dir, "src/email-kit/compiled/index.ts"))).toBe(true)
     expect(out).toContain("Compiled 1 template × 1 locale into src/email-kit/compiled")
     expect(out).toContain('  import { emails } from "@/email-kit"')
@@ -143,7 +143,7 @@ describe("Next.js without src/", () => {
 })
 
 describe("a tsc project run with node", () => {
-  it("imports #email-kit from the .mjs output (ADR 0004 G), and node runs it", async () => {
+  it("imports #email-kit from the .mjs output, and node runs it", async () => {
     const dir = project({
       "package.json": {
         name: "api",
@@ -174,7 +174,7 @@ describe("a tsc project run with node", () => {
 })
 
 describe("Node type stripping, no build", () => {
-  it("imports #email-kit through a .ts re-export (ADR 0004 C), and node runs it", async () => {
+  it("imports #email-kit through a .ts re-export, and node runs it", async () => {
     const dir = project({
       "package.json": { name: "worker", type: "module", scripts: { start: "node src/server.ts" } },
       "src/server.ts": "export {}\n",
@@ -193,7 +193,7 @@ describe("Node type stripping, no build", () => {
   })
 })
 
-describe("names that are taken (INIT-06)", () => {
+describe("names that are taken", () => {
   it("stops at a config of the same name that isn't ours", async () => {
     const dir = project({
       "package.json": { name: "x" },
@@ -230,7 +230,7 @@ describe("names that are taken (INIT-06)", () => {
   })
 })
 
-describe("asking first (INIT-04)", () => {
+describe("asking first", () => {
   it("applies only the changes the user accepts", async () => {
     const dir = project({
       "package.json": { name: "x" },
@@ -265,6 +265,19 @@ describe("asking first (INIT-04)", () => {
     expect(existsSync(join(dir, "email-kit.config.ts"))).toBe(false)
   })
 
+  it("won't ask for a folder without a terminal either", async () => {
+    const dir = project({
+      "package.json": { name: "x" },
+      "email-kit/notes.md": "",
+      "email-templates/notes.md": "",
+      "emails/notes.md": "",
+    })
+    const { code, err } = await init(dir, ["--no-install"])
+    expect(code).toBe(1)
+    expect(err).toContain("Run it with --yes to accept the defaults")
+    expect(existsSync(join(dir, "email-kit.config.ts"))).toBe(false)
+  })
+
   it("offers a shadcn theme it finds", async () => {
     const dir = project({
       "package.json": { name: "x", dependencies: { next: "16.4.2" } },
@@ -278,8 +291,14 @@ describe("asking first (INIT-04)", () => {
 describe("finding the project", () => {
   it("works from a subfolder, on the nearest package.json, and takes --dir", async () => {
     const dir = project({ "package.json": { name: "x" }, "lib/server/index.ts": "" })
-    const { code } = await init(join(dir, "lib/server"), ["--yes", "--no-install", "--dir", "lib"])
+    const { code, out } = await init(join(dir, "lib/server"), [
+      "--yes",
+      "--no-install",
+      "--dir",
+      "lib",
+    ])
     expect(code).toBe(0)
+    expect(out).toContain("Project    ../.. (npm)")
     expect(existsSync(join(dir, "lib/email-kit/templates/welcome.tsx"))).toBe(true)
     expect(read(dir, "email-kit.config.ts")).toContain('root: "lib/email-kit"')
   })
@@ -333,7 +352,7 @@ describe("the project's schema library", () => {
   })
 })
 
-describe("email-kit new (P1-211)", () => {
+describe("email-kit new", () => {
   const cli = async (dir: string, args: string[]) => {
     const out: string[] = []
     const err: string[] = []
@@ -405,5 +424,14 @@ describe("email-kit new (P1-211)", () => {
       ),
     ])
     expect(tree(dir)).toEqual(before)
+  })
+
+  it("ignores folders and other files in the templates folder", async () => {
+    const dir = await setUp()
+    mkdirSync(join(dir, "src/email-kit/templates/partials"), { recursive: true })
+    writeFileSync(join(dir, "src/email-kit/templates/README.md"), 'id: "order-shipped"\n')
+    const { code, out } = await cli(dir, ["new", "order-shipped"])
+    expect(code).toBe(0)
+    expect(out).toContain("Created src/email-kit/templates/order-shipped.tsx")
   })
 })

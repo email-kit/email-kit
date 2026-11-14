@@ -9,7 +9,7 @@ import * as v from "valibot"
 import { describe, expect, it } from "vitest"
 import { z } from "zod"
 
-import { type PortableSchema, readSchema } from "../src/compiler/schema.ts"
+import { type PortableSchema, readSchema } from "../src/compiler/schema/index.ts"
 
 const resolveFrom = fileURLToPath(import.meta.url)
 const read = (schema: unknown) => readSchema(schema as StandardSchemaV1, { resolveFrom })

@@ -1,4 +1,4 @@
-// P1-155, I18N-05: pseudo-locales en-XA and ar-XB, built by `check` and shipped on request.
+// The pseudo-locales en-XA and ar-XB, built by `check` and shipped on request.
 
 import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs"
 import { join, sep } from "node:path"

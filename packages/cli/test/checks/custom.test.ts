@@ -1,4 +1,4 @@
-// P1-166, CHK-08: team checks from the config run beside the catalogue, with the same config,
+// Team checks from the config run beside the catalogue, with the same config,
 // findings and reporters.
 
 import { cpSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs"

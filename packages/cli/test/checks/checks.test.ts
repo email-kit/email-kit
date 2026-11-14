@@ -1,5 +1,5 @@
-// The check engine (P1-140), config (P1-160), reporters (P1-161), finding shape (P1-162), the
-// parser (P1-165), docs (P1-168), `email-kit check` (P1-169) and the first catalogue (P1-172).
+// The check engine, the checks config, the reporters, the finding shape, the parser, the docs
+// page, `email-kit check` and the catalogue.
 // Every check has a positive case (the fixture's real output passes) and a negative one (the
 // same email with exactly one rule broken reports exactly that check).
 
@@ -10,16 +10,17 @@ import { fileURLToPath } from "node:url"
 import { afterAll, beforeAll, describe, expect, it } from "vitest"
 
 import { CATALOGUE } from "../../src/checks/catalogue/index.ts"
+import { contextOf } from "../../src/checks/context.ts"
 import { checksMarkdown } from "../../src/checks/docs.ts"
-import { contextOf, docsUrl, runChecks } from "../../src/checks/engine.ts"
+import { docsUrl, runChecks } from "../../src/checks/engine.ts"
 import { parseEmail } from "../../src/checks/parse.ts"
 import { formatGithub, formatHuman, formatJson } from "../../src/checks/report.ts"
 import { sourceFile } from "../../src/checks/source.ts"
 import type { CheckContext, CheckedEmail, Finding } from "../../src/checks/types.ts"
 import { type BuiltProject, buildProject } from "../../src/compiler/build.ts"
-import { loadConfig, resolveConfig } from "../../src/compiler/config.ts"
+import { loadConfig, resolveConfig } from "../../src/compiler/config/index.ts"
 import { run } from "../../src/run.ts"
-import { TOKEN_CHECKS } from "../../src/theme/validate.ts"
+import { TOKEN_CHECKS } from "../../src/theme/validate/index.ts"
 
 const FIXTURE = fileURLToPath(new URL("../fixtures/project/", import.meta.url))
 const REPO = fileURLToPath(new URL("../../../../", import.meta.url))
@@ -464,7 +465,7 @@ describe("source checks (UI-01)", () => {
     expect(found('<td style={{ fontSize: "1px", lineHeight: "24px" }} />')).toEqual([])
   })
 
-  it("passes on email-kit's own components (P1-120)", () => {
+  it("passes on email-kit's own components", () => {
     const dir = `${REPO}packages/components/src/`
     const files = readdirSync(dir).filter((name) => name.endsWith(".tsx"))
     expect(files.length).toBeGreaterThan(10)
@@ -635,7 +636,7 @@ describe("email-kit check", () => {
   })
 })
 
-describe("docs/checks.md (P1-168)", () => {
+describe("docs/checks.md", () => {
   it("is generated from the catalogue, one entry per id", async () => {
     await expect(checksMarkdown()).toMatchFileSnapshot(`${REPO}docs/checks.md`)
     const headings = [...checksMarkdown().matchAll(/^### (\S+)$/gm)].map((m) => m[1])
@@ -643,7 +644,9 @@ describe("docs/checks.md (P1-168)", () => {
   })
 
   it("lists every tokens.* id the theme checks can report", () => {
-    const source = readFileSync(`${REPO}packages/cli/src/theme/validate.ts`, "utf8")
+    const source = ["index.ts", "colours.ts"]
+      .map((file) => readFileSync(`${REPO}packages/cli/src/theme/validate/${file}`, "utf8"))
+      .join("\n")
     const used = new Set([...source.matchAll(/"(tokens\.[a-z-]+)"/g)].map((m) => m[1]))
     expect([...used].sort()).toEqual(TOKEN_CHECKS.map((c) => c.id).sort())
   })

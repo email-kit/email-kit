@@ -1,4 +1,4 @@
-// init's tsconfig edits (INIT-04): one property added, in the file's style; nothing else moves.
+// init's tsconfig edits: one property added, in the file's style; nothing else moves.
 
 import { parse } from "jsonc-parser"
 import { describe, expect, it } from "vitest"

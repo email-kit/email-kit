@@ -1,5 +1,5 @@
-// P1-015 (fixture validation and generated variants) and P1-164 (the fixture sweep), with the
-// checks that run on renders: size.gmail and copy.placeholder-fallbacks.
+// Fixture validation, generated variants and the fixture sweep, with the checks that run on
+// renders: size.gmail and copy.placeholder-fallbacks.
 
 import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs"
 import { join, sep } from "node:path"
@@ -8,13 +8,14 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest"
 import { z } from "zod"
 
 import { CATALOGUE } from "../../src/checks/catalogue/index.ts"
-import { contextOf, runChecks } from "../../src/checks/engine.ts"
+import { contextOf } from "../../src/checks/context.ts"
+import { runChecks } from "../../src/checks/engine.ts"
 import { parseEmail } from "../../src/checks/parse.ts"
 import type { CheckContext, CheckedEmail, Finding } from "../../src/checks/types.ts"
 import { buildProject, compile } from "../../src/compiler/build.ts"
-import { loadConfig } from "../../src/compiler/config.ts"
+import { loadConfig } from "../../src/compiler/config/index.ts"
 import { fixturesWithVariants, generate, validateFixtures } from "../../src/compiler/fixtures.ts"
-import type { Field } from "../../src/compiler/schema.ts"
+import type { Field } from "../../src/compiler/schema/index.ts"
 import { run } from "../../src/run.ts"
 
 const FIXTURE = fileURLToPath(new URL("../fixtures/project/", import.meta.url))
@@ -57,7 +58,7 @@ const base = {
   items: ["Tea"],
 }
 
-describe("generated variants (P1-015)", () => {
+describe("generated variants", () => {
   it("empty: optional fields out, strings at their minimum, nullable null, lists empty", () => {
     expect(generate(model, base, "empty")).toEqual({
       name: "x",
@@ -85,6 +86,26 @@ describe("generated variants (P1-015)", () => {
     expect(hostile.note).toContain('<script>alert("x")</script>')
     expect(hostile.note).toContain("{{name}}")
     expect(hostile.hero).toBe('https://cdn.test/hero.png?q=<script>&x="y"&z={{name}}')
+  })
+
+  it("cuts text to maxLength in UTF-16 units without splitting the emoji", () => {
+    const length = '<script>alert("x")</script> & "q" \'a\' {{name}} {{{raw}}} \u202eevil\u202c '
+      .length
+    for (const max of [length + 1, length + 2]) {
+      const value = generate(str({ constraints: { maxLength: max } }), undefined, "hostile")
+      expect((value as string).length).toBeLessThanOrEqual(max)
+      expect(value).not.toMatch(/[\ud800-\udbff]$/)
+    }
+  })
+
+  it("long: a list keeps at least minItems, even past the usual 25", () => {
+    const list: Field = {
+      type: "array",
+      nullable: false,
+      constraints: { minItems: 30 },
+      items: str(),
+    }
+    expect(generate(list, ["Tea"], "long")).toHaveLength(30)
   })
 
   it("keeps only the variants the schema accepts", async () => {
@@ -123,7 +144,7 @@ describe("fixture validation", () => {
   })
 })
 
-describe("the fixture sweep (P1-164)", () => {
+describe("the fixture sweep", () => {
   let context: CheckContext
   beforeAll(async () => {
     context = await contextOf(await buildProject(await loadConfig({ cwd: FIXTURE })))

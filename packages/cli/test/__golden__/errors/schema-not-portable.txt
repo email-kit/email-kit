@@ -1,5 +1,5 @@
 ✗ src/email-kit/templates/order-confirmation.tsx [schema-not-portable]
-  The schema isn't portable (R4):
+  The schema isn't portable:
     • items[].qty: Unions aren't portable: use one type, optionally nullable
     • items[].tags: Maps with dynamic keys (records) aren't portable: list the keys as properties
 

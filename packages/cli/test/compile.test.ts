@@ -9,8 +9,8 @@ import { render } from "@email-kit/dialect"
 import { beforeAll, describe, expect, it } from "vitest"
 
 import { type CompiledEmail, compileEmail } from "../src/compiler/compile.ts"
-import { type LoadedTemplate, loadTemplate } from "../src/compiler/load.ts"
-import { readSchema } from "../src/compiler/schema.ts"
+import { type LoadedTemplate, loadTemplate } from "../src/compiler/load/index.ts"
+import { readSchema } from "../src/compiler/schema/index.ts"
 
 const fixture = (path: string) => fileURLToPath(new URL(`fixtures/${path}`, import.meta.url))
 const emailKit = (path: string) => fixture(`project/src/email-kit/${path}`)
