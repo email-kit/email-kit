@@ -9,7 +9,7 @@ import { resolveLocale } from "@email-kit/dialect/module"
 import { afterAll, describe, expect, it } from "vitest"
 
 import { compile } from "../src/compiler/build.ts"
-import { resolveConfig } from "../src/compiler/config.ts"
+import { resolveConfig } from "../src/compiler/config/index.ts"
 import { localeData } from "../src/i18n/locales.ts"
 
 const TMP = fileURLToPath(new URL(".tmp/locales-test/", import.meta.url))

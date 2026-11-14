@@ -8,7 +8,7 @@ import { fileURLToPath } from "node:url"
 import { afterAll, describe, expect, it } from "vitest"
 
 import { compile, summarize } from "../../src/compiler/build.ts"
-import { resolveConfig } from "../../src/compiler/config.ts"
+import { resolveConfig } from "../../src/compiler/config/index.ts"
 import { run } from "../../src/run.ts"
 import { readDtcg } from "../../src/theme/dtcg.ts"
 import { loadTheme } from "../../src/theme/theme.ts"

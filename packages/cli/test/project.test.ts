@@ -17,7 +17,7 @@ import { fileURLToPath, pathToFileURL } from "node:url"
 import { afterAll, describe, expect, it } from "vitest"
 
 import { compile, summarize } from "../src/compiler/build.ts"
-import { resolveConfig } from "../src/compiler/config.ts"
+import { resolveConfig } from "../src/compiler/config/index.ts"
 import { CompileError } from "../src/compiler/project.ts"
 
 const FIXTURE = fileURLToPath(new URL("fixtures/project/", import.meta.url))

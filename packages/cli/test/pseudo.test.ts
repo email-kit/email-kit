@@ -8,7 +8,7 @@ import { afterAll, describe, expect, it } from "vitest"
 
 import type { Finding } from "../src/checks/types.ts"
 import { compile } from "../src/compiler/build.ts"
-import { resolveConfig } from "../src/compiler/config.ts"
+import { resolveConfig } from "../src/compiler/config/index.ts"
 import { run } from "../src/run.ts"
 
 const FIXTURE = fileURLToPath(new URL("fixtures/project/", import.meta.url))
