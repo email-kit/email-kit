@@ -179,7 +179,7 @@ variant instead of the compiled templates (each render then has `fixture`), or `
 ### source.schema-portable
 **Default:** error
 
-**Rule:** The schema stays within the portable JSON Schema subset (R4). Enforced when compiling: the compile fails with `schema-not-portable` or `unsupported-schema` or `missing-converter`, which `email-kit check` reports as this check.
+**Rule:** The schema stays within the portable JSON Schema subset. Enforced when compiling: the compile fails with `schema-not-portable` or `unsupported-schema` or `missing-converter`, which `email-kit check` reports as this check.
 
 **Fix:** Use the types and constraints every target language can check; the message names the field.
 
@@ -786,7 +786,7 @@ variant instead of the compiled templates (each render then has `fixture`), or `
 
 **Rule:** No secret field (a code or token) in the subject or the preheader.
 
-**Fix:** Subjects show on lock screens and in provider logs: put the code in the body only (research 04 §5.1).
+**Fix:** Subjects show on lock screens and in provider logs: put the code in the body only.
 
 ### subject.generic
 **Default:** warning
