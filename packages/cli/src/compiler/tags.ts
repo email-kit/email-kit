@@ -1,6 +1,6 @@
 import { EmailKitError, type IrPlaceholder, type IrSection } from "@email-kit/core/internal"
 
-const NAME = /^[A-Za-z_][A-Za-z0-9_]*$/
+import { FIELD_NAME } from "./schema/index.ts"
 
 /**
  * The mustache-core tag for a placeholder, for the HTML and text renderers. `scopes` lists the
@@ -38,7 +38,7 @@ function name(node: IrPlaceholder | IrSection, scopes: readonly number[]): strin
     return "."
   }
   for (const segment of node.path) {
-    if (!NAME.test(segment)) {
+    if (!FIELD_NAME.test(segment)) {
       throw new EmailKitError(
         "invalid-field-name",
         `The field name "${segment}" can't be a placeholder: use letters, digits and _ only`,

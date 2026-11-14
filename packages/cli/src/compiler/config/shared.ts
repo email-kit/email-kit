@@ -1,5 +1,3 @@
-import { existsSync, statSync } from "node:fs"
-
 /**
  * The messages the config readers collect. Each reader adds to it instead of throwing, so one run
  * shows every problem in the config.
@@ -31,9 +29,4 @@ export function quoted(values: readonly string[], last = "or"): string {
   return items.length < 2
     ? items.join("")
     : `${items.slice(0, -1).join(", ")} ${last} ${items.at(-1)}`
-}
-
-/** Whether `path` exists and is a folder. */
-export function isDirectory(path: string): boolean {
-  return existsSync(path) && statSync(path).isDirectory()
 }

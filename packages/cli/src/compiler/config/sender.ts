@@ -19,7 +19,7 @@ export function readSender(value: unknown, problems: Problems): SenderValues {
     )
     return { constants, runtime }
   }
-  
+
   for (const [key, option] of Object.entries(value)) {
     if (!isSenderKey(key)) {
       problems.push(`sender.${key}: unknown sender value (known: ${SENDER_KEYS.join(", ")})`)

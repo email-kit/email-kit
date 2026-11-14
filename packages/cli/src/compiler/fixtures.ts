@@ -1,7 +1,7 @@
 import type { StandardSchemaV1 } from "@email-kit/core"
 import { EmailKitError } from "@email-kit/core/internal"
 
-import type { Field } from "./schema.ts"
+import type { Field } from "./schema/index.ts"
 
 /** Sample data a template is rendered with for checks and previews. */
 export interface Fixture {

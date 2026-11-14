@@ -72,7 +72,7 @@ export function readCustomChecks(value: unknown, problems: Problems): CustomChec
     problems.push("customChecks: must be an array of defineCheck({ … })")
     return []
   }
-  
+
   const seen = new Set<string>()
   const out: CustomCheck[] = []
   value.forEach((check: unknown, i) => {

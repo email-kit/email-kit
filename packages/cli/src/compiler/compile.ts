@@ -12,7 +12,7 @@ import { pluralRules } from "../i18n/plurals.ts"
 import { loadTheme, type Theme } from "../theme/theme.ts"
 import { checkDerived } from "./derived.ts"
 import { type DocumentOptions, msoFontFamily, renderDocument } from "./document.ts"
-import type { Field } from "./schema.ts"
+import type { Field } from "./schema/index.ts"
 import { renderLine, renderTextPart } from "./text.ts"
 
 /**

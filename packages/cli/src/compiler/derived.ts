@@ -1,6 +1,6 @@
 import { EmailKitError, type IrNode, type IrSection, RESERVED_KEY } from "@email-kit/core/internal"
 
-import type { Field } from "./schema.ts"
+import type { Field } from "./schema/index.ts"
 
 /**
  * Checks the plural and select sections that messages made against the schema: a plural needs a

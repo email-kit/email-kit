@@ -4,7 +4,7 @@ import { dirname, join, resolve } from "node:path"
 import type { CheckSetting, CustomCheck, ThemeConfig } from "@email-kit/core"
 import { EmailKitError, type SenderValues } from "@email-kit/core/internal"
 
-import { loadModule } from "../load.ts"
+import { loadModule } from "../load/index.ts"
 
 import { readChecks, readCustomChecks } from "./checks.ts"
 import { readLocales } from "./locales.ts"
@@ -76,7 +76,7 @@ export async function loadConfig(options: {
   const file = options.config
     ? resolve(options.cwd, options.config)
     : CONFIG_FILES.map((name) => join(options.cwd, name)).find((path) => existsSync(path))
-  
+
   if (!file || !existsSync(file)) {
     throw new EmailKitError(
       "config-not-found",
@@ -106,7 +106,7 @@ export function resolveConfig(
       `${file} must have \`export default defineConfig({ … })\``,
     )
   }
-  
+
   const problems: Problems = []
   checkKeys(value, KEYS, "", problems)
   const dir = dirname(file)

@@ -64,6 +64,6 @@ export function readTheme(value: unknown, problems: Problems): ThemeConfig | und
   if (container !== undefined && typeof container !== "number") {
     problems.push("theme.layout.container: must be a number of px")
   }
-  
+
   return value as ThemeConfig
 }
