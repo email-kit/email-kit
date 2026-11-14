@@ -2,9 +2,9 @@ import { basename, relative } from "node:path"
 import { checkPermutations } from "../theme/check.ts"
 import { loadTheme, type Theme } from "../theme/theme.ts"
 import type { TokenFinding } from "../theme/validate.ts"
-import { loadConfig, type ResolvedConfig } from "./config.ts"
-import { buildOutput, type OutputFile, type WriteResult, writeOutput } from "./output.ts"
-import { type CompiledTemplate, compileProject } from "./project.ts"
+import { loadConfig, type ResolvedConfig } from "./config/index.ts"
+import { buildOutput, type OutputFile, type WriteResult, writeOutput } from "./output/index.ts"
+import { type CompiledTemplate, compileProject } from "./project/index.ts"
 
 export interface CompileOptions {
   /** The folder to look for `email-kit.config.ts` in. */

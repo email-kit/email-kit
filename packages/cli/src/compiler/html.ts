@@ -47,7 +47,7 @@ function render(node: IrNode, scopes: readonly number[], mode: Mode): string {
     nodes.map((child) => render(child, inner, mode)).join("")
   switch (node.kind) {
     case "text":
-      return escape(node.value, mode)
+      return escapeHtml(node.value, mode)
     case "placeholder":
       return placeholderTag(node, scopes)
     case "fragment":
@@ -97,7 +97,7 @@ function element(node: IrElement, scopes: readonly number[], children: string): 
 function attribute(name: string, value: IrAttr, scopes: readonly number[]): string {
   if (value.length === 0) return ` ${name}`
   const parts = value.map((part) =>
-    typeof part === "string" ? escape(part, "attribute") : placeholderTag(part, scopes),
+    typeof part === "string" ? escapeHtml(part, "attribute") : placeholderTag(part, scopes),
   )
   return ` ${name}="${parts.join("")}"`
 }
@@ -114,7 +114,7 @@ const ENTITIES: Readonly<Record<string, string>> = {
  * Escapes text for HTML, and `"` too inside an attribute. `{` becomes an entity as well, so text
  * next to a placeholder can never form a mustache tag.
  */
-function escape(value: string, mode: Mode): string {
+function escapeHtml(value: string, mode: Mode): string {
   const special = mode === "attribute" ? /[&<>"{]/g : /[&<>{]/g
   return value.replace(special, (char) => ENTITIES[char] as string)
 }
