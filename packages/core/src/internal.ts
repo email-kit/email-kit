@@ -18,7 +18,7 @@ export { pseudoMessage } from "./i18n/pseudo.ts"
 export type { Messages, PluralSupport } from "./i18n/translate.ts"
 export { EmailKitError, isEmailKitError } from "./shared/errors.ts"
 export type { ThemeContext } from "./theme/context.ts"
-export { fontClass, fontStack } from "./theme/font-stack.ts"
+export { familyList, fontClass, fontStack } from "./theme/font-stack.ts"
 export { parseRoleClass, roleClass } from "./theme/role.ts"
 export type {
   IrAttr,
