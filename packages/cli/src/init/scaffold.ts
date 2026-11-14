@@ -1,23 +1,21 @@
-// The files `email-kit init` creates (INIT-03): the config, the folder's index.ts and a welcome
-// template with its messages and fixture. Templates start with the JSX pragma (P0-05), so they
-// type-check whatever the host's tsconfig says about JSX.
-
 import type { SchemaLibrary } from "./detect.ts"
+import type { ImportStrategy } from "./imports.ts"
 
-export type ImportStrategy =
-  /** tsconfig paths work at runtime: Next.js, Bun, bundlers (ADR 0004) */
-  | { readonly kind: "alias"; readonly path: string; readonly addPath: boolean }
-  /** package.json "imports": a tsc build (G, .mjs output) or Node type stripping (C, .ts) */
-  | { readonly kind: "subpath"; readonly target: string; readonly module: "mjs" | "ts" }
-  | { readonly kind: "relative" }
-
-export function configFile(options: {
+/** What goes into the config `init` writes. */
+export interface ConfigOptions {
+  /** email-kit's folder, when it isn't the default one, which the config then leaves out. */
   readonly root: string | undefined
+  /** What the app imports the emails from. */
   readonly importPath: string
+  /** `mjs` when the app runs compiled JavaScript, so the module is written as `.mjs`. */
   readonly module: "mjs" | "ts"
   readonly productName: string
+  /** The shadcn CSS file to take the theme from. */
   readonly theme: string | undefined
-}): string {
+}
+
+/** The `email-kit.config.ts` that `init` writes: only the options the project needs. */
+export function configFile(options: ConfigOptions): string {
   const lines = [
     ...(options.root ? [`  root: ${JSON.stringify(options.root)},`] : []),
     '  locales: { default: "en" },',
@@ -39,14 +37,12 @@ ${lines.join("\n")}
 `
 }
 
-/** The folder's entry: what the app imports. */
+/**
+ * The folder's `index.ts`, which the app imports: it re-exports the compiled module. A subpath
+ * import needs the module's file name, since Node resolves it without a bundler.
+ */
 export function indexFile(strategy: ImportStrategy): string {
-  const target =
-    strategy.kind === "subpath"
-      ? strategy.module === "mjs"
-        ? "./compiled/index.mjs"
-        : "./compiled/index.ts"
-      : "./compiled"
+  const target = strategy.kind === "subpath" ? `./compiled/index.${strategy.module}` : "./compiled"
   return `// The emails, compiled by \`email-kit compile\` into ./compiled.\nexport * from "${target}"\n`
 }
 
@@ -56,13 +52,16 @@ export interface ScaffoldField {
   readonly kind: "text" | "url"
 }
 
-const SCHEMA_SOURCE: Record<
-  SchemaLibrary,
-  {
-    readonly import: string
-    readonly open: string
-    readonly field: Record<ScaffoldField["kind"], string>
-  }
+/** How each schema library writes its import, an object, and each kind of field. */
+const SCHEMA_SOURCE: Readonly<
+  Record<
+    SchemaLibrary,
+    {
+      readonly import: string
+      readonly open: string
+      readonly field: Readonly<Record<ScaffoldField["kind"], string>>
+    }
+  >
 > = {
   zod: {
     import: 'import { z } from "zod"',
@@ -100,16 +99,25 @@ export function schemaSource(
   }
 }
 
-/** What each library needs installed for email-kit to read its schemas. */
-export function schemaDependencies(library: SchemaLibrary): Readonly<Record<string, string>> {
-  return library === "zod"
-    ? { zod: "^4" }
-    : library === "valibot"
-      ? { valibot: "^1", "@valibot/to-json-schema": "^1" }
-      : { arktype: "^2" }
+/**
+ * What each library needs installed for email-kit to read its schemas: Valibot needs its JSON
+ * Schema converter too.
+ */
+const SCHEMA_DEPENDENCIES: Readonly<Record<SchemaLibrary, Readonly<Record<string, string>>>> = {
+  zod: { zod: "^4" },
+  valibot: { valibot: "^1", "@valibot/to-json-schema": "^1" },
+  arktype: { arktype: "^2" },
 }
 
-/** The welcome template, with its schema written for the project's library. */
+/** The packages a schema library needs installed, name → version range. */
+export function schemaDependencies(library: SchemaLibrary): Readonly<Record<string, string>> {
+  return SCHEMA_DEPENDENCIES[library]
+}
+
+/**
+ * The welcome template `init` creates, with its schema written for the project's library. It
+ * starts with the JSX pragma, so it type-checks whatever the project's tsconfig says about JSX.
+ */
 export function welcomeTemplate(library: SchemaLibrary): string {
   const { import: schemaImport, schema } = schemaSource(library, [
     { name: "name", kind: "text" },
@@ -144,7 +152,8 @@ ${schema}
 `
 }
 
-export const WELCOME_MESSAGES = `${JSON.stringify(
+/** The welcome template's English messages. */
+export const WELCOME_MESSAGES: string = `${JSON.stringify(
   {
     subject: "Welcome to {product}, {name}",
     preheader: "Your account is ready",

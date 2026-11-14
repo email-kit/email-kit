@@ -1,24 +1,24 @@
-// `email-kit new <id>` (P1-211, CLI-02): a template with its messages in every locale and a
-// fixture. The id follows the grammar, and an id that exists is refused, never overwritten.
-
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs"
 import { basename, dirname, join, relative } from "node:path"
 
-import { EmailKitError } from "@email-kit/core/internal"
+import { EmailKitError, isTemplateId } from "@email-kit/core/internal"
 
-import { loadConfig } from "../compiler/config.ts"
+import { loadConfig } from "../compiler/config/index.ts"
 import { identifiersFor } from "../compiler/emit/identifiers.ts"
 import { isPseudo } from "../i18n/pseudo.ts"
 import { findProject, type SchemaLibrary, schemaLibraryOf } from "./detect.ts"
 import { schemaSource } from "./scaffold.ts"
 
-const ID = /^[a-z][a-z0-9]*(-[a-z0-9]+)*$/
-
+/**
+ * `email-kit new <id>`: adds a template, with its messages in every locale and a fixture. The id
+ * must follow the id grammar. An id already in use, by a file, its messages or another template
+ * that declares it, is refused, never overwritten.
+ */
 export async function newTemplate(
   id: string,
   options: { readonly cwd: string; readonly config?: string | undefined },
 ): Promise<string> {
-  if (!ID.test(id)) {
+  if (!isTemplateId(id)) {
     throw new EmailKitError(
       "invalid-id",
       `"${id}" isn't a template id: use lowercase words joined by hyphens, like "password-reset"`,
@@ -30,15 +30,11 @@ export async function newTemplate(
   const locales = config.locales.filter((locale) => !isPseudo(locale))
   const messageFiles = locales.map((locale) => join(config.messages, locale, `${id}.json`))
 
-  // An id in use: the file, its messages, or another template that declares it.
   const taken = [templateFile, ...messageFiles].find((file) => existsSync(file))
-  const declared = existsSync(config.templates)
-    ? readdirSync(config.templates).find((file) =>
-        new RegExp(`\\bid:\\s*["']${id}["']`).test(
-          readFileSync(join(config.templates, file), "utf8"),
-        ),
-      )
-    : undefined
+  const declares = new RegExp(`\\bid:\\s*["']${id}["']`)
+  const declared = templateSources(config.templates).find((file) =>
+    declares.test(readFileSync(join(config.templates, file), "utf8")),
+  )
   if (taken || declared) {
     throw new EmailKitError(
       "duplicate-id",
@@ -49,7 +45,7 @@ export async function newTemplate(
   mkdirSync(config.templates, { recursive: true })
   writeFileSync(templateFile, template(id, schemaLibrary(config.dir, config.templates)))
   for (const file of messageFiles) {
-    mkdirSync(join(file, ".."), { recursive: true })
+    mkdirSync(dirname(file), { recursive: true })
     writeFileSync(file, MESSAGES)
   }
   const property = identifiersFor(id).property
@@ -66,6 +62,7 @@ export async function newTemplate(
   ].join("\n")
 }
 
+/** The new template's messages, written for every locale, for translators to replace. */
 const MESSAGES = `${JSON.stringify(
   {
     subject: "A message for {name}",
@@ -78,19 +75,27 @@ const MESSAGES = `${JSON.stringify(
   2,
 )}\n`
 
+/**
+ * The files in the templates folder that can hold a template, by name: TypeScript and JavaScript
+ * files, not folders. Missing folder, no files.
+ */
+function templateSources(templates: string): string[] {
+  if (!existsSync(templates)) return []
+  return readdirSync(templates, { withFileTypes: true })
+    .filter((entry) => entry.isFile() && /\.[cm]?[jt]sx?$/.test(entry.name))
+    .map((entry) => entry.name)
+}
+
 /** The library the other templates import, else the one the project depends on, else Zod. */
 function schemaLibrary(configDir: string, templates: string): SchemaLibrary {
-  const imported = existsSync(templates)
-    ? readdirSync(templates)
-        .filter((file) => /\.[cm]?tsx?$/.test(file))
-        .map(
-          (file) =>
-            /from\s+["'](zod|valibot|arktype)["']/.exec(
-              readFileSync(join(templates, file), "utf8"),
-            )?.[1] as SchemaLibrary | undefined,
-        )
-        .find((library) => library !== undefined)
-    : undefined
+  const imported = templateSources(templates)
+    .map(
+      (file) =>
+        /from\s+["'](zod|valibot|arktype)["']/.exec(
+          readFileSync(join(templates, file), "utf8"),
+        )?.[1] as SchemaLibrary | undefined,
+    )
+    .find((library) => library !== undefined)
   if (imported) return imported
   try {
     const pkg = JSON.parse(readFileSync(join(findProject(configDir), "package.json"), "utf8"))
@@ -100,6 +105,7 @@ function schemaLibrary(configDir: string, templates: string): SchemaLibrary {
   }
 }
 
+/** The new template: a heading, some copy and the footer, with a `name` field in its schema. */
 function template(id: string, library: SchemaLibrary): string {
   const { import: schemaImport, schema } = schemaSource(library, [{ name: "name", kind: "text" }])
   return `/** @jsxImportSource @email-kit/core */
