@@ -1,57 +1,54 @@
-// The resolved theme (P1-100 to P1-108): colour roles per mode from the configured source, plus
-// typography, spacing, radius, layout and component tokens, all in px. Defaults follow research
-// 05 (§1 layout, §2 typography, §6 buttons, §12.4 radius, §14.1 schema).
+import type { FontStackName, ThemeConfig, TypeStep, TypeStyle } from "@email-kit/core"
 
-import { readFileSync } from "node:fs"
-import { resolve } from "node:path"
-
-import type {
-  FontStackName,
-  ThemeConfig,
-  ThemeRole,
-  ThemeVariables,
-  TypeStep,
-  TypeStyle,
-} from "@email-kit/core"
-import { EmailKitError } from "@email-kit/core/internal"
-
-import { readDtcg, readDtcgDocument } from "./dtcg.ts"
 import {
-  type Modifier,
-  permutations,
-  type Resolver,
-  readResolver,
-  resolveTokens,
-} from "./resolver.ts"
-import { type ColourTokens, type ResolvedRoles, type RoleOverride, resolveRoles } from "./roles.ts"
-import { readShadcnCss } from "./shadcn.ts"
+  BORDER_WIDTH,
+  COMPONENTS,
+  DEFAULT_RADIUS,
+  DEFAULT_ROLES,
+  LAYOUT,
+  SPACE,
+  TYPE_SCALE,
+} from "./defaults.ts"
+import { type FontStack, fontStacks } from "./fonts.ts"
+import { type ResolvedRoles, resolveRoles } from "./roles/index.ts"
+import { readSource } from "./source/index.ts"
 
-export interface FontStack {
-  /** Families in order, ending in a generic family */
-  readonly families: readonly string[]
-  /** The family Outlook's Word engine gets instead of falling back to Times New Roman */
-  readonly msoFallback: string
-}
+export type { FontStack }
 
+/**
+ * A resolved theme: what components read through `useTheme()`, what the `tokens.*` checks test,
+ * and what `theme.json` holds. Every size is in px.
+ */
 export interface Theme {
-  /** Where the colours came from, for reports */
+  /** Where the colours came from, for reports. */
   readonly source: string
-  /** The theme files that were read, for --watch */
+  /** The theme files that were read, for `--watch`. */
   readonly files: readonly string[]
-  /** A resolver's other inputs (brands and the like), each checked as well (THM-10) */
+  /** A resolver's other inputs, such as other brands, which are checked too. */
   readonly permutations: readonly Readonly<Record<string, string>>[]
+  /** The colour of each role, in light mode and, when the theme has it, dark mode. */
   readonly roles: ResolvedRoles
   readonly typography: {
+    /** The font stacks text can use. */
     readonly stacks: Readonly<Record<FontStackName, FontStack>>
+    /** The text styles, from `display` down to `footer`. */
     readonly scale: Readonly<Record<TypeStep, TypeStyle>>
   }
   readonly space: {
+    /** The spacing steps, on a 4px grid. */
     readonly scale: readonly number[]
+    /** The space beside the content on phones and on wider screens. */
     readonly gutterMobile: number
     readonly gutterDesktop: number
+    /** The space between stacked blocks. */
     readonly stack: { readonly sm: number; readonly md: number; readonly lg: number }
+    /** The space above and below the email's content. */
     readonly section: number
   }
+  /**
+   * The corner radii: a scale (`none` to `full`, which makes a pill), and the radius each kind of
+   * element uses.
+   */
   readonly radius: Readonly<
     Record<
       "none" | "sm" | "md" | "lg" | "xl" | "full" | "button" | "card" | "badge" | "code" | "image",
@@ -60,12 +57,17 @@ export interface Theme {
   >
   readonly borderWidth: { readonly hairline: number; readonly strong: number }
   readonly layout: {
+    /** The content width on wide screens. */
     readonly container: number
+    /** The screen width below which the layout stacks for phones. */
     readonly breakpoint: number
+    /** The most columns a row may have. */
     readonly maxColumns: number
+    /** The longest comfortable line of text, in characters. */
     readonly contentMaxCh: number
   }
   readonly components: {
+    /** Each button size: its minimum height, padding and text style. */
     readonly button: Readonly<
       Record<
         "sm" | "md" | "lg",
@@ -78,308 +80,51 @@ export interface Theme {
       >
     >
     readonly link: { readonly underline: boolean }
+    /** One-time codes: their text style, on the code surface. */
     readonly otp: { readonly font: TypeStep; readonly surface: "codeSurface" }
   }
+  /** `authored`: the email has dark-mode CSS from the theme's dark colours. `none`: it has none. */
   readonly dark: "authored" | "none"
 }
 
-// The default when a project configures no source: shadcn/ui's neutral theme (MIT), adjusted for
-// email so a new project starts without findings: muted ink that passes on the page ground, a
-// darker destructive red (out of the mid-tone band, research 02 C3), and a secondary-button
-// border that reaches 3:1.
-export const DEFAULT_VARIABLES: ThemeVariables = {
-  radius: "0.625rem",
-  light: {
-    background: "oklch(1 0 0)",
-    foreground: "oklch(0.145 0 0)",
-    card: "oklch(1 0 0)",
-    "card-foreground": "oklch(0.145 0 0)",
-    primary: "oklch(0.205 0 0)",
-    "primary-foreground": "oklch(0.985 0 0)",
-    secondary: "oklch(0.97 0 0)",
-    "secondary-foreground": "oklch(0.205 0 0)",
-    muted: "oklch(0.97 0 0)",
-    // shadcn's #737373 is 4.35:1 on the #f5f5f5 page ground; #707070 is the nearest that passes.
-    "muted-foreground": "#707070",
-    accent: "oklch(0.97 0 0)",
-    destructive: "#991b1b",
-    border: "oklch(0.922 0 0)",
-  },
-  dark: {
-    background: "oklch(0.145 0 0)",
-    foreground: "oklch(0.985 0 0)",
-    card: "oklch(0.205 0 0)",
-    "card-foreground": "oklch(0.985 0 0)",
-    primary: "oklch(0.922 0 0)",
-    "primary-foreground": "oklch(0.205 0 0)",
-    secondary: "oklch(0.269 0 0)",
-    "secondary-foreground": "oklch(0.985 0 0)",
-    muted: "oklch(0.269 0 0)",
-    "muted-foreground": "oklch(0.708 0 0)",
-    accent: "oklch(0.269 0 0)",
-    destructive: "oklch(0.704 0.191 22.216)",
-    border: "oklch(1 0 0 / 10%)",
-  },
-}
-
-const DEFAULT_ROLES: Readonly<Partial<Record<ThemeRole, RoleOverride>>> = {
-  "action.secondary.border": "oklch(0.556 0 0)",
-}
-
-const STACKS: Readonly<Record<FontStackName, readonly string[]>> = {
-  sans: [
-    "-apple-system",
-    "BlinkMacSystemFont",
-    "Segoe UI",
-    "Roboto",
-    "Helvetica Neue",
-    "Arial",
-    "sans-serif",
-  ],
-  serif: ["Georgia", "Times New Roman", "serif"],
-  mono: [
-    "ui-monospace",
-    "SFMono-Regular",
-    "Menlo",
-    "Consolas",
-    "Liberation Mono",
-    "Courier New",
-    "monospace",
-  ],
-}
-
-const GENERIC = new Set([
-  "serif",
-  "sans-serif",
-  "monospace",
-  "cursive",
-  "fantasy",
-  "system-ui",
-  "ui-monospace",
-  "ui-sans-serif",
-  "ui-serif",
-])
-
-const style = (
-  stack: FontStackName,
-  sizePx: number,
-  lineHeightPx: number,
-  weight: number,
-  letterSpacingPx = 0,
-): TypeStyle => ({
-  stack,
-  sizePx,
-  lineHeightPx,
-  weight,
-  letterSpacingPx,
-})
-
-// Body 16/24, headings about 1.25× apart, everything ≥ 14 px (research 05 §2).
-const SCALE: Readonly<Record<TypeStep, TypeStyle>> = {
-  display: style("sans", 36, 44, 700),
-  h1: style("sans", 28, 36, 700),
-  h2: style("sans", 22, 30, 700),
-  h3: style("sans", 18, 26, 700),
-  lead: style("sans", 18, 28, 400),
-  body: style("sans", 16, 24, 400),
-  bodySm: style("sans", 14, 22, 400),
-  caption: style("sans", 14, 20, 400),
-  footer: style("sans", 14, 20, 400),
-  button: style("sans", 16, 24, 700),
-  code: style("mono", 14, 20, 400),
-  otp: style("mono", 28, 36, 700, 6),
-  wordmark: style("sans", 20, 28, 700),
-}
-
-/** Loads and resolves the theme. Paths in the config are relative to `dir` (the config's folder). */
+/**
+ * Loads and resolves the theme: colour roles in each mode from the configured source, plus
+ * typography, spacing, radius, layout and component tokens. Paths in the config are relative to
+ * `dir`, the config's folder. The radius scale multiplies the base radius, as shadcn's does.
+ */
 export function loadTheme(config: ThemeConfig | undefined, dir: string): Theme {
-  const { tokens, radiusPx, source, files, others } = readSource(config, dir)
-  const overrides = {
+  const source = readSource(config, dir)
+  const roles = resolveRoles(source.tokens, {
     ...(config?.source === undefined ? DEFAULT_ROLES : {}),
     ...config?.roles,
-  } as Readonly<Record<string, RoleOverride>>
-  const roles = resolveRoles(tokens, overrides)
-  const base = config?.radius ?? radiusPx ?? 10
-  // shadcn's radius scale is multiplicative (research 05 §12.4).
-  const r = (multiplier: number) => Math.round(base * multiplier)
-  const radius = { none: 0, sm: r(0.6), md: r(0.8), lg: r(1), xl: r(1.4), full: 9999 }
-  const stacks = Object.fromEntries(
-    (Object.keys(STACKS) as FontStackName[]).map((name) => {
-      const families = config?.typography?.stacks?.[name] ?? STACKS[name]
-      const named = families.filter((family) => !GENERIC.has(family))
-      return [name, { families, msoFallback: named.at(-1) ?? "Arial" }]
-    }),
-  ) as Record<FontStackName, FontStack>
+  })
+  const base = config?.radius ?? source.radiusPx ?? DEFAULT_RADIUS
+  const scaled = (multiplier: number) => Math.round(base * multiplier)
+  const radius = { none: 0, sm: scaled(0.6), md: scaled(0.8), lg: scaled(1), xl: scaled(1.4) }
+  const steps = Object.keys(TYPE_SCALE) as TypeStep[]
   const scale = Object.fromEntries(
-    (Object.keys(SCALE) as TypeStep[]).map((step) => [
-      step,
-      { ...SCALE[step], ...config?.typography?.scale?.[step] },
-    ]),
+    steps.map((step) => [step, { ...TYPE_SCALE[step], ...config?.typography?.scale?.[step] }]),
   ) as Record<TypeStep, TypeStyle>
 
   return {
-    source,
-    files,
-    permutations: others,
+    source: source.label,
+    files: source.files,
+    permutations: source.permutations,
     roles,
-    typography: { stacks, scale },
-    space: {
-      scale: [0, 4, 8, 12, 16, 24, 32, 40, 48, 64],
-      gutterMobile: 16,
-      gutterDesktop: 32,
-      stack: { sm: 8, md: 16, lg: 24 },
-      section: 32,
-    },
+    typography: { stacks: fontStacks(config?.typography?.stacks), scale },
+    space: SPACE,
     radius: {
       ...radius,
+      full: 9999,
       button: radius.md,
       card: radius.lg,
-      badge: radius.full,
+      badge: 9999,
       code: radius.sm,
       image: radius.md,
     },
-    borderWidth: { hairline: 1, strong: 2 },
-    layout: {
-      container: config?.layout?.container ?? 600,
-      breakpoint: 480,
-      maxColumns: 3,
-      contentMaxCh: 75,
-    },
-    components: {
-      // 44 px tall with a 16/24 label: (44 − 24) / 2 = 10 px vertical padding (research 05 §6).
-      button: {
-        sm: { minHeight: 36, padX: 16, padY: 7, font: "bodySm" },
-        md: { minHeight: 44, padX: 24, padY: 10, font: "button" },
-        lg: { minHeight: 52, padX: 32, padY: 14, font: "button" },
-      },
-      link: { underline: true },
-      otp: { font: "otp", surface: "codeSurface" },
-    },
+    borderWidth: BORDER_WIDTH,
+    layout: { ...LAYOUT, container: config?.layout?.container ?? LAYOUT.container },
+    components: COMPONENTS,
     dark: config?.dark ?? (roles.dark ? "authored" : "none"),
-  }
-}
-
-interface Source {
-  tokens: ColourTokens
-  radiusPx: number | undefined
-  source: string
-  files: string[]
-  others: Record<string, string>[]
-}
-
-function readSource(config: ThemeConfig | undefined, dir: string): Source {
-  const source = config?.source
-  if (
-    config?.input !== undefined &&
-    !(typeof source === "string" && source.endsWith(".resolver.json"))
-  ) {
-    throw new EmailKitError("invalid-theme", "theme.input only applies to a .resolver.json source")
-  }
-  if (typeof source === "string" && source.endsWith(".resolver.json")) {
-    return fromResolver(readResolver(resolve(dir, source), source), config?.input ?? {})
-  }
-  return { ...readFiles(source, dir), others: [] }
-}
-
-/** The modifier whose contexts include `light` and `dark`; `theme` or `mode` if several do. */
-function modeModifier(resolver: Resolver): Modifier | undefined {
-  const modes = resolver.modifiers.filter(
-    (m) => m.contexts.includes("light") && m.contexts.includes("dark"),
-  )
-  if (modes.length <= 1) return modes[0]
-  const named = modes.filter((m) => m.name === "theme" || m.name === "mode")
-  if (named.length === 1) return named[0]
-  throw new EmailKitError(
-    "invalid-theme",
-    `${resolver.label}: several modifiers have light and dark contexts (${modes.map((m) => m.name).join(", ")}); name the colour-scheme one "theme"`,
-  )
-}
-
-function fromResolver(resolver: Resolver, input: Readonly<Record<string, string>>): Source {
-  const mode = modeModifier(resolver)
-  if (mode && Object.keys(input).some((key) => key.toLowerCase() === mode.name.toLowerCase())) {
-    throw new EmailKitError(
-      "invalid-theme",
-      `theme.input.${mode.name}: email-kit resolves both light and dark; leave it out`,
-    )
-  }
-  const files = new Set<string>()
-  const read = (context: "light" | "dark") => {
-    const result = resolveTokens(resolver, mode ? { ...input, [mode.name]: context } : input)
-    for (const file of result.files) files.add(file)
-    return readDtcgDocument(result.document, `${resolver.label} (${context})`)
-  }
-  const light = read("light")
-  const dark = mode ? read("dark") : undefined
-  const chosen = Object.entries(input)
-  const label = (values: [string, string][]) => values.map(([k, v]) => `${k}=${v}`).join(", ")
-  // The selected permutation, with defaults filled in, to leave out of the others.
-  const selected = label(
-    resolver.modifiers
-      .filter((m) => m !== mode)
-      .map((m) => [
-        m.name,
-        chosen.find(([k]) => k.toLowerCase() === m.name.toLowerCase())?.[1] ?? m.default ?? "",
-      ]),
-  )
-  return {
-    tokens: { light: light.colours, dark: dark?.colours },
-    radiusPx: light.radiusPx,
-    source: chosen.length > 0 ? `${resolver.label} (${label(chosen)})` : resolver.label,
-    files: [...files],
-    others: permutations(resolver, mode?.name).filter((p) => label(Object.entries(p)) !== selected),
-  }
-}
-
-function readFiles(
-  source: ThemeConfig["source"],
-  dir: string,
-): { tokens: ColourTokens; radiusPx: number | undefined; source: string; files: string[] } {
-  if (source === undefined) {
-    return fromVariables(
-      DEFAULT_VARIABLES,
-      "email-kit default (shadcn neutral, adjusted for email)",
-    )
-  }
-  if (typeof source === "string") {
-    const file = resolve(dir, source)
-    const text = read(file, source)
-    if (source.endsWith(".css")) {
-      const theme = readShadcnCss(text, source)
-      return { tokens: theme, radiusPx: theme.radiusPx, source, files: [file] }
-    }
-    const tokens = readDtcg(text, source)
-    return { tokens: { light: tokens.colours }, radiusPx: tokens.radiusPx, source, files: [file] }
-  }
-  if (typeof source.light === "string") {
-    const light = readDtcg(read(resolve(dir, source.light), source.light), source.light)
-    const darkFile = (source as { dark?: string }).dark
-    const dark = darkFile ? readDtcg(read(resolve(dir, darkFile), darkFile), darkFile) : undefined
-    return {
-      tokens: { light: light.colours, dark: dark?.colours },
-      radiusPx: light.radiusPx,
-      source: darkFile ? `${source.light} + ${darkFile}` : source.light,
-      files: [resolve(dir, source.light), ...(darkFile ? [resolve(dir, darkFile)] : [])],
-    }
-  }
-  return fromVariables(source as ThemeVariables, "theme.source (variables)")
-}
-
-function fromVariables(variables: ThemeVariables, label: string) {
-  const match = variables.radius ? /^([\d.]+)(px|rem)$/.exec(variables.radius.trim()) : null
-  const radiusPx = match ? Number(match[1]) * (match[2] === "rem" ? 16 : 1) : undefined
-  return {
-    tokens: { light: variables.light, dark: variables.dark },
-    radiusPx,
-    source: label,
-    files: [],
-  }
-}
-
-function read(file: string, label: string): string {
-  try {
-    return readFileSync(file, "utf8")
-  } catch {
-    throw new EmailKitError("invalid-theme", `The theme source ${label} can't be read`)
   }
 }
