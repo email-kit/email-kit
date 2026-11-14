@@ -11,7 +11,7 @@ export {
   type SenderKey,
   type SenderValues,
 } from "./config/sender.ts"
-export { isEmailDefinition } from "./definition/define.ts"
+export { isEmailDefinition, isTemplateId } from "./definition/define.ts"
 export { type EvaluatedEmail, type EvaluateOptions, evaluate } from "./definition/evaluate.ts"
 export { messageArguments } from "./i18n/message-format.ts"
 export { pseudoMessage } from "./i18n/pseudo.ts"

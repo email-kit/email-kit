@@ -81,6 +81,11 @@ export type EmailDefinitionInput<S extends StandardSchemaV1, Id extends string =
 }
 
 const ID = /^[a-z][a-z0-9]*(-[a-z0-9]+)*$/
+
+/** Whether a string is a template id: lowercase words joined by hyphens, like `order-shipped`. */
+export function isTemplateId(id: string): boolean {
+  return ID.test(id)
+}
 const DEFINITION = Symbol.for("email-kit.definition")
 const PURPOSES: readonly Purpose[] = ["transactional", "marketing", "consent-request"]
 
@@ -122,7 +127,7 @@ const PURPOSES: readonly Purpose[] = ["transactional", "marketing", "consent-req
 export function defineEmail<S extends StandardSchemaV1, const Id extends string = string>(
   definition: EmailDefinitionInput<S, Id>,
 ): EmailDefinition<StandardSchemaV1.InferOutput<S>> {
-  if (!ID.test(definition.id)) {
+  if (!isTemplateId(definition.id)) {
     throw new EmailKitError(
       "invalid-id",
       `Template id "${definition.id}" must be lowercase words joined by hyphens, like "order-confirmation"`,
