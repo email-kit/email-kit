@@ -1,28 +1,26 @@
-// A.7 Accessibility (`a11y.*`): headings, links, type size, zoom and tables (research 02).
-
-import type { Element } from "domhandler"
+import { type Element, isTag, isText } from "domhandler"
 
 import { attr } from "../parse.ts"
-import type { Check } from "../types.ts"
-import { declarations, eachEmail, inlineStyles, text } from "./util.ts"
+import type { Check, CheckedEmail } from "../types.ts"
+import { collapse, declarations, eachEmail, inlineStyles, text } from "./util.ts"
 
-/** Elements of this table itself: not inside a nested table. */
+/** The elements of a table itself, not those inside a table nested in it. */
 function own(table: Element): Element[] {
   const out: Element[] = []
   const walk = (node: Element) => {
-    for (const child of node.children) {
-      if (child.type !== "tag") continue
-      const element = child as Element
-      out.push(element)
-      if (element.name !== "table") walk(element)
+    for (const child of node.children.filter(isTag)) {
+      out.push(child)
+      if (child.name !== "table") walk(child)
     }
   }
   walk(table)
   return out
 }
 
-// Link text that says nothing out of context (WCAG 2.4.4), per language. Compared whole, after
-// trimming punctuation and case.
+/**
+ * Link text that says nothing out of context, in each language. It's compared whole, ignoring
+ * punctuation and case.
+ */
 const GENERIC_LINK_TEXT: Readonly<Record<string, readonly string[]>> = {
   en: ["click here", "here", "click", "more", "read more", "learn more", "link", "this link", "go"],
   de: ["hier", "hier klicken", "klicken", "mehr", "weiterlesen", "mehr erfahren", "link"],
@@ -36,21 +34,27 @@ function linkName(link: Element): string {
   if (label !== undefined) return label.trim()
   const alts: string[] = []
   const walk = (node: Element) => {
-    for (const child of node.children) {
-      if (child.type !== "tag") continue
-      const element = child as Element
-      if (element.name === "img") alts.push(attr(element, "alt") ?? "")
-      walk(element)
+    for (const child of node.children.filter(isTag)) {
+      if (child.name === "img") alts.push(attr(child, "alt") ?? "")
+      walk(child)
     }
   }
   walk(link)
-  return `${text(link)} ${alts.join(" ")}`.replace(/\s+/g, " ").trim()
+  return collapse(`${text(link)} ${alts.join(" ")}`)
 }
 
+/** Whether a table says it's for layout, with `role="presentation"` or `role="none"`. */
 const isPresentation = (table: Element) =>
   ["presentation", "none"].includes(attr(table, "role") ?? "")
-const isData = (table: Element) => own(table).some((e) => e.name === "th" || e.name === "caption")
 
+/** Whether a table holds data: it has header cells or a caption. */
+const isDataTable = (table: Element) =>
+  own(table).some((e) => e.name === "th" || e.name === "caption")
+
+/** The `scope` values a header cell can have. */
+const SCOPES = ["col", "row", "colgroup", "rowgroup"]
+
+/** The `a11y.*` checks: headings, links, type size, zoom and tables. */
 export const A11Y: readonly Check[] = [
   {
     id: "a11y.layout-table-role",
@@ -58,28 +62,24 @@ export const A11Y: readonly Check[] = [
     rule: 'Layout tables have `role="presentation"` and no `th`, `caption`, `summary` or `scope`.',
     fix: 'Add role="presentation" to tables used for layout; otherwise screen readers announce rows and columns.',
     run: (context, report) =>
-      eachEmail(
-        context,
-        (email, problem) => {
-          for (const { node, offset } of email.parsed.elements) {
-            if (node.name !== "table") continue
-            if (isPresentation(node)) {
-              const conflict = own(node).find(
-                (e) => e.name === "th" || e.name === "caption" || attr(e, "scope"),
+      eachEmail(context, report, (email, problem) => {
+        for (const { node, offset } of email.parsed.elements) {
+          if (node.name !== "table") continue
+          if (isPresentation(node)) {
+            const conflict = own(node).find(
+              (e) => e.name === "th" || e.name === "caption" || attr(e, "scope"),
+            )
+            if (conflict || attr(node, "summary") !== undefined) {
+              problem(
+                `A presentation table has ${conflict ? `<${conflict.name}>` : "summary"}: use a data table or drop it`,
+                offset,
               )
-              if (conflict || attr(node, "summary") !== undefined) {
-                problem(
-                  `A presentation table has ${conflict ? `<${conflict.name}>` : "summary"}: use a data table or drop it`,
-                  offset,
-                )
-              }
-            } else if (!isData(node)) {
-              problem('A layout table has no role="presentation"', offset)
             }
+          } else if (!isDataTable(node)) {
+            problem('A layout table has no role="presentation"', offset)
           }
-        },
-        report,
-      ),
+        }
+      }),
   },
   {
     id: "a11y.data-table",
@@ -87,47 +87,30 @@ export const A11Y: readonly Check[] = [
     rule: "Data tables have `th scope`, a caption or a heading before them, at least 2 × 2 cells, and no presentation role.",
     fix: "Use DataTable, which writes all of these.",
     run: (context, report) =>
-      eachEmail(
-        context,
-        (email, problem) => {
-          for (const { node, offset } of email.parsed.elements) {
-            if (node.name !== "table" || isPresentation(node) || !isData(node)) continue
-            const cells = own(node)
-            const headers = cells.filter((e) => e.name === "th")
-            if (
-              headers.some(
-                (th) => !["col", "row", "colgroup", "rowgroup"].includes(attr(th, "scope") ?? ""),
-              )
-            ) {
-              problem("A data table has a <th> without scope", offset)
-            }
-            let previous = node.prev
-            while (
-              previous &&
-              previous.type === "text" &&
-              !(previous as unknown as { data: string }).data.trim()
-            ) {
-              previous = previous.prev
-            }
-            const heading = previous?.type === "tag" && /^h[1-6]$/.test((previous as Element).name)
-            if (!cells.some((e) => e.name === "caption") && !heading) {
-              problem("A data table has no <caption> and no heading right before it", offset)
-            }
-            const rows = cells.filter((e) => e.name === "tr")
-            const columns = Math.max(
-              0,
-              ...rows.map((tr) => tr.children.filter((c) => c.type === "tag").length),
-            )
-            if (rows.length < 2 || columns < 2) {
-              problem(
-                `A data table is ${rows.length} × ${columns}; NVDA in classic Outlook treats it as layout`,
-                offset,
-              )
-            }
+      eachEmail(context, report, (email, problem) => {
+        for (const { node, offset } of email.parsed.elements) {
+          if (node.name !== "table" || isPresentation(node) || !isDataTable(node)) continue
+          const cells = own(node)
+          const headers = cells.filter((e) => e.name === "th")
+          if (headers.some((th) => !SCOPES.includes(attr(th, "scope") ?? ""))) {
+            problem("A data table has a <th> without scope", offset)
           }
-        },
-        report,
-      ),
+          let previous = node.prev
+          while (previous && isText(previous) && !previous.data.trim()) previous = previous.prev
+          const heading = previous && isTag(previous) && /^h[1-6]$/.test(previous.name)
+          if (!cells.some((e) => e.name === "caption") && !heading) {
+            problem("A data table has no <caption> and no heading right before it", offset)
+          }
+          const rows = cells.filter((e) => e.name === "tr")
+          const columns = Math.max(0, ...rows.map((tr) => tr.children.filter(isTag).length))
+          if (rows.length < 2 || columns < 2) {
+            problem(
+              `A data table is ${rows.length} × ${columns}; NVDA in classic Outlook treats it as layout`,
+              offset,
+            )
+          }
+        }
+      }),
   },
   {
     id: "a11y.one-h1",
@@ -171,14 +154,9 @@ export const A11Y: readonly Check[] = [
     level: "error",
     rule: "Text is at least 12 px (error), and 14 px or more (warning below).",
     fix: "Use a type step from the theme: body is 16 px and the smallest step 14 px.",
+    /** Sizes of 0 and 1px are the spacer-cell technique, not text. */
     run: (context, report) => {
-      // 0 and 1 px are the spacer-cell technique, not text.
-      const check = (
-        email: (typeof context.emails)[number],
-        value: string,
-        at: number,
-        where: string,
-      ) => {
+      const check = (email: CheckedEmail, value: string, at: number, where: string) => {
         const px = /^(\d+(?:\.\d+)?)px$/.exec(value.replace(/\s*!important$/, ""))?.[1]
         const size = px === undefined ? undefined : Number(px)
         if (size === undefined || size <= 1 || size >= 14) return
@@ -207,20 +185,16 @@ export const A11Y: readonly Check[] = [
     rule: "The viewport meta doesn't block zoom (`user-scalable=no` or `maximum-scale` below 2).",
     fix: "Use `width=device-width, initial-scale=1` only: people with low vision zoom to read.",
     run: (context, report) =>
-      eachEmail(
-        context,
-        (email, problem) => {
-          for (const { node, offset } of email.parsed.elements) {
-            if (node.name !== "meta" || attr(node, "name")?.toLowerCase() !== "viewport") continue
-            const content = (attr(node, "content") ?? "").toLowerCase()
-            const scale = /maximum-scale\s*=\s*([\d.]+)/.exec(content)?.[1]
-            if (/user-scalable\s*=\s*(no|0)\b/.test(content))
-              problem("The viewport sets user-scalable=no", offset)
-            else if (scale !== undefined && Number(scale) < 2)
-              problem(`The viewport sets maximum-scale=${scale}`, offset)
-          }
-        },
-        report,
-      ),
+      eachEmail(context, report, (email, problem) => {
+        for (const { node, offset } of email.parsed.elements) {
+          if (node.name !== "meta" || attr(node, "name")?.toLowerCase() !== "viewport") continue
+          const content = (attr(node, "content") ?? "").toLowerCase()
+          const scale = /maximum-scale\s*=\s*([\d.]+)/.exec(content)?.[1]
+          if (/user-scalable\s*=\s*(no|0)\b/.test(content))
+            problem("The viewport sets user-scalable=no", offset)
+          else if (scale !== undefined && Number(scale) < 2)
+            problem(`The viewport sets maximum-scale=${scale}`, offset)
+        }
+      }),
   },
 ]

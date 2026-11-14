@@ -1,15 +1,16 @@
-// A.12 Output (`output.*`): the committed output folder matches what a compile writes now.
-
 import { createHash } from "node:crypto"
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs"
 import { join } from "node:path"
 
 import type { Check, CheckContext } from "../types.ts"
 
+/** A file's SHA-256, as the manifest records it. */
 const sha256 = (text: string) => createHash("sha256").update(text).digest("hex")
 
-// A gitignored output folder is a local build, not committed output: drift is expected there,
-// and output.gitignored says so instead.
+/**
+ * A file's committed content, or `undefined` for a gitignored output folder: that's a local build,
+ * where drift is expected, and `output.gitignored` reports it instead.
+ */
 function onDisk(context: CheckContext, path: string): string | undefined {
   if (context.output.gitignored) return undefined
   const file = join(context.output.absolute, ...path.split("/"))
@@ -27,21 +28,24 @@ function literals(module: string): Set<string> {
   return out
 }
 
-/** A JavaScript string literal as JSON: oxc writes `\\xA0`, `\\'`, `\\v` and `\\0`, which JSON lacks. */
+/** The escapes JavaScript has and JSON lacks, as JSON writes them. */
+const JSON_ESCAPES: Readonly<Record<string, string>> = {
+  "'": "'",
+  v: "\\u000b",
+  "0": "\\u0000",
+}
+
+/**
+ * A JavaScript string literal as JSON: oxc writes `\\xA0`, `\\'`, `\\v` and `\\0`, which JSON
+ * lacks.
+ */
 function asJson(literal: string): string {
   return literal.replace(/\\(x[0-9a-fA-F]{2}|['v]|0(?![0-9])|[\s\S])/g, (sequence, code: string) =>
-    code[0] === "x"
-      ? `\\u00${code.slice(1)}`
-      : code === "'"
-        ? "'"
-        : code === "v"
-          ? "\\u000b"
-          : code === "0"
-            ? "\\u0000"
-            : sequence,
+    code[0] === "x" ? `\\u00${code.slice(1)}` : (JSON_ESCAPES[code] ?? sequence),
   )
 }
 
+/** The `output.*` checks: the committed output folder matches what a compile writes now. */
 export const OUTPUT: readonly Check[] = [
   {
     id: "output.drift",

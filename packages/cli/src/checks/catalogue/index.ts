@@ -10,11 +10,13 @@ import { LAYOUT } from "./layout.ts"
 import { LEGAL } from "./legal.ts"
 import { LINK } from "./link.ts"
 import { OUTPUT } from "./output.ts"
+import { PREHEADER } from "./preheader.ts"
 import { RENDER } from "./render.ts"
 import { SOURCE } from "./source.ts"
+import { SUBJECT } from "./subject.ts"
 import { TEXT } from "./text.ts"
 
-/** The built-in checks over compiled output (Appendix A, phase 1, in progress). */
+/** Every built-in check, family by family. Findings are reported in this order. */
 export const CATALOGUE: readonly Check[] = [
   ...COMPILER,
   ...SOURCE,
@@ -28,6 +30,8 @@ export const CATALOGUE: readonly Check[] = [
   ...LEGAL,
   ...I18N,
   ...TEXT,
+  ...PREHEADER,
+  ...SUBJECT,
   ...RENDER,
   ...OUTPUT,
 ]

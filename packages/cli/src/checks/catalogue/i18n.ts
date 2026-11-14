@@ -1,19 +1,31 @@
-// A.13 i18n (`i18n.*`): pseudo-locales (I18N-05), caller-formatted values (I18N-07, R5), message
-// hygiene, and right-to-left text cells (research 05 §10, 01).
-
 import type { Element } from "domhandler"
 
 import { attr } from "../parse.ts"
 import { type Node, walk } from "../source.ts"
 import type { Check } from "../types.ts"
-import { eachEmail, inlineStyles, ownText, TEXT_CELLS } from "./util.ts"
+import { eachEmail, firstElement, inlineStyles, ownText, TEXT_CELLS } from "./util.ts"
 
+/** The currency symbols that mustn't be written next to a value. */
 const CURRENCY = "$€£¥₹₩₽¢₺₦₱₫₪"
+
+/** A currency symbol next to a message argument: `${amount}` or `{amount} €`. */
 const SYMBOL_ARGUMENT = new RegExp(
   `[${CURRENCY}]\\s?\\{[A-Za-z_]\\w*\\}|\\{[A-Za-z_]\\w*\\}\\s?[${CURRENCY}]`,
 )
+
+/** A date built from three arguments: `{day}/{month}/{year}`. */
 const DATE_PARTS = /\{[A-Za-z_]\w*\}\s*[/.-]\s*\{[A-Za-z_]\w*\}\s*[/.-]\s*\{[A-Za-z_]\w*\}/
 
+/** JSX text that ends with a currency symbol, before a value: `$` in `${total}`. */
+const SYMBOL_BEFORE = new RegExp(`[${CURRENCY}]\\s?$`)
+
+/** JSX text that starts with a currency symbol, after a value: ` €` in `{total} €`. */
+const SYMBOL_AFTER = new RegExp(`^\\s?[${CURRENCY}]`)
+
+/**
+ * The `i18n.*` checks: the pseudo-locales, values the caller formats, message hygiene, and
+ * right-to-left text cells.
+ */
 export const I18N: readonly Check[] = [
   {
     id: "i18n.expansion",
@@ -58,11 +70,9 @@ export const I18N: readonly Check[] = [
             if (child.type !== "JSXText") return
             const text = String(child.value)
             const before =
-              children[i + 1]?.type === "JSXExpressionContainer" &&
-              new RegExp(`[${CURRENCY}]\\s?$`).test(text)
+              children[i + 1]?.type === "JSXExpressionContainer" && SYMBOL_BEFORE.test(text)
             const after =
-              children[i - 1]?.type === "JSXExpressionContainer" &&
-              new RegExp(`^\\s?[${CURRENCY}]`).test(text)
+              children[i - 1]?.type === "JSXExpressionContainer" && SYMBOL_AFTER.test(text)
             if (before || after) {
               report({
                 message: `A currency symbol is written next to a value: "${text.trim()}"`,
@@ -99,26 +109,22 @@ export const I18N: readonly Check[] = [
     rule: "In right-to-left emails, every text cell (p, h1–h6, li, td, th, caption) carries dir and an explicit alignment.",
     fix: 'Use email-kit\'s components, which do this, or add dir="rtl" and text-align to the element: Orange strips dir from tables and cells, and Outlook mishandles inherited direction.',
     run: (context, report) =>
-      eachEmail(
-        context,
-        (email, problem) => {
-          const root = email.parsed.elements.find((e) => e.node.name === "html")
-          if (!root || attr(root.node, "dir") !== "rtl") return
-          const aligned = new Set<Element>()
-          for (const { element, props } of inlineStyles(email.parsed.elements)) {
-            if (props.has("text-align")) aligned.add(element)
-          }
-          for (const { node, offset } of email.parsed.elements) {
-            if (!TEXT_CELLS.has(node.name) || !ownText(node)) continue
-            const missing = [
-              ...(attr(node, "dir") ? [] : ["dir"]),
-              ...(aligned.has(node) || attr(node, "align") ? [] : ["text-align"]),
-            ]
-            if (missing.length > 0)
-              problem(`A <${node.name}> with text has no ${missing.join(" or ")}`, offset)
-          }
-        },
-        report,
-      ),
+      eachEmail(context, report, (email, problem) => {
+        const root = firstElement(email, "html")
+        if (!root || attr(root.node, "dir") !== "rtl") return
+        const aligned = new Set<Element>()
+        for (const { element, props } of inlineStyles(email.parsed.elements)) {
+          if (props.has("text-align")) aligned.add(element)
+        }
+        for (const { node, offset } of email.parsed.elements) {
+          if (!TEXT_CELLS.has(node.name) || !ownText(node)) continue
+          const missing = [
+            ...(attr(node, "dir") ? [] : ["dir"]),
+            ...(aligned.has(node) || attr(node, "align") ? [] : ["text-align"]),
+          ]
+          if (missing.length > 0)
+            problem(`A <${node.name}> with text has no ${missing.join(" or ")}`, offset)
+        }
+      }),
   },
 ]

@@ -1,14 +1,15 @@
-// Checks over the renders of the fixture sweep (CHK-06): sizes from the largest render, and copy
-// that only breaks with real data (research 01 §8, 05 §8).
-
 import type { Check, CheckedEmail } from "../types.ts"
 
-/** Gmail clips the HTML part past 102 KB; providers add some bytes of their own. */
+/** Gmail clips the HTML part past 102 KB. */
 const CLIP = 102 * 1024
+
+/** The size from which `size.gmail` warns. */
 const WARN = 90 * 1024
+
+/** The bytes a sending provider adds, such as tracking pixels and rewritten links. */
 const ALLOWANCE = 5 * 1024
 
-// Signs a value rendered empty: "Hi ,", "Thanks, !", "Order  confirmed", "()".
+/** Signs that a value rendered empty: "Hi ,", "Thanks, !", "Order  confirmed", "()". */
 const BROKEN: readonly [RegExp, string][] = [
   [/\S ,/, "a space before a comma"],
   [/[,;:]\s*[.!?,;:]/, "punctuation with nothing between"],
@@ -16,6 +17,7 @@ const BROKEN: readonly [RegExp, string][] = [
   [/\(\s*\)|\[\s*\]/, "empty brackets"],
 ]
 
+/** The renders of each template in each locale. */
 function groups(emails: readonly CheckedEmail[]): Map<string, CheckedEmail[]> {
   const out = new Map<string, CheckedEmail[]>()
   for (const email of emails) {
@@ -25,6 +27,10 @@ function groups(emails: readonly CheckedEmail[]): Map<string, CheckedEmail[]> {
   return out
 }
 
+/**
+ * The checks on the renders with every fixture and generated variant: sizes from the largest
+ * render, and copy that breaks only with real data.
+ */
 export const RENDER: readonly Check[] = [
   {
     id: "size.gmail",

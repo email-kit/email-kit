@@ -1,16 +1,14 @@
-// A.2 Sources (`source.*`): templates and user components take values from the theme (UI-01).
-// The style lints read style objects: a JSX `style={{…}}` (through spreads, conditionals and
-// `&&`), or `style={NAME}` where NAME is an object constant in the same file. Data, such as a
-// fixture's `{ color: "Red" }`, is never a style, so it isn't flagged.
-
-import { colorsNamed } from "culori"
-
 import { isNode, type Node, type SourceFile, staticString, walk } from "../source.ts"
-import type { Check, Problem } from "../types.ts"
+import type { Check } from "../types.ts"
+import { NAMED_COLOURS, type Report } from "./util.ts"
 
-const NAMED = new Set(Object.keys(colorsNamed))
+/** Keywords that aren't colours, though some are CSS colour values. */
 const ALLOWED = new Set(["transparent", "inherit", "currentcolor", "initial", "unset", "none"])
+
+/** A CSS colour function, such as `rgb(` or `oklch(`. */
 const COLOUR_FUNCTION = /\b(rgba?|hsla?|hwb|lab|lch|oklab|oklch|color|color-mix|light-dark)\(/i
+
+/** A hex colour of 3, 4, 6 or 8 digits. */
 const HEX = /#(?:[0-9a-f]{3,4}|[0-9a-f]{6}|[0-9a-f]{8})\b/i
 
 /** Style properties and attributes that carry colours, lowercased without hyphens. */
@@ -27,6 +25,7 @@ const COLOUR_PROPS = new Set([
   ...["borderbottomcolor", "borderleftcolor", "textdecorationcolor", "boxshadow", "textshadow"],
   ...["fill", "stroke", "caretcolor", "columnrulecolor", "msoborderalt"],
 ])
+/** JSX attributes that carry colours, lowercased. */
 const COLOUR_ATTRS = new Set([
   "bgcolor",
   "color",
@@ -40,27 +39,42 @@ const COLOUR_ATTRS = new Set([
   "text",
 ])
 
-export function colourIn(value: string): string | undefined {
+/** The first literal colour in a value: a hex, a colour function or a colour name. */
+function colourIn(value: string): string | undefined {
   const hex = HEX.exec(value)
   if (hex) return hex[0]
   const fn = COLOUR_FUNCTION.exec(value)
   if (fn) return `${fn[1]}()`
   for (const word of value.toLowerCase().split(/[^a-z]+/)) {
-    if (word && !ALLOWED.has(word) && NAMED.has(word)) return word
+    if (word && !ALLOWED.has(word) && NAMED_COLOURS.has(word)) return word
   }
   return undefined
 }
 
+/** A property name lowercased without hyphens, so `fontSize` and `font-size` compare equal. */
 const normal = (name: string) => name.toLowerCase().replaceAll("-", "")
 
+/** One property of a style object: its name, its value, and the whole property node. */
 interface StyleProperty {
   readonly key: string
   readonly value: Node
   readonly node: Node
 }
 
+/** Each file's style properties, found once for the three checks that read them. */
+const found = new WeakMap<SourceFile, readonly StyleProperty[]>()
+
 /** The properties of every style object in the file. */
-function* styleProperties(source: SourceFile): Generator<StyleProperty> {
+function styleProperties(source: SourceFile): readonly StyleProperty[] {
+  let properties = found.get(source)
+  if (!properties) {
+    properties = [...findStyleProperties(source)]
+    found.set(source, properties)
+  }
+  return properties
+}
+
+function* findStyleProperties(source: SourceFile): Generator<StyleProperty> {
   const program = source.program()
   const constants = new Map<string, Node>()
   for (const { node } of walk(program)) {
@@ -74,6 +88,7 @@ function* styleProperties(source: SourceFile): Generator<StyleProperty> {
     }
   }
   const seen = new Set<Node>()
+  /** The properties an expression gives a style, following what it's built from. */
   function* fromExpression(expression: Node | undefined): Generator<StyleProperty> {
     if (!expression || seen.has(expression)) return
     seen.add(expression)
@@ -131,14 +146,21 @@ function* attributes(source: SourceFile): Generator<{ name: string; value: strin
   }
 }
 
+/** Runs `fn` for every source file, for checks that look at one file at a time. */
 function eachSource(
   sources: readonly SourceFile[],
-  report: (problem: Problem) => void,
+  report: Report,
   fn: (source: SourceFile, problem: (message: string, at: number) => void) => void,
 ): void {
   for (const source of sources) fn(source, (message, at) => report({ message, source, at }))
 }
 
+/**
+ * The `source.*` checks: templates and components take their values from the theme. The style
+ * checks read style objects: a JSX `style={{…}}`, through spreads, conditionals and `&&`, or
+ * `style={NAME}` where `NAME` is an object constant in the same file. Data, such as a fixture's
+ * `{ color: "Red" }`, is never a style, so it isn't flagged.
+ */
 export const SOURCE: readonly Check[] = [
   {
     id: "source.no-literal-colour",
@@ -180,6 +202,10 @@ export const SOURCE: readonly Check[] = [
     level: "error",
     rule: "No literal `font-size` in templates or user components, except 0 or 1px on spacer and divider cells.",
     fix: "Sizes come from the type scale: use Text or Heading with a size, or the font() helper.",
+    /**
+     * 0 or 1px is allowed: it keeps an empty spacer or divider cell from growing to the text's
+     * line height.
+     */
     run: (context, report) =>
       eachSource(context.sources, report, (source, problem) => {
         for (const { key, value, node } of styleProperties(source)) {
@@ -190,7 +216,6 @@ export const SOURCE: readonly Check[] = [
               : value.type === "TemplateLiteral" && (value.expressions as unknown[]).length === 0
                 ? staticString(value)
                 : undefined
-          // 0 or 1px keeps an empty spacer or divider cell from growing to the text's line height.
           if (literal !== undefined && !/^[01](px)?$/.test(literal.trim())) {
             problem(`\`${key}\` is a literal size`, node.start)
           }

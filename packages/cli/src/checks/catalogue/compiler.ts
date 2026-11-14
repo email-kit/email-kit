@@ -1,10 +1,11 @@
-// Checks the compiler enforces (Appendix A): a compile that breaks one fails with an error code,
-// and `email-kit check` reports that failure under the check's id, with its location.
-
 import type { Check } from "../types.ts"
 
 const nothing = () => {}
 
+/**
+ * The checks the compiler enforces. A compile that breaks one fails with an error code, and
+ * `email-kit check` reports that failure under the check's id, with its location.
+ */
 export const COMPILER: readonly Check[] = [
   {
     id: "source.id-grammar",
@@ -33,7 +34,7 @@ export const COMPILER: readonly Check[] = [
   {
     id: "source.schema-portable",
     level: "error",
-    rule: "The schema stays within the portable JSON Schema subset (R4).",
+    rule: "The schema stays within the portable JSON Schema subset.",
     fix: "Use the types and constraints every target language can check; the message names the field.",
     compiler: { codes: ["schema-not-portable", "unsupported-schema", "missing-converter"] },
     run: nothing,
