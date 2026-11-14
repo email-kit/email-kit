@@ -61,7 +61,7 @@ export interface EmailTemplate<Id extends TemplateId, Data> {
   validate(data: unknown): readonly DataIssue[]
 }
 
-/** Sender values the backend passes once, at startup, to createEmails() (RUN-04). */
+/** Sender values the backend passes once, at startup, to createEmails(). */
 export interface EmailContext {
   readonly siteUrl: string
 }
@@ -799,7 +799,7 @@ const TEMPLATES = {
 // LOCALE_DATA and PLURALS derive from Unicode CLDR 47 data, © Unicode, Inc., under the
 // Unicode License v3: https://www.unicode.org/license.txt
 
-/** CLDR 47 parents and scripts for resolving a requested locale (spec §16). */
+/** CLDR 47 parents and scripts, for resolving a requested locale. */
 const LOCALE_DATA: LocaleData = {
   "parents": {
     "en-150": "en-001",
@@ -917,7 +917,7 @@ const LOCALE_DATA: LocaleData = {
   "regions": {}
 }
 
-/** CLDR 47 plural rules per locale (ADR 0003): the category of a number. */
+/** CLDR 47 plural rules for each locale: the category of a number. */
 const PLURALS: Readonly<Record<string, (n: number) => string>> = {
   "en": (n) => {
     const s = String(Math.abs(n))
@@ -940,7 +940,7 @@ const PLURALS: Readonly<Record<string, (n: number) => string>> = {
 }
 
 /**
- * Builds the emails with the values that vary by environment (RUN-04). Call it once, for
+ * Builds the emails with the values that vary by environment. Call it once, for
  * example at startup, and reuse the result. Data passed to render() can't override them.
  */
 export function createEmails(context: EmailContext): Emails {
