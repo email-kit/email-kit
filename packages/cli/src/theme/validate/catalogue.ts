@@ -14,6 +14,10 @@ export interface TokenFinding {
   readonly message: string
 }
 
+/** The fix every `tokens.*` finding gives. */
+export const TOKEN_FIX =
+  "Adjust the colour or the role in the theme; `email-kit tokens` lists every pair."
+
 /**
  * Every `tokens.*` check, with its default level and its rule in one line. The checks config, the
  * docs page and `email-kit check` use this list. A finding may carry another level than its

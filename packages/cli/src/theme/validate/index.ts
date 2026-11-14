@@ -3,7 +3,7 @@ import type { Theme } from "../theme.ts"
 import type { Level, TokenFinding } from "./catalogue.ts"
 import { validateRoles } from "./colours.ts"
 
-export { type Level, TOKEN_CHECKS, type TokenFinding } from "./catalogue.ts"
+export { type Level, TOKEN_CHECKS, TOKEN_FIX, type TokenFinding } from "./catalogue.ts"
 export { validateRoles } from "./colours.ts"
 
 /** The smallest touch target, in px. */
