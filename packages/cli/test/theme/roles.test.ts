@@ -1,5 +1,5 @@
-// P1-104 roles (with the research 05 §12.5 shadcn mapping), P1-111 muted-ink adjustment and the
-// colour checks of P1-110, on shadcn's neutral theme and on deliberately bad themes.
+// The colour roles mapped from shadcn's variables, the muted-ink adjustment and the colour checks,
+// on shadcn's neutral theme and on deliberately bad themes.
 
 import { readFileSync } from "node:fs"
 import { fileURLToPath } from "node:url"
@@ -7,9 +7,9 @@ import { fileURLToPath } from "node:url"
 import { describe, expect, it } from "vitest"
 
 import { channels, contrast } from "../../src/theme/colour.ts"
-import { type ColourTokens, ROLES, resolveRoles } from "../../src/theme/roles.ts"
-import { readShadcnCss } from "../../src/theme/shadcn.ts"
-import { validateRoles } from "../../src/theme/validate.ts"
+import { type ColourTokens, ROLES, resolveRoles } from "../../src/theme/roles/index.ts"
+import { readShadcnCss } from "../../src/theme/source/shadcn.ts"
+import { validateRoles } from "../../src/theme/validate/index.ts"
 
 const neutral = readShadcnCss(
   readFileSync(
@@ -50,7 +50,7 @@ describe("shadcn neutral theme", () => {
     await expect(report(neutral)).toMatchFileSnapshot("../__golden__/theme/shadcn-neutral.txt")
   })
 
-  it("maps the roles as research 05 §12.5 describes", () => {
+  it("maps shadcn's variables to the roles", () => {
     const { light, dark } = resolveRoles(neutral)
     expect(light).toMatchObject({
       pageGround: "#f5f5f5",

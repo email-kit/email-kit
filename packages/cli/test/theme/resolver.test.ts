@@ -1,4 +1,4 @@
-// P1-102: DTCG Resolver Module 2025.10 sources, and P1-110: every permutation checked.
+// DTCG Resolver Module 2025.10 sources, with every permutation checked.
 
 import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs"
 import { join, sep } from "node:path"
@@ -8,7 +8,7 @@ import { afterAll, describe, expect, it } from "vitest"
 
 import { run } from "../../src/run.ts"
 import { checkPermutations } from "../../src/theme/check.ts"
-import { checkInput, readResolver, resolveTokens } from "../../src/theme/resolver.ts"
+import { checkInput, readResolver, resolveTokens } from "../../src/theme/source/resolver.ts"
 import { loadTheme } from "../../src/theme/theme.ts"
 
 const DIR = fileURLToPath(new URL("../fixtures/themes/resolver/", import.meta.url))
@@ -23,7 +23,7 @@ describe("a resolver source", () => {
   it("takes light and dark from the modifier with those contexts, the brand from its default", () => {
     expect(theme.source).toBe("theme.resolver.json")
     expect(theme.roles.light["action.primary.fill"]).toBe("#1d4ed8")
-    // Dark mode: the page ground from `background`, the canvas from `card` (research 05 §12.5).
+    // Dark mode: the page ground from `background`, the canvas from `card`.
     expect(theme.roles.dark?.pageGround).toBe("#09090b")
     expect(theme.roles.dark?.canvas).toBe("#18181b")
     expect(theme.dark).toBe("authored")
@@ -91,7 +91,7 @@ describe("email-kit tokens with a resolver", () => {
   })
 })
 
-describe("inputs (resolver §6.1)", () => {
+describe("inputs", () => {
   const resolver = readResolver(join(DIR, "theme.resolver.json"), "theme.resolver.json")
 
   it("fills defaults and matches modifier names case-insensitively", () => {
@@ -157,6 +157,11 @@ describe("documents the spec requires tools to reject", () => {
       "a pointer into resolutionOrder",
       { resolutionOrder: [{ $ref: "#/resolutionOrder/0" }] },
       "must point at #/sets/<name> or #/modifiers/<name>",
+    ],
+    [
+      "a set without sources",
+      { sets: { a: {} }, resolutionOrder: [{ $ref: "#/sets/a" }] },
+      "a has no sources array",
     ],
     [
       "an inline entry without a type",

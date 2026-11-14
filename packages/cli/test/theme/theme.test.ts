@@ -1,5 +1,5 @@
-// P1-100 (config), P1-102 (DTCG and variables inputs), P1-105–108 (type, space, radius, layout,
-// buttons, dark), P1-110 (checks), P1-112 (theme.json) and P1-114 (`email-kit tokens`).
+// Loading the theme: its config, its sources (DTCG files, inline variables, shadcn CSS), the type,
+// space, radius, layout, button and dark tokens, the checks, theme.json and `email-kit tokens`.
 
 import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs"
 import { join, sep } from "node:path"
@@ -10,9 +10,9 @@ import { afterAll, describe, expect, it } from "vitest"
 import { compile, summarize } from "../../src/compiler/build.ts"
 import { resolveConfig } from "../../src/compiler/config/index.ts"
 import { run } from "../../src/run.ts"
-import { readDtcg } from "../../src/theme/dtcg.ts"
+import { readDtcg } from "../../src/theme/source/dtcg.ts"
 import { loadTheme } from "../../src/theme/theme.ts"
-import { validateTheme } from "../../src/theme/validate.ts"
+import { validateTheme } from "../../src/theme/validate/index.ts"
 
 const THEMES = fileURLToPath(new URL("../fixtures/themes/", import.meta.url))
 const FIXTURE = fileURLToPath(new URL("../fixtures/project/", import.meta.url))
@@ -31,7 +31,7 @@ describe("the default theme", () => {
     expect(levels(findings, "warning")).toEqual([])
   })
 
-  it("has the research 05 defaults", () => {
+  it("has the default type, fonts and radius", () => {
     expect(theme.typography.scale.body).toEqual({
       stack: "sans",
       sizePx: 16,
@@ -103,6 +103,14 @@ describe("sources", () => {
     ).toThrow(/cycle/)
   })
 
+  it("reads a DTCG radius as an object or, as older files write it, a string", () => {
+    const radius = (value: unknown) =>
+      readDtcg(JSON.stringify({ radius: { $type: "dimension", $value: value } })).radiusPx
+    expect(radius({ value: 0.5, unit: "rem" })).toBe(8)
+    expect(radius("6px")).toBe(6)
+    expect(() => radius("1em")).toThrow("must be a dimension in px or rem")
+  })
+
   it("takes the variables inline, and shadcn CSS by path", () => {
     const inline = loadTheme(
       {
@@ -146,6 +154,20 @@ describe("sources", () => {
 })
 
 describe("checks beyond colour", () => {
+  it("never gives Outlook a system-font alias, which Windows doesn't have", () => {
+    const theme = loadTheme(
+      { typography: { stacks: { sans: ["-apple-system", "BlinkMacSystemFont", "sans-serif"] } } },
+      THEMES,
+    )
+    expect(theme.typography.stacks.sans.msoFallback).toBe("Arial")
+    expect(validateTheme(theme)).toContainEqual(
+      expect.objectContaining({
+        id: "tokens.font-stack",
+        message: expect.stringContaining("The sans stack has no named family"),
+      }),
+    )
+  })
+
   it("reports font stacks, weights, sizes, button height, container", () => {
     const theme = loadTheme(
       {

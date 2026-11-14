@@ -3,7 +3,7 @@ import { fileURLToPath } from "node:url"
 
 import { describe, expect, it } from "vitest"
 
-import { readShadcnCss } from "../../src/theme/shadcn.ts"
+import { readShadcnCss } from "../../src/theme/source/shadcn.ts"
 
 const neutral = readFileSync(
   fileURLToPath(new URL("../fixtures/themes/shadcn-neutral.css", import.meta.url)),
@@ -31,6 +31,15 @@ describe("readShadcnCss", () => {
     expect(theme.light.primary).toBe("oklch(0.6 0.2 260)")
     expect(theme.dark?.primary).toBe("#fff")
     expect(theme.light.ring).toBe("#ccc")
+  })
+
+  it("reads a fallback with brackets of its own, and a var() inside a fallback", () => {
+    const theme = readShadcnCss(
+      ":root { --a: red; --set: var(--a, oklch(0.5 0 0)); --unset: var(--x, oklch(0.5 0 0)); --nested: var(--x, var(--a)); }",
+    )
+    expect(theme.light.set).toBe("red")
+    expect(theme.light.unset).toBe("oklch(0.5 0 0)")
+    expect(theme.light.nested).toBe("red")
   })
 
   it("reads variables inside @layer base (shadcn before Tailwind v4)", () => {

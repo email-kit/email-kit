@@ -1,4 +1,4 @@
-// P1-103: reference conversions from research 05 §12.4 and §12.6.
+// Colour conversion to hex for email, and the measures the token checks use.
 
 import { describe, expect, it } from "vitest"
 
@@ -6,7 +6,7 @@ import { contrast, lightness, toHex, yiq } from "../../src/theme/colour.ts"
 
 describe("toHex", () => {
   it.each([
-    // shadcn neutral defaults (research 05 §12.4)
+    // shadcn's neutral theme
     ["oklch(1 0 0)", "#ffffff"],
     ["oklch(0.145 0 0)", "#0a0a0a"],
     ["oklch(0.205 0 0)", "#171717"],
@@ -26,7 +26,7 @@ describe("toHex", () => {
   })
 
   it("gamut-maps out-of-sRGB colours instead of clamping (CSS Color 4)", () => {
-    // research 05 §12.6: clamping shifts the hue to #00d6eb; mapping gives #00c9d2
+    // clamping shifts the hue to #00d6eb; mapping gives #00c9d2
     expect(toHex("oklch(0.75 0.25 200)")).toEqual({
       hex: "#00c9d2",
       outOfGamut: { clamped: "#00d6eb" },
@@ -37,7 +37,7 @@ describe("toHex", () => {
 
   it("flattens alpha over the surface, keeping greys neutral", () => {
     // shadcn dark --border: oklch(1 0 0 / 10%) on #0a0a0a. 10 + 245 × 0.1 = 34.5 → 35, as clients
-    // composite. (Research 05 §12.5 rounds it down to #222222.)
+    // composite, rather than #222222 from rounding down.
     expect(toHex("oklch(1 0 0 / 10%)", "#0a0a0a")).toEqual({
       hex: "#232323",
       flattened: { alpha: 0.1, over: "#0a0a0a" },
@@ -55,14 +55,14 @@ describe("toHex", () => {
 
 describe("measures", () => {
   it("computes WCAG contrast", () => {
-    // research 05 §12.4: #737373 on white 4.74:1, #e7000b 4.77:1, #a1a1a1 on #0a0a0a 7.66:1
+    // #737373 on white 4.74:1, #e7000b 4.77:1, #a1a1a1 on #0a0a0a 7.66:1
     expect(contrast("#737373", "#ffffff")).toBeCloseTo(4.74, 2)
     expect(contrast("#e7000b", "#ffffff")).toBeCloseTo(4.77, 1)
     expect(contrast("#a1a1a1", "#0a0a0a")).toBeCloseTo(7.66, 1)
   })
 
   it("computes L* for the mid-tone band", () => {
-    // research 02 §2 table: #707070 / #808080 / #909090 → L* 47 / 54 / 60; #2563eb L* 46
+    // #707070 / #808080 / #909090 → L* 47 / 54 / 60; #2563eb L* 46
     expect(Math.round(lightness("#707070"))).toBe(47)
     expect(Math.round(lightness("#808080"))).toBe(54)
     expect(Math.round(lightness("#909090"))).toBe(60)
