@@ -162,7 +162,7 @@ function readShape(
   if (type === undefined) {
     return fail(
       "A field with no JSON type isn't portable (any, unknown, or a type JSON Schema can't " +
-      "express, such as Date or bigint)",
+        "express, such as Date or bigint)",
     )
   }
   if (typeof type !== "string" || !(type in STRUCTURE)) {

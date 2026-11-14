@@ -1,6 +1,6 @@
 import { stripVTControlCharacters } from "node:util"
 
-import { SourceError } from "../problems.ts"
+import { SourceError } from "../problems/index.ts"
 
 /** One error in a rolldown build failure. */
 interface RolldownDiagnostic {

@@ -10,7 +10,7 @@ import type { CompiledEmail } from "../compile.ts"
 import type { ResolvedConfig } from "../config/index.ts"
 import { assertUniqueIdentifiers, type Identifiers } from "../emit/identifiers.ts"
 import { CompileError, type Problem, toProblem } from "../problems/index.ts"
-import type { Field } from "../schema.ts"
+import type { Field } from "../schema/index.ts"
 
 import type { Catalogue } from "./messages.ts"
 import { compileTemplate } from "./template.ts"
@@ -91,7 +91,7 @@ function templateFiles(config: ResolvedConfig): string[] {
     throw new EmailKitError(
       "no-templates-folder",
       `The templates folder ${relativePath(config.dir, config.templates)} doesn't exist. ` +
-      `Create it, or set "templates" in ${basename(config.file)}`,
+        `Create it, or set "templates" in ${basename(config.file)}`,
     )
   }
   return readdirSync(config.templates)

@@ -1,7 +1,8 @@
-import { dirname, isAbsolute, join, relative, resolve } from "node:path"
-
+import { dirname, join, relative, resolve } from "node:path"
+import { isDirectory, isWithin } from "../../paths.ts"
 import type { ResolvedConfig } from "./index.ts"
-import { isDirectory, type Problems } from "./shared.ts"
+
+import type { Problems } from "./shared.ts"
 
 /** The folders in a resolved config. */
 export type ConfigPaths = Pick<ResolvedConfig, "root" | "templates" | "messages" | "out">
@@ -25,21 +26,23 @@ export function readPaths(
     return resolve(dir, option)
   }
 
-  const root = path("root") ?? (isDirectory(join(dir, "src")) ? join(dir, "src", "email-kit") : join(dir, "email-kit"))
+  const root =
+    path("root") ??
+    (isDirectory(join(dir, "src")) ? join(dir, "src", "email-kit") : join(dir, "email-kit"))
   const templates = path("templates") ?? join(root, "templates")
   const messages = path("messages") ?? join(root, "messages")
   const out = path("out") ?? join(root, "compiled")
-  
+
   for (const [name, folder] of [
     ["templates", templates],
     ["messages", messages],
   ] as const) {
-    if (folder === out || isInside(folder, out) || isInside(out, folder)) {
+    if (isWithin(folder, out) || isWithin(out, folder)) {
       problems.push(`out: must not overlap the ${name} folder (${relative(dir, folder)})`)
     }
   }
-  
-  if (out === dir || isInside(out, dir)) {
+
+  if (isWithin(out, dir)) {
     problems.push(
       "out: must not contain the project; use its own folder, such as src/email-kit/compiled",
     )
@@ -56,10 +59,4 @@ export function nearestNodeModules(from: string): string | undefined {
     if (isDirectory(join(dir, "node_modules"))) return join(dir, "node_modules")
     if (dirname(dir) === dir) return undefined
   }
-}
-
-/** Whether `child` is inside `parent`, not `parent` itself. */
-function isInside(parent: string, child: string): boolean {
-  const path = relative(parent, child)
-  return path !== "" && !path.startsWith("..") && !isAbsolute(path)
 }

@@ -9,7 +9,7 @@ import type { ResolvedConfig } from "../config/index.ts"
 import { identifiersFor } from "../emit/identifiers.ts"
 import { validateFixtures } from "../fixtures.ts"
 import { loadTemplate } from "../load/index.ts"
-import { type Field, readSchema } from "../schema.ts"
+import { type Field, readSchema } from "../schema/index.ts"
 
 import type { CompiledTemplate, PseudoBuild } from "./index.ts"
 import { type Catalogue, readCatalogues } from "./messages.ts"

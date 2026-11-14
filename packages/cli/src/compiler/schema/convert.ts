@@ -31,7 +31,7 @@ export async function toJsonSchema(
     throw new EmailKitError(
       "unsupported-schema",
       `A "${standard.vendor}" schema can't be converted to JSON Schema. Use Zod 4, ArkType 2 or ` +
-      "Valibot with @valibot/to-json-schema",
+        "Valibot with @valibot/to-json-schema",
     )
   }
   const converter = await valibotConverter(resolveFrom)
