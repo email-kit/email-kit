@@ -1,8 +1,9 @@
 import { cac } from "cac"
 
 import { CATALOGUE } from "./checks/catalogue/index.ts"
+import { contextOf } from "./checks/context.ts"
 import { fromCustom } from "./checks/custom.ts"
-import { compileFindings, contextOf, runChecks } from "./checks/engine.ts"
+import { compileFindings, runChecks } from "./checks/engine.ts"
 import { formatGithub, formatHuman, formatJson } from "./checks/report.ts"
 import { buildProject, compile, describeResult, summarize } from "./compiler/build.ts"
 import { loadConfig } from "./compiler/config/index.ts"
