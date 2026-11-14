@@ -11,10 +11,10 @@ import { dirname } from "node:path"
 export async function writeOnce(file: string, content: string): Promise<void> {
   if (await exists(file)) return
   await mkdir(dirname(file), { recursive: true })
-  
+
   const temporary = `${file}.${randomUUID()}.tmp`
   await writeFile(temporary, content)
-  
+
   try {
     await rename(temporary, file)
   } catch (error) {

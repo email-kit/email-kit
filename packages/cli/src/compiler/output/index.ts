@@ -6,7 +6,7 @@ import { VERSION } from "../../version.ts"
 import { toJavaScript } from "../emit/javascript.ts"
 import { generateMessageTypes } from "../emit/messages.ts"
 import { generateModule, type ModuleOptions, moduleHeader } from "../emit/module.ts"
-import type { CompiledTemplate } from "../project.ts"
+import type { CompiledTemplate } from "../project/index.ts"
 
 import { describe, GENERATED, json, type ManifestTemplate, manifestFile } from "./manifest.ts"
 
