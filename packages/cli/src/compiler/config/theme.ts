@@ -1,6 +1,6 @@
 import type { ThemeConfig } from "@email-kit/core"
 
-import { ROLES } from "../../theme/roles.ts"
+import { ROLES } from "../../theme/roles/index.ts"
 
 import { checkKeys, isRecord, type Problems, quoted } from "./shared.ts"
 

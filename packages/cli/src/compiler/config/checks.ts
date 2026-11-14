@@ -1,7 +1,7 @@
 import type { CheckSetting, CustomCheck } from "@email-kit/core"
 
 import { CATALOGUE } from "../../checks/catalogue/index.ts"
-import { TOKEN_CHECKS } from "../../theme/validate.ts"
+import { TOKEN_CHECKS } from "../../theme/validate/index.ts"
 
 import { checkKeys, isRecord, type Problems, quoted } from "./shared.ts"
 
