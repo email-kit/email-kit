@@ -1,16 +1,22 @@
-// The generated module as `index.mjs` + `index.d.mts` (OUT-07, ADR 0004): oxc (through rolldown)
-// strips the types and writes the declarations. The TS module already satisfies
-// isolatedDeclarations, so both are mechanical. `.mjs` keeps it ESM in CommonJS packages too.
-
 import { EmailKitError } from "@email-kit/core/internal"
 import { isolatedDeclarationSync } from "rolldown/experimental"
 import { transformSync } from "rolldown/utils"
 
+/** The generated module as JavaScript, with its types beside it. */
 export interface JavaScriptModule {
+  /** `index.mjs`: the code, without types. */
   readonly js: string
+  /** `index.d.mts`: the types, without the code. */
   readonly dts: string
 }
 
+/**
+ * Converts the generated module to `index.mjs` and `index.d.mts`, for `module: "mjs"`. oxc, through
+ * rolldown, strips the types and writes the declarations: the module already meets
+ * `isolatedDeclarations`, so both steps are mechanical. `.mjs` keeps it ESM even in a CommonJS
+ * package. The header is added back to both, since oxc drops it with the type-only declarations
+ * it precedes.
+ */
 export function toJavaScript(typescript: string, header: string): JavaScriptModule {
   const js = transformSync("index.ts", typescript, { lang: "ts" })
   const dts = isolatedDeclarationSync("index.ts", typescript)
@@ -21,6 +27,5 @@ export function toJavaScript(typescript: string, header: string): JavaScriptModu
       `Bug: the generated module couldn't be converted to JavaScript: ${errors[0]?.message}`,
     )
   }
-  // oxc drops the leading comments with the type-only declarations they precede.
   return { js: `${header}\n${js.code}`, dts: `${header}\n${dts.code}` }
 }

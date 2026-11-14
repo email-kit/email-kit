@@ -1,25 +1,26 @@
-// messages.d.ts (P1-159, AUTH-09): each template's message keys and parameters, from the default
-// locale, as an augmentation of @email-kit/core's MessageRegistry. Templates get a typed t()
-// without importing anything; before the first compile, t() stays untyped.
-
 import { messageArguments } from "@email-kit/core/internal"
 
-import type { CompiledTemplate } from "../project.ts"
+import type { CompiledTemplate } from "../project/index.ts"
+import { docText } from "./types.ts"
 
+/** The type a message argument accepts, by how the message uses it. */
 const TYPES = {
   text: "MessageParam",
   plural: "number | Placeholder<number>",
   select: "string | Placeholder<string>",
 } as const
 
-const comment = (text: string) => text.replace(/\*\//g, "*\\/").replace(/\s*\n\s*/g, " ")
-
+/**
+ * Writes `messages.d.ts`: each template's message keys and parameters, from the default locale, as
+ * an augmentation of core's `MessageRegistry`. Templates then get a typed `t()` without importing
+ * anything. Before the first compile, `t()` accepts any key. Each key's doc is its message.
+ */
 export function generateMessageTypes(
   templates: readonly CompiledTemplate[],
   header: string,
 ): string {
   const entries = [...templates]
-    .sort((a, b) => a.id.localeCompare(b.id))
+    .sort((a, b) => (a.id < b.id ? -1 : 1))
     .map((template) => {
       const keys = Object.keys(template.messages)
         .sort()
@@ -28,7 +29,7 @@ export function generateMessageTypes(
           const args = [...messageArguments(source, `Message "${key}" of ${template.id}`)]
           const params = args.map(([name, kind]) => `readonly ${name}: ${TYPES[kind]}`).join("; ")
           const type = params ? `{ ${params} }` : "{}"
-          return `      /** ${comment(source)} */\n      readonly ${JSON.stringify(key)}: ${type}`
+          return `      /** ${docText(source)} */\n      readonly ${JSON.stringify(key)}: ${type}`
         })
       return `    readonly ${JSON.stringify(template.id)}: {\n${keys.join("\n")}\n    }`
     })

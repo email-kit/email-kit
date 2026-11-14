@@ -1,33 +1,31 @@
-// Writes compiled/index.ts (OUT-05): self-contained, no imports, no dependencies. It holds the
-// types emitted from each schema, the TemplateId and Locale unions, the `emails` object and the
-// inlined renderer. It compiles under the host's tsconfig, so it must also pass strict settings:
-// noUnusedLocals, exactOptionalPropertyTypes, isolatedDeclarations, an ES2020 lib.
-
 import type { Purpose } from "@email-kit/core"
 import { source as runtimeSource } from "@email-kit/dialect/source"
 
 import type { LocaleData } from "../../i18n/locales.ts"
 import { CLDR_VERSION, pluralRules } from "../../i18n/plurals.ts"
-import type { CompiledTemplate } from "../project.ts"
+import type { CompiledTemplate } from "../project/index.ts"
 import { dataInterface, modelOf } from "./types.ts"
 
+/** Every email purpose, for the generated `Purpose` type. */
 const PURPOSES = [
   "transactional",
   "marketing",
   "consent-request",
 ] as const satisfies readonly Purpose[]
 
+/** What the generated module needs besides the templates. */
 export interface ModuleOptions {
+  /** The email-kit version, for the header. */
   readonly version: string
-  /** Every locale, the default first */
+  /** Every locale, the default first. */
   readonly locales: readonly string[]
-  /** CLDR parents and scripts for the project's languages, and locales.fallback (I18N-04) */
+  /** CLDR parents and scripts for the project's languages, and `locales.fallback`. */
   readonly localeData: LocaleData
-  /** Sender keys the backend passes to createEmails() (RUN-04) */
+  /** The sender keys the backend passes to `createEmails()`. */
   readonly context: readonly string[]
-  /** render() validates data against the schema first (OUT-08) */
+  /** Whether `render()` validates data against the schema first. */
   readonly validate: boolean
-  /** The config file, relative to the output folder's project, for the header */
+  /** The config file, relative to the output folder's project, for the header. */
   readonly configFile: string
 }
 
@@ -39,13 +37,17 @@ export function moduleHeader(options: Pick<ModuleOptions, "version" | "configFil
 /* eslint-disable */`
 }
 
+/**
+ * Writes the generated `index.ts`: the data type for each template's schema, the `TemplateId` and
+ * `Locale` unions, the compiled templates, `createEmails()`, and the inlined renderer and runtime.
+ * It imports nothing, so it has no dependencies. It compiles under the project's own tsconfig, so
+ * it must pass strict settings: `noUnusedLocals`, `exactOptionalPropertyTypes`,
+ * `isolatedDeclarations` and an ES2020 lib.
+ */
 export function generateModule(
   templates: readonly CompiledTemplate[],
   options: ModuleOptions,
 ): string {
-  const union = (values: readonly string[]) =>
-    values.length === 0 ? "never" : values.map((value) => JSON.stringify(value)).join(" | ")
-
   const types = templates.map((t) =>
     dataInterface(
       t.identifiers.typeName,
@@ -53,53 +55,9 @@ export function generateModule(
       `The data for the \`${t.id}\` email, from its schema.`,
     ),
   )
-
-  const parts = templates.map((t) => {
-    const locales = t.emails
-      .map(
-        (email) =>
-          `    ${JSON.stringify(email.locale)}: {\n` +
-          `      subject: ${JSON.stringify(email.subject)},\n` +
-          `      preheader: ${JSON.stringify(email.preheader)},\n` +
-          `      html: ${JSON.stringify(email.html)},\n` +
-          `      text: ${JSON.stringify(email.text)},\n` +
-          "    },",
-      )
-      .join("\n")
-    return `  ${t.identifiers.property}: {\n${locales}\n  },`
-  })
-
-  const entries = templates.map(
-    (t) =>
-      `    ${t.identifiers.property}: createTemplate(\n` +
-      `      ${JSON.stringify(t.id)},\n` +
-      `      ${JSON.stringify(t.purpose)},\n` +
-      `      ${JSON.stringify(modelOf(t.model))},\n` +
-      "      locales,\n" +
-      `      TEMPLATES.${t.identifiers.property},\n` +
-      "      values,\n" +
-      `      ${options.validate},\n` +
-      "      PLURALS,\n" +
-      "      LOCALE_DATA,\n" +
-      `    ) as EmailTemplate<${JSON.stringify(t.id)}, ${t.identifiers.typeName}>,`,
-  )
-
   const emailsType = templates
-    .map(
-      (t) =>
-        `  readonly ${t.identifiers.property}: EmailTemplate<${JSON.stringify(t.id)}, ${t.identifiers.typeName}>`,
-    )
+    .map((t) => `  readonly ${t.identifiers.property}: ${templateType(t)}`)
     .join("\n")
-
-  const contextType =
-    options.context.length === 0
-      ? "/** Nothing is passed at send time: every sender value is in the templates. */\nexport type EmailContext = Record<never, never>"
-      : "/** Sender values the backend passes once, at startup, to createEmails() (RUN-04). */\n" +
-        `export interface EmailContext {\n${options.context.map((key) => `  readonly ${key}: string`).join("\n")}\n}`
-  const ready =
-    options.context.length === 0
-      ? "\n/** Every email. Nothing varies by environment, so they are ready to use. */\nexport const emails: Emails = createEmails({})\n"
-      : ""
 
   return `${moduleHeader(options)}
 
@@ -149,7 +107,7 @@ export interface EmailTemplate<Id extends TemplateId, Data> {
   validate(data: unknown): readonly DataIssue[]
 }
 
-${contextType}
+${contextDeclaration(options.context)}
 
 /** Every email, by the camelCase form of its id. */
 export interface Emails {
@@ -163,29 +121,98 @@ export { type DataIssue, DIALECT, EmailRenderError, MustacheCoreError }
 
 ${runtimeSource}
 const TEMPLATES = {
-${parts.join("\n")}
+${templates.map(templateParts).join("\n")}
 }
 
 // LOCALE_DATA and PLURALS derive from Unicode CLDR ${CLDR_VERSION} data, © Unicode, Inc., under the
 // Unicode License v3: https://www.unicode.org/license.txt
 
-/** CLDR ${CLDR_VERSION} parents and scripts for resolving a requested locale (spec §16). */
+/** CLDR ${CLDR_VERSION} parents and scripts, for resolving a requested locale. */
 const LOCALE_DATA: LocaleData = ${JSON.stringify(options.localeData, null, 2)}
 
-/** CLDR ${CLDR_VERSION} plural rules per locale (ADR 0003): the category of a number. */
+/** CLDR ${CLDR_VERSION} plural rules for each locale: the category of a number. */
 const PLURALS: Readonly<Record<string, (n: number) => string>> = {
 ${options.locales.map((locale) => `  ${JSON.stringify(locale)}: ${pluralRules(locale).source.replace(/\n/g, "\n  ")},`).join("\n")}
 }
 
 /**
- * Builds the emails with the values that vary by environment (RUN-04). Call it once, for
+ * Builds the emails with the values that vary by environment. Call it once, for
  * example at startup, and reuse the result. Data passed to render() can't override them.
  */
 export function createEmails(context: EmailContext): Emails {
   const values = readContext(${JSON.stringify(options.context)}, context)
   return {
-${entries.join("\n")}
+${templates.map((t) => templateEntry(t, options.validate)).join("\n")}
   }
 }
-${ready}`
+${options.context.length === 0 ? READY : ""}`
 }
+
+/** A union of string literals, or `never` when there are none. */
+function union(values: readonly string[]): string {
+  return values.length === 0 ? "never" : values.map((value) => JSON.stringify(value)).join(" | ")
+}
+
+/** The type of a template in `Emails`, such as `EmailTemplate<"welcome", WelcomeData>`. */
+function templateType(template: CompiledTemplate): string {
+  return `EmailTemplate<${JSON.stringify(template.id)}, ${template.identifiers.typeName}>`
+}
+
+/** A template's entry in `TEMPLATES`: its four parts in each locale, as string literals. */
+function templateParts(template: CompiledTemplate): string {
+  const locales = template.emails
+    .map(
+      (email) =>
+        `    ${JSON.stringify(email.locale)}: {\n` +
+        `      subject: ${JSON.stringify(email.subject)},\n` +
+        `      preheader: ${JSON.stringify(email.preheader)},\n` +
+        `      html: ${JSON.stringify(email.html)},\n` +
+        `      text: ${JSON.stringify(email.text)},\n` +
+        "    },",
+    )
+    .join("\n")
+  return `  ${template.identifiers.property}: {\n${locales}\n  },`
+}
+
+/**
+ * A template's entry in the object `createEmails()` returns: the runtime's `createTemplate()` with
+ * the template's id, purpose, data model and parts, and the values shared by every template.
+ */
+function templateEntry(template: CompiledTemplate, validate: boolean): string {
+  return (
+    `    ${template.identifiers.property}: createTemplate(\n` +
+    `      ${JSON.stringify(template.id)},\n` +
+    `      ${JSON.stringify(template.purpose)},\n` +
+    `      ${JSON.stringify(modelOf(template.model))},\n` +
+    "      locales,\n" +
+    `      TEMPLATES.${template.identifiers.property},\n` +
+    "      values,\n" +
+    `      ${validate},\n` +
+    "      PLURALS,\n" +
+    "      LOCALE_DATA,\n" +
+    `    ) as ${templateType(template)},`
+  )
+}
+
+/**
+ * `EmailContext`: the sender values the backend passes to `createEmails()`, or an empty type when
+ * every sender value is fixed at compile time.
+ */
+function contextDeclaration(context: readonly string[]): string {
+  if (context.length === 0) {
+    return (
+      "/** Nothing is passed at send time: every sender value is in the templates. */\n" +
+      "export type EmailContext = Record<never, never>"
+    )
+  }
+  const keys = context.map((key) => `  readonly ${key}: string`).join("\n")
+  return (
+    "/** Sender values the backend passes once, at startup, to createEmails(). */\n" +
+    `export interface EmailContext {\n${keys}\n}`
+  )
+}
+
+/** With no sender values to pass, the module also exports the emails, ready to use. */
+const READY =
+  "\n/** Every email. Nothing varies by environment, so they are ready to use. */\n" +
+  "export const emails: Emails = createEmails({})\n"

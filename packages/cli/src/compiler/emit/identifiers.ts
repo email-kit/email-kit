@@ -1,25 +1,30 @@
-// Deterministic identifiers for generated code (R6, OUT-11). A template id such as
-// `order-confirmation` becomes `orderConfirmation` (the `emails` key) and `OrderConfirmationData`
-// (its data type). Ids follow `^[a-z][a-z0-9]*(-[a-z0-9]+)*$` (AUTH-02), so the results are always
-// valid TS identifiers; keys can't clash with reserved words (they are property names), and the
-// `Data` suffix keeps type names off TS's own.
-
 import { EmailKitError } from "@email-kit/core/internal"
 
+/** A template's names in the generated module. */
 export interface Identifiers {
-  /** The key in the `emails` object */
+  /** Its key in the `emails` object, such as `orderConfirmation`. */
   readonly property: string
-  /** The exported data interface */
+  /** Its exported data interface, such as `OrderConfirmationData`. */
   readonly typeName: string
 }
 
+/**
+ * The generated code's names for a template: `order-confirmation` becomes `orderConfirmation`, its
+ * key in `emails`, and `OrderConfirmationData`, its data type. Ids match
+ * `^[a-z][a-z0-9]*(-[a-z0-9]+)*$`, so both are always valid identifiers. A key can't clash with a
+ * reserved word, since it's a property name, and the `Data` suffix keeps type names off
+ * TypeScript's own.
+ */
 export function identifiersFor(id: string): Identifiers {
   const [first = "", ...rest] = id.split("-")
   const property = first + rest.map(capitalize).join("")
   return { property, typeName: `${capitalize(property)}Data` }
 }
 
-/** Fails when two template ids map to the same identifier (such as `a-b` and `aB`, if allowed). */
+/**
+ * Fails when two template ids map to the same identifier. A digit has no capital, so `order-v2`
+ * and `order-v-2` both become `orderV2`.
+ */
 export function assertUniqueIdentifiers(ids: readonly string[]): void {
   const seen = new Map<string, string>()
   for (const id of ids) {
