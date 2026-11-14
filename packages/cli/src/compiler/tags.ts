@@ -1,19 +1,25 @@
-// Writes mustache-core tags for IR placeholders and sections, shared by the HTML and text
-// serialisers. `scopes` lists the contexts the open sections pushed, innermost last.
-
 import { EmailKitError, type IrPlaceholder, type IrSection } from "@email-kit/core/internal"
 
 const NAME = /^[A-Za-z_][A-Za-z0-9_]*$/
 
+/**
+ * The mustache-core tag for a placeholder, for the HTML and text renderers. `scopes` lists the
+ * contexts the open sections pushed, innermost last.
+ */
 export function placeholderTag(node: IrPlaceholder, scopes: readonly number[]): string {
   return `{{${name(node, scopes)}}}`
 }
 
+/** The opening and closing tags of a section, such as `{{#items}}` and `{{/items}}`. */
 export function sectionTags(node: IrSection, scopes: readonly number[]): [string, string] {
   const path = name(node, scopes)
   return [`{{${node.inverted ? "^" : "#"}${path}}}`, `{{/${path}}}`]
 }
 
+/**
+ * The name in a tag: the field's path, or `.` for a list item's own value. `.` always means the
+ * innermost context, so an item's value can't be used inside a nested `<Each>` or `<If>`.
+ */
 function name(node: IrPlaceholder | IrSection, scopes: readonly number[]): string {
   if (node.path.length === 0) {
     if (node.scope === 0) {
@@ -22,8 +28,6 @@ function name(node: IrPlaceholder | IrSection, scopes: readonly number[]): strin
         "`data` itself can't be rendered; render one of its fields",
       )
     }
-    // `{{.}}` means the innermost context, so it only names this item if no inner section has
-    // pushed another one.
     if (scopes.at(-1) !== node.scope) {
       throw new EmailKitError(
         "shadowed-item",

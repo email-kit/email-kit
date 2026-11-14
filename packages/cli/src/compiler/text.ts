@@ -1,11 +1,11 @@
-// IR → the plain-text part, from the same tree as the HTML (TXT-01). Lines wrap at 78 columns
-// (RFC 5322's recommendation), except lines with a URL, which stay whole so it stays clickable.
-
 import { EmailKitError, type IrElement, type IrNode } from "@email-kit/core/internal"
 
 import { placeholderTag, sectionTags } from "./tags.ts"
 
-/** The text part: the preheader as its first line, then the body (BLD-07). */
+/**
+ * The plain-text part, from the same tree as the HTML: the preheader as its first line, then the
+ * body, wrapped at 78 columns.
+ */
 export function renderTextPart(body: IrNode, preheader: string): string {
   const text = (preheader ? `${preheader}\n\n` : "") + renderText(body)
   return guard(`${wrap(text.replace(/\n{3,}/g, "\n\n").trim())}\n`)
@@ -18,6 +18,14 @@ export function renderLine(node: IrNode, what: string): string {
   return guard(line)
 }
 
+/**
+ * Renders IR as plain text, with mustache-core tags where data goes. Headings are underlined,
+ * links become `text: url`, and an image becomes its alt text, so both parts say the same thing.
+ * Conditionals follow every client but classic Outlook, plus the `textOnly` branch. A section
+ * around block content puts its tags on their own lines, which mustache-core removes. An ordered
+ * list is numbered only when its items are all known at compile time: items repeated by `<Each>`
+ * can't be counted in a template, so they keep the bullet.
+ */
 function renderText(node: IrNode, scopes: readonly number[] = [0]): string {
   switch (node.kind) {
     case "text":
@@ -35,11 +43,9 @@ function renderText(node: IrNode, scopes: readonly number[] = [0]): string {
     case "section": {
       const [open, close] = sectionTags(node, scopes)
       const inner = join(node.children, [...scopes, node.opens])
-      // Block content puts the tags on their own lines; mustache-core removes such lines.
       return inner.endsWith("\n") ? `${open}\n${inner}${close}\n` : open + inner + close
     }
     case "conditional":
-      // The text part follows every client but Outlook's Word engine, and has its own branch.
       return node.when === "notMso" || node.when === "textOnly" ? join(node.children, scopes) : ""
     case "element":
       return element(node, scopes)
@@ -58,8 +64,6 @@ function element(node: IrElement, scopes: readonly number[]): string {
     case "li":
       return `- ${inner.trim()}\n`
     case "ol": {
-      // Number the items when they're all known at compile time; repeated items (<Each>) can't
-      // be counted in a template, so those keep the bullet.
       const items = node.children.filter((child) => !(child.kind === "text" && !child.value.trim()))
       if (
         items.length === 0 ||
@@ -82,7 +86,6 @@ function element(node: IrElement, scopes: readonly number[]): string {
       return `${inner.trim()}: ${url.join("")}`
     }
     case "img":
-      // The alt carries what the image says, so the parts stay equivalent; decorative is "".
       return (node.attrs.alt ?? [])
         .map((part) => (typeof part === "string" ? part : placeholderTag(part, scopes)))
         .join("")
@@ -103,9 +106,10 @@ function element(node: IrElement, scopes: readonly number[]): string {
 const WIDTH = 78
 
 /**
- * Each line over 78 characters, at spaces; list items keep their indent. Lines with a URL stay
- * whole, and so do lines with sections (a plural, an <If>): their rendered width isn't known
- * here, and a break inside a branch would show up mid-sentence.
+ * Wraps each line over 78 characters at spaces, the width RFC 5322 recommends. List items keep
+ * their indent. Lines with a URL stay whole, so the URL stays clickable, and so do lines with
+ * sections, such as a plural or an `<If>`: their rendered width isn't known here, and a break
+ * inside a branch would show up mid-sentence.
  */
 function wrap(text: string): string {
   return text
@@ -134,12 +138,12 @@ function join(children: readonly IrNode[], scopes: readonly number[]): string {
   return children.map((child) => renderText(child, scopes)).join("")
 }
 
-// Placeholders count as their name; the real width is only known at send time.
+/** A line's width, counting each tag as its name: the real width is known only at send time. */
 function width(line: string): number {
   return [...line.replace(/\{\{[#^/]?([^}]*)\}\}/g, "$1")].length
 }
 
-// A literal "{" right before a tag would turn it into "{{{": not expressible in the text part.
+/** Rejects a literal `{` right before a tag, which would make `{{{`: text can't express it. */
 function guard(text: string): string {
   if (text.includes("{{{")) {
     throw new EmailKitError(
