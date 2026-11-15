@@ -68,6 +68,7 @@ describe("evaluate", () => {
           inverted: false,
           path: ["items"],
           scope: 0,
+          component: "Each",
           opens: 1,
           children: [
             {
@@ -83,6 +84,7 @@ describe("evaluate", () => {
           inverted: false,
           path: ["tags"],
           scope: 0,
+          component: "Each",
           opens: 2,
           children: [{ kind: "placeholder", path: [], scope: 2 }],
         },
@@ -91,6 +93,7 @@ describe("evaluate", () => {
           inverted: false,
           path: ["discount"],
           scope: 0,
+          component: "If",
           opens: 3,
           children: [{ kind: "text", value: "-" }],
         },
@@ -99,6 +102,7 @@ describe("evaluate", () => {
           inverted: true,
           path: ["discount"],
           scope: 0,
+          component: "Unless",
           opens: 4,
           children: [{ kind: "text", value: "none" }],
         },

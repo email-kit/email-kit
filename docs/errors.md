@@ -93,6 +93,13 @@ A test checks that every id the code can raise is listed here.
 **Why:** `<If>`, `<Unless>` and `<Each>` choose content at send time, so they need a field from `data`.
 **Fix:** for conditions known at compile time, use plain JavaScript: `{isMarketing && <Footer />}`.
 
+### list-condition
+**Why:** `<If>` was given a list. A list section repeats its content once per item, so the content
+would show as many times as the list has items.
+**Fix:** use `<Each>` for the items (it shows nothing for an empty or missing list) and `<Unless>`
+for the empty case. For content around the items, such as a heading or a `<List>`, wrap the list
+in an optional object and test that with `<If>`, or pass a boolean field such as `hasItems`.
+
 ### function-child
 **Why:** a function was rendered as a child. Only `<Each>` and `<If>` take a function child.
 **Fix:** call the function, or move it inside `<Each>` or `<If>`.

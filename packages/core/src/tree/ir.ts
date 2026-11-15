@@ -42,6 +42,12 @@ export interface IrSection {
   readonly scope: number
   /** A new number for the context its children read in: the list item or the tested value. */
   readonly opens: number
+  /**
+   * The control component that made it. Plural and select sections from messages have none. The
+   * compiler checks an `If` against the schema: a section over a list repeats, so an `If` on a
+   * list would show its content once per item.
+   */
+  readonly component?: "If" | "Unless" | "Each"
   readonly children: readonly IrNode[]
 }
 

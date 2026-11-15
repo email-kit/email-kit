@@ -13,6 +13,7 @@ const schema = z.object({
   items: z.array(z.object({ label: z.string() })),
   discount: z.string().optional(),
   note: z.string().nullable(),
+  extras: z.array(z.object({ label: z.string() })).optional(),
 })
 
 defineEmail({
@@ -35,6 +36,8 @@ defineEmail({
         <p>active</p>
       </If>
       <Unless when={data.discount}>no discount</Unless>
+      <Each of={data.extras}>{(extra) => <p>{extra.label}</p>}</Each>
+      <Unless when={data.extras}>no extras</Unless>
     </div>,
     // @ts-expect-error: a misspelt field
     <p>{data.nmae}</p>,
@@ -56,6 +59,10 @@ defineEmail({
     <Each of={data.items}>{(item) => <p>{item.lable}</p>}</Each>,
     // @ts-expect-error: <If> needs an optional or boolean field
     <If when={data.name}>never</If>,
+    // @ts-expect-error: <If> can't take a list, which would repeat its content per item
+    <If when={data.extras}>never</If>,
+    // @ts-expect-error: nor a required one
+    <If when={data.items}>never</If>,
     // @ts-expect-error: an optional object needs <If> before its fields are reachable
     <p>{data.discount.length}</p>,
   ],

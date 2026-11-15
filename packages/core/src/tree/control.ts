@@ -32,14 +32,14 @@ export function Conditional(props: {
 }
 
 /**
- * Repeats its content once for each item of a list field in `data`. An empty list renders
- * nothing; pair it with `<Unless>` to show a message instead.
+ * Repeats its content once for each item of a list field in `data`. An empty or missing list
+ * renders nothing; pair it with `<Unless>` to show a message instead.
  *
  * The child is a function that receives the current item. It runs once, while the template
  * compiles, not once per item: the item stands for "the current item", and the real items are
  * filled in when the email is rendered.
  *
- * @param props.of - A list field from `data`, such as `data.items`.
+ * @param props.of - A list field from `data`, such as `data.items`. It can be optional.
  * @param props.children - A function from the current item to the content to repeat.
  *
  * @example
@@ -50,15 +50,18 @@ export function Conditional(props: {
  * ```
  */
 export function Each<Item>(props: {
-  readonly of: ListPlaceholder<Item>
+  readonly of: ListPlaceholder<Item> | MaybePlaceholder<readonly Item[]>
   readonly children: (item: Data<Item>) => Child
 }): IrNode {
-  return section("Each", props.of, props.children, "item")
+  return section("Each", props.of, props.children)
 }
 
 /**
  * Shows its content only when an optional field in `data` has a value. Missing, `null`, `""`
  * and `0` count as no value.
+ *
+ * It doesn't take a list: a list shows its content once per item. Use `<Each>`, which shows
+ * nothing for an empty or missing list, and `<Unless>` for the empty case.
  *
  * The child can be a function: it receives the field as required, so you can use its parts
  * without checking for a missing value.
@@ -66,7 +69,7 @@ export function Each<Item>(props: {
  * Use `<If>` for conditions on data. For conditions you know while writing the template, use
  * plain JavaScript: `{showFooter && <Footer />}`.
  *
- * @param props.when - An optional field from `data`, such as `data.coupon`.
+ * @param props.when - An optional field from `data` that isn't a list, such as `data.coupon`.
  * @param props.children - The content to show, or a function from the field to that content.
  *
  * @example
@@ -77,7 +80,7 @@ export function Each<Item>(props: {
  * ```
  */
 export function If<T>(props: {
-  readonly when: MaybePlaceholder<T>
+  readonly when: MaybePlaceholder<T> & NotAList<T>
   readonly children: Child | ((value: Data<T>) => Child)
 }): IrNode
 /**
@@ -95,7 +98,7 @@ export function If<T>(props: {
  */
 export function If(props: { readonly when: Placeholder<boolean>; readonly children: Child }): IrNode
 export function If(props: { readonly when: unknown; readonly children: unknown }): IrNode {
-  return section("If", props.when, props.children, "if")
+  return section("If", props.when, props.children)
 }
 
 /**
@@ -116,15 +119,20 @@ export function Unless(props: {
   readonly when: MaybePlaceholder<unknown> | Placeholder<boolean> | ListPlaceholder<unknown>
   readonly children: Child
 }): IrNode {
-  return section("Unless", props.when, props.children, "unless")
+  return section("Unless", props.when, props.children)
 }
 
-function section(
-  component: string,
-  when: unknown,
-  children: unknown,
-  mode: "item" | "if" | "unless",
-): IrNode {
+/**
+ * Makes `<If>` refuse a list field: its type gains a property the placeholder doesn't have, whose
+ * name is the error the editor shows.
+ */
+type NotAList<T> = [T] extends [readonly unknown[]]
+  ? {
+      readonly "<If> can't take a list, which would repeat its content per item. Use <Each> or <Unless>": never
+    }
+  : unknown
+
+function section(component: "If" | "Unless" | "Each", when: unknown, children: unknown): IrNode {
   const info = placeholderInfo(when)
   if (!info) {
     throw new EmailKitError(
@@ -135,16 +143,17 @@ function section(
   }
 
   const opens = openScope()
-  const value = mode === "item" || info.path.length === 0 ? createPlaceholder(opens) : when
+  const value = component === "Each" || info.path.length === 0 ? createPlaceholder(opens) : when
   const content =
     typeof children === "function" && !placeholderInfo(children) ? children(value) : children
 
   return {
     kind: "section",
-    inverted: mode === "unless",
+    inverted: component === "Unless",
     path: info.path,
     scope: info.scope,
     opens,
+    component,
     children: toNodes(content),
   }
 }

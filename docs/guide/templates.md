@@ -263,12 +263,28 @@ defineEmail({ /* … */ fixtures })
 
 | Component | Props | Renders |
 |---|---|---|
-| `If` | `when`: an optional or nullable field, or a boolean field; `children`: content, or a function that receives the field | Its content when the field is present (or `true`) |
+| `If` | `when`: an optional or nullable field that isn't a list, or a boolean field; `children`: content, or a function that receives the field | Its content once, when the field is present (or `true`) |
 | `Unless` | `when`: an optional, nullable, boolean or list field; `children` | Its content when the field is missing (or `false`, or an empty list) |
-| `Each` | `of`: a list field; `children`: a function that receives the item | Its content once per item |
+| `Each` | `of`: a list field, optional or not; `children`: a function that receives the item | Its content once per item, and nothing for an empty or missing list |
 
 With a function child, `If` passes the field as a required value, so it can go where a required
 one is expected, such as a `t()` parameter.
+
+`If` doesn't take a list, since a list section repeats its content per item
+([`list-condition`](../errors.md#list-condition)). Use `<Each>` for the items and `<Unless>` for
+the empty case. When content around the items, such as a heading or a `<List>`, should only show
+when there are items, wrap the list in an optional object and test that:
+
+```tsx
+// schema: team: z.object({ name: z.string(), members: z.array(…).min(1) }).optional()
+<If when={data.team}>
+  {(team) => (
+    <List>
+      <Each of={team.members}>{(member) => <ListItem>{member.name}</ListItem>}</Each>
+    </List>
+  )}
+</If>
+```
 
 "Missing" follows the [placeholder language](../spec/mustache-core.md#7-sections-and-truthiness):
 a missing value, `null`, `false`, `0`, `""` and `[]` all count as missing. An optional number

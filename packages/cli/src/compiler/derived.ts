@@ -3,10 +3,11 @@ import { EmailKitError, type IrNode, type IrSection, RESERVED_KEY } from "@email
 import type { Field } from "./schema/index.ts"
 
 /**
- * Checks the plural and select sections that messages made against the schema: a plural needs a
- * number field, and a select needs a field with fixed values that include every case. The
- * generated module sets the `_ek.plural` and `_ek.select` flags from those fields, so a mismatch
- * would render the wrong case. `where` names the template and locale in errors.
+ * Checks sections against the schema. A plural needs a number field, and a select needs a field
+ * with fixed values that include every case: the generated module sets the `_ek.plural` and
+ * `_ek.select` flags from those fields, so a mismatch would render the wrong case. An `<If>` can't
+ * test a list, since a section over a list repeats its content per item. `where` names the
+ * template and locale in errors.
  */
 export function checkDerived(nodes: readonly IrNode[], model: Field, where: string): void {
   const scopes = new Map<number, Field | undefined>([[0, model]])
@@ -40,6 +41,16 @@ function checkSection(node: IrSection, base: Field | undefined, where: string): 
   const [root, flag, ...rest] = node.path
   if (root !== RESERVED_KEY || (flag !== "plural" && flag !== "select")) {
     const field = lookup(base, node.path)
+    if (node.component === "If" && field?.type === "array") {
+      const name = node.path.join(".")
+      throw new EmailKitError(
+        "list-condition",
+        `${where}: <If> tests the list "${name}", so it would show its content once per item. ` +
+          "Use <Each> for the items (it shows nothing for an empty or missing list) and <Unless> " +
+          "for the empty case. For content around the items, such as a heading, wrap the list in " +
+          "an optional object or pass a boolean field.",
+      )
+    }
     return field?.type === "array" ? field.items : field
   }
   const path = rest.slice(0, -1)
