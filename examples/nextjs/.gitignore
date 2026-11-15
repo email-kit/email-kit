@@ -1,7 +1,0 @@
-# Next.js
-/.next/
-next-env.d.ts
-*.tsbuildinfo
-
-# Written by `email-kit compile`
-/src/email-kit/_generated/

@@ -1,8 +1,0 @@
-{
-  "subject": "Welcome to {product}, {name}",
-  "preheader": "Your trial is ready",
-  "heading": "Welcome, {name}!",
-  "body": "Your {product} trial lasts {days, plural, one {# day} other {# days}}. Everything is set up.",
-  "cta": "Get started",
-  "footer": "You're receiving this email because you signed up for {product}."
-}
