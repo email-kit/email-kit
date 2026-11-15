@@ -45,7 +45,7 @@ export function formatError(error: unknown, options: FormatOptions = {}): string
 
 /**
  * ```text
- * ✗ src/email-kit/templates/welcome.tsx:12:14 [syntax-error]
+ * ✗ src/email-kit/welcome/template.tsx:12:14 [syntax-error]
  *   Expected `}`
  *
  *   > 12 |   {data.name)

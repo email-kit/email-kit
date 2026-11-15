@@ -24,10 +24,10 @@ export interface ManifestTemplate {
 }
 
 /**
- * manifest.json: what was compiled, for tools that send the files without the generated module.
- * It records the versions that shaped the output (email-kit, the template dialect, the CLDR
- * plural data), the locales and sender values, each template's files, and in `files` every file
- * the compiler owns, which the next compile may delete.
+ * manifest.json, written with `contract`: what was compiled, for tools that send the files
+ * without the generated module. It records the versions that shaped the output (email-kit, the
+ * template dialect, the CLDR plural data), the locales and sender values, each template's files,
+ * and in `files` every file in the output folder.
  */
 export function manifestFile(
   templates: readonly ManifestTemplate[],

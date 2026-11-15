@@ -43,11 +43,11 @@ describe("email-kit CLI", () => {
     const dir = mkdtempSync(join(TMP, "cli-"))
     cpSync(fileURLToPath(new URL("fixtures/project/", import.meta.url)), dir, {
       recursive: true,
-      filter: (path) => !path.includes(`${sep}compiled`),
+      filter: (path) => !path.includes(`${sep}_generated`),
     })
     const first = capture(dir)
     expect(await run(["compile"], first.io)).toBe(0)
-    expect(first.out[0]).toMatch(/^Compiled 1 template × 2 locales into src\/email-kit\/compiled/)
+    expect(first.out[0]).toMatch(/^Compiled 1 template × 2 locales into src\/email-kit\/_generated/)
 
     const quiet = capture(dir)
     expect(await run(["generate", "--quiet"], quiet.io)).toBe(0)
@@ -59,16 +59,14 @@ describe("email-kit CLI", () => {
     const dir = mkdtempSync(join(TMP, "verbose-"))
     cpSync(fileURLToPath(new URL("fixtures/project/", import.meta.url)), dir, {
       recursive: true,
-      filter: (path) => !path.includes(`${sep}compiled`),
+      filter: (path) => !path.includes(`${sep}_generated`),
     })
     const verbose = capture(dir)
     expect(await run(["compile", "--verbose"], verbose.io)).toBe(0)
     const details = verbose.out[1] ?? ""
     expect(details).toMatch(/^ {2}order-confirmation {2}en {5}html \d+\.\d KB {2}text \d+\.\d KB$/m)
     expect(details).toMatch(/^ {22}de {5}html /m)
-    expect(details).toContain(
-      "written: index.ts, manifest.json, messages.d.ts, order-confirmation/de.html",
-    )
+    expect(details).toContain("written: index.ts, messages.d.ts")
 
     const both = capture(dir)
     expect(await run(["compile", "--quiet", "--verbose"], both.io)).toBe(1)

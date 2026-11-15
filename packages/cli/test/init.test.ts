@@ -52,7 +52,7 @@ const json = (dir: string, path: string) => JSON.parse(read(dir, path))
 const tree = (dir: string) =>
   readdirSync(dir, { recursive: true })
     .map(String)
-    .filter((p) => !p.includes("compiled") && !p.startsWith("node_modules"))
+    .filter((p) => !p.includes("_generated") && !p.startsWith("node_modules"))
     .sort()
 
 describe("Next.js with src/", () => {
@@ -77,16 +77,14 @@ describe("Next.js with src/", () => {
       "email-kit.config.ts",
       "src/email-kit",
       "src/email-kit/index.ts",
-      "src/email-kit/messages",
-      "src/email-kit/messages/en",
-      "src/email-kit/messages/en/welcome.json",
-      "src/email-kit/templates",
-      "src/email-kit/templates/welcome.tsx",
+      "src/email-kit/welcome",
+      "src/email-kit/welcome/messages.en.json",
+      "src/email-kit/welcome/template.tsx",
     ])
     expect(read(dir, "email-kit.config.ts")).toBe(
       'import { defineConfig } from "@email-kit/core"\n\nexport default defineConfig({\n  locales: { default: "en" },\n  importPath: "@/email-kit",\n  sender: { productName: "Shop Web" },\n})\n',
     )
-    expect(read(dir, "src/email-kit/index.ts")).toContain('export * from "./compiled"')
+    expect(read(dir, "src/email-kit/index.ts")).toContain('export * from "./_generated"')
     // tsconfig already has jsx and an @/* alias that covers src/email-kit: unchanged.
     expect(read(dir, "tsconfig.json")).toBe(files["tsconfig.json"])
     expect(json(dir, "package.json")).toMatchObject({
@@ -95,16 +93,21 @@ describe("Next.js with src/", () => {
         "email-kit:compile": "email-kit compile",
         "email-kit:check": "email-kit check",
       },
+      // The generated module imports the runtime when the app runs; the rest is build-time.
+      dependencies: { next: "16.4.2", "@email-kit/runtime": expect.any(String) },
       devDependencies: {
         "@email-kit/cli": expect.any(String),
         "@email-kit/core": expect.any(String),
         zod: "^4",
       },
     })
-    expect(read(dir, ".gitattributes")).toBe("src/email-kit/compiled/** linguist-generated=true\n")
+    expect(json(dir, "package.json").devDependencies).not.toHaveProperty("@email-kit/runtime")
+    expect(read(dir, ".gitattributes")).toBe(
+      "src/email-kit/_generated/** linguist-generated=true\n",
+    )
     // Compiled once, then the next steps.
-    expect(existsSync(join(dir, "src/email-kit/compiled/index.ts"))).toBe(true)
-    expect(out).toContain("Compiled 1 template × 1 locale into src/email-kit/compiled")
+    expect(existsSync(join(dir, "src/email-kit/_generated/index.ts"))).toBe(true)
+    expect(out).toContain("Compiled 1 template × 1 locale into src/email-kit/_generated")
     expect(out).toContain('  import { emails } from "@/email-kit"')
     expect(out).toContain("  npm run email-kit:compile   after changing a template or message")
     expect(out).toContain("  npm run email-kit:check     the checks, for CI")
@@ -133,7 +136,7 @@ describe("Next.js without src/", () => {
     })
     const { code } = await init(dir)
     expect(code).toBe(0)
-    expect(existsSync(join(dir, "email-kit/templates/welcome.tsx"))).toBe(true)
+    expect(existsSync(join(dir, "email-kit/welcome/template.tsx"))).toBe(true)
     // The comment and the existing path stay; one exact path is added.
     expect(read(dir, "tsconfig.json")).toContain("// Next.js settings")
     expect(read(dir, "tsconfig.json")).toBe(
@@ -159,7 +162,7 @@ describe("a tsc project run with node", () => {
     expect(read(dir, "email-kit.config.ts")).toContain('module: "mjs"')
     expect(read(dir, "email-kit.config.ts")).toContain('importPath: "#email-kit"')
     expect(json(dir, "package.json").imports).toEqual({
-      "#email-kit": "./src/email-kit/compiled/index.mjs",
+      "#email-kit": "./src/email-kit/_generated/index.mjs",
     })
     expect(json(dir, "tsconfig.json").compilerOptions.jsx).toBe("react-jsx")
     expect(out).toContain('  import { emails } from "#email-kit"')
@@ -182,7 +185,7 @@ describe("Node type stripping, no build", () => {
     const { code } = await init(dir)
     expect(code).toBe(0)
     expect(json(dir, "package.json").imports).toEqual({ "#email-kit": "./src/email-kit/index.ts" })
-    expect(read(dir, "src/email-kit/index.ts")).toContain('export * from "./compiled/index.ts"')
+    expect(read(dir, "src/email-kit/index.ts")).toContain('export * from "./_generated/index.ts"')
     writeFileSync(
       join(dir, "src/send.ts"),
       'import { emails } from "#email-kit"\nconsole.log(emails.welcome.render({ name: "Ada", startUrl: "https://x.test" }).subject)\n',
@@ -224,7 +227,7 @@ describe("names that are taken", () => {
     const dir = project({
       "package.json": { name: "x" },
       "src/index.ts": "export {}\n",
-      "src/email-kit/compiled/manifest.json": { emailKit: "0.0.0", dialect: "mustache-core@1" },
+      "src/email-kit/_generated/manifest.json": { emailKit: "0.0.0", dialect: "mustache-core@1" },
     })
     expect((await init(dir)).out).toContain("already set up here (src/email-kit/)")
   })
@@ -249,12 +252,25 @@ describe("asking first", () => {
     expect(asked).toEqual([
       "Create these files?",
       "package.json: add the devDependencies @email-kit/cli, @email-kit/core, @email-kit/components, zod?",
+      "package.json: add the dependency @email-kit/runtime, which the generated module imports when the app runs?",
       "package.json: add the scripts email-kit:compile and email-kit:check?",
       'tsconfig.json: add "jsx": "react-jsx" (templates name their JSX runtime themselves)?',
-      ".gitattributes: mark src/email-kit/compiled/ as generated?",
+      ".gitattributes: mark src/email-kit/_generated/ as generated?",
     ])
     expect(json(dir, "package.json")).toEqual({ name: "x" })
     expect(json(dir, "tsconfig.json").compilerOptions.jsx).toBe("react-jsx")
+  })
+
+  it("moves @email-kit/runtime from devDependencies to dependencies, keeping its version", async () => {
+    const dir = project({
+      "package.json": { name: "x", devDependencies: { "@email-kit/runtime": "^0.1.0" } },
+      "src/index.ts": "",
+    })
+    const { code } = await init(dir)
+    expect(code).toBe(0)
+    const pkg = json(dir, "package.json")
+    expect(pkg.dependencies).toEqual({ "@email-kit/runtime": "^0.1.0" })
+    expect(pkg.devDependencies).not.toHaveProperty("@email-kit/runtime")
   })
 
   it("won't guess without a terminal: it asks for --yes", async () => {
@@ -299,7 +315,7 @@ describe("finding the project", () => {
     ])
     expect(code).toBe(0)
     expect(out).toContain("Project    ../.. (npm)")
-    expect(existsSync(join(dir, "lib/email-kit/templates/welcome.tsx"))).toBe(true)
+    expect(existsSync(join(dir, "lib/email-kit/welcome/template.tsx"))).toBe(true)
     expect(read(dir, "email-kit.config.ts")).toContain('root: "lib/email-kit"')
   })
 })
@@ -331,23 +347,23 @@ describe("the project's schema library", () => {
     const dir = base(deps)
     const { code, out } = await init(dir)
     expect(code).toBe(0)
-    const welcome = read(dir, "src/email-kit/templates/welcome.tsx")
+    const welcome = read(dir, "src/email-kit/welcome/template.tsx")
     expect(welcome).toContain(line)
     expect(welcome).toContain(schema)
     expect(welcome).not.toContain("zod")
     const devDependencies = json(dir, "package.json").devDependencies
     expect(devDependencies).toMatchObject(added)
     expect(devDependencies).not.toHaveProperty("zod")
-    // The first compile read the schema: the url field is marked in schema.json.
+    // The first compile read the schema: the url field is marked in the module's data model.
     expect(out).toContain("Compiled 1 template × 1 locale")
-    expect(
-      json(dir, "src/email-kit/compiled/welcome/schema.json").properties.startUrl,
-    ).toMatchObject({ "x-email-kit": { url: true } })
+    expect(read(dir, "src/email-kit/_generated/index.ts")).toContain(
+      '"startUrl":{"type":"string","url":true}',
+    )
 
     // `new` writes the same library's schema, and it compiles.
     const result = await run(["new", "order-shipped"], { cwd: dir, out: () => {}, err: () => {} })
     expect(result).toBe(0)
-    expect(read(dir, "src/email-kit/templates/order-shipped.tsx")).toContain(line)
+    expect(read(dir, "src/email-kit/order-shipped/template.tsx")).toContain(line)
     expect(await run(["compile", "--quiet"], { cwd: dir, out: () => {}, err: () => {} })).toBe(0)
   })
 })
@@ -373,10 +389,9 @@ describe("email-kit new", () => {
         'locales: { default: "en", list: ["en", "de"] }',
       ),
     )
-    mkdirSync(join(dir, "src/email-kit/messages/de"), { recursive: true })
     writeFileSync(
-      join(dir, "src/email-kit/messages/de/welcome.json"),
-      read(dir, "src/email-kit/messages/en/welcome.json"),
+      join(dir, "src/email-kit/welcome/messages.de.json"),
+      read(dir, "src/email-kit/welcome/messages.en.json"),
     )
     return dir
   }
@@ -387,9 +402,9 @@ describe("email-kit new", () => {
     expect(code).toBe(0)
     expect(out).toBe(
       [
-        "Created src/email-kit/templates/password-reset.tsx",
-        "   and src/email-kit/messages/en/password-reset.json",
-        "   and src/email-kit/messages/de/password-reset.json (translate it)",
+        "Created src/email-kit/password-reset/template.tsx",
+        "   and src/email-kit/password-reset/messages.en.json",
+        "   and src/email-kit/password-reset/messages.de.json (translate it)",
         "",
         "Compile, then render it:",
         "",
@@ -399,7 +414,9 @@ describe("email-kit new", () => {
       ].join("\n"),
     )
     expect(await cli(dir, ["compile", "--quiet"])).toMatchObject({ code: 0 })
-    expect(existsSync(join(dir, "src/email-kit/compiled/password-reset/de.html"))).toBe(true)
+    expect(read(dir, "src/email-kit/_generated/index.ts")).toMatch(
+      /const passwordResetSpec: TemplateSpec = \{[\s\S]*?\n {4}"en": \{[\s\S]*?\n {4}"de": \{/,
+    )
     // With its footer, the new template passes every check, the legal.* ones included.
     const checked = await cli(dir, ["check", "--json"])
     const errors = JSON.parse(checked.out).findings.filter(
@@ -419,19 +436,18 @@ describe("email-kit new", () => {
     const taken = await cli(dir, ["new", "welcome"])
     expect([taken.code, taken.err]).toEqual([
       1,
-      expect.stringContaining(
-        'The template "welcome" exists (src/email-kit/templates/welcome.tsx)',
-      ),
+      expect.stringContaining('The template "welcome" exists (src/email-kit/welcome)'),
     ])
     expect(tree(dir)).toEqual(before)
   })
 
-  it("ignores folders and other files in the templates folder", async () => {
+  it("ignores other folders and files in the email-kit folder", async () => {
     const dir = await setUp()
-    mkdirSync(join(dir, "src/email-kit/templates/partials"), { recursive: true })
-    writeFileSync(join(dir, "src/email-kit/templates/README.md"), 'id: "order-shipped"\n')
+    mkdirSync(join(dir, "src/email-kit/_shared"), { recursive: true })
+    writeFileSync(join(dir, "src/email-kit/_shared/README.md"), 'id: "order-shipped"\n')
+    writeFileSync(join(dir, "src/email-kit/README.md"), 'id: "order-shipped"\n')
     const { code, out } = await cli(dir, ["new", "order-shipped"])
     expect(code).toBe(0)
-    expect(out).toContain("Created src/email-kit/templates/order-shipped.tsx")
+    expect(out).toContain("Created src/email-kit/order-shipped/template.tsx")
   })
 })

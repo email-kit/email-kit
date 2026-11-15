@@ -1,18 +1,24 @@
-import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs"
-import { basename, dirname, join, relative } from "node:path"
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs"
+import { basename, join, relative } from "node:path"
 
 import { EmailKitError, isTemplateId } from "@email-kit/core/internal"
 
 import { loadConfig } from "../compiler/config/index.ts"
 import { identifiersFor } from "../compiler/emit/identifiers.ts"
+import {
+  messagesFile,
+  readLayout,
+  TEMPLATE_FILE,
+  templateFolder,
+} from "../compiler/project/layout.ts"
 import { isPseudo } from "../i18n/pseudo.ts"
 import { findProject, type SchemaLibrary, schemaLibraryOf } from "./detect.ts"
 import { schemaSource } from "./scaffold.ts"
 
 /**
- * `email-kit new <id>`: adds a template, with its messages in every locale and a fixture. The id
- * must follow the id grammar. An id already in use, by a file, its messages or another template
- * that declares it, is refused, never overwritten.
+ * `email-kit new <id>`: adds a template folder, `<root>/<id>/`, with `template.tsx`, its messages
+ * in every locale and a fixture. The id must follow the id grammar. A folder already named by the
+ * id is refused, never overwritten.
  */
 export async function newTemplate(
   id: string,
@@ -26,30 +32,23 @@ export async function newTemplate(
   }
   const config = await loadConfig({ cwd: options.cwd, config: options.config })
   const rel = (path: string) => relative(config.dir, path)
-  const templateFile = join(config.templates, `${id}.tsx`)
-  const locales = config.locales.filter((locale) => !isPseudo(locale))
-  const messageFiles = locales.map((locale) => join(config.messages, locale, `${id}.json`))
-
-  const taken = [templateFile, ...messageFiles].find((file) => existsSync(file))
-  const declares = new RegExp(`\\bid:\\s*["']${id}["']`)
-  const declared = templateSources(config.templates).find((file) =>
-    declares.test(readFileSync(join(config.templates, file), "utf8")),
-  )
-  if (taken || declared) {
+  const folder = templateFolder(config.root, id)
+  if (existsSync(folder)) {
     throw new EmailKitError(
       "duplicate-id",
-      `The template "${id}" exists (${rel(taken ?? join(config.templates, declared as string))}). Choose another id.`,
+      `The template "${id}" exists (${rel(folder)}). Choose another id.`,
     )
   }
+  const library = schemaLibrary(config)
+  const templateFile = join(folder, TEMPLATE_FILE)
+  const locales = config.locales.filter((locale) => !isPseudo(locale))
+  const messageFiles = locales.map((locale) => messagesFile(folder, locale))
 
-  mkdirSync(config.templates, { recursive: true })
-  writeFileSync(templateFile, template(id, schemaLibrary(config.dir, config.templates)))
-  for (const file of messageFiles) {
-    mkdirSync(dirname(file), { recursive: true })
-    writeFileSync(file, MESSAGES)
-  }
+  mkdirSync(folder, { recursive: true })
+  writeFileSync(templateFile, template(id, library))
+  for (const file of messageFiles) writeFileSync(file, MESSAGES)
   const property = identifiersFor(id).property
-  const from = config.importPath ?? `./${basename(dirname(config.templates))}`
+  const from = config.importPath ?? `./${basename(config.root)}`
   return [
     `Created ${rel(templateFile)}`,
     ...messageFiles.map((file, i) => `   and ${rel(file)}${i > 0 ? " (translate it)" : ""}`),
@@ -75,30 +74,20 @@ const MESSAGES = `${JSON.stringify(
   2,
 )}\n`
 
-/**
- * The files in the templates folder that can hold a template, by name: TypeScript and JavaScript
- * files, not folders. Missing folder, no files.
- */
-function templateSources(templates: string): string[] {
-  if (!existsSync(templates)) return []
-  return readdirSync(templates, { withFileTypes: true })
-    .filter((entry) => entry.isFile() && /\.[cm]?[jt]sx?$/.test(entry.name))
-    .map((entry) => entry.name)
-}
-
 /** The library the other templates import, else the one the project depends on, else Zod. */
-function schemaLibrary(configDir: string, templates: string): SchemaLibrary {
-  const imported = templateSources(templates)
+function schemaLibrary(config: Parameters<typeof readLayout>[0]): SchemaLibrary {
+  const templates = existsSync(config.root) ? readLayout(config).templates : []
+  const imported = templates
     .map(
       (file) =>
-        /from\s+["'](zod|valibot|arktype)["']/.exec(
-          readFileSync(join(templates, file), "utf8"),
-        )?.[1] as SchemaLibrary | undefined,
+        /from\s+["'](zod|valibot|arktype)["']/.exec(readFileSync(file, "utf8"))?.[1] as
+          | SchemaLibrary
+          | undefined,
     )
     .find((library) => library !== undefined)
   if (imported) return imported
   try {
-    const pkg = JSON.parse(readFileSync(join(findProject(configDir), "package.json"), "utf8"))
+    const pkg = JSON.parse(readFileSync(join(findProject(config.dir), "package.json"), "utf8"))
     return schemaLibraryOf(pkg) ?? "zod"
   } catch {
     return "zod"

@@ -26,6 +26,8 @@ export interface OutputOptions {
   /** The config file's name, for the generated header. */
   readonly configFile: string
   readonly module: "ts" | "mjs"
+  /** Also write the parts, schemas and manifest as plain files. */
+  readonly contract: boolean
   readonly perTemplateEntries: boolean
   readonly validate: boolean
   readonly sender: SenderValues
@@ -35,12 +37,12 @@ export interface OutputOptions {
 
 /**
  * Every file of the output folder, sorted by path:
- * - for each template, `schema.json`, then a `.html` and a `.txt` for each locale;
  * - the module (`index.ts`, or `index.mjs` with `index.d.mts`) and `messages.d.ts`;
  * - with `perTemplateEntries`, the module again in each template's folder, with that template
  *   alone, from the same generator, so every entry has the same API and stands alone;
  * - `theme.json`, when the theme is emitted;
- * - `manifest.json`, which lists all of them.
+ * - with `contract`, for each template `schema.json` and a `.html` and a `.txt` for each locale,
+ *   and `manifest.json`, which lists every file.
  *
  * The `.html` and `.txt` files are the exact email parts, so they have no "generated" header; the
  * JSON files have it as `$comment`.
@@ -57,7 +59,7 @@ export function buildOutput(
     context: options.sender.runtime,
     validate: options.validate,
   }
-  const outputs = templates.map(templateOutput)
+  const outputs = options.contract ? templates.map(templateOutput) : []
   const files = outputs.flatMap((output) => output.files)
   files.push(...moduleFiles("", templates, options.module, moduleOptions))
   files.push({
@@ -70,14 +72,16 @@ export function buildOutput(
     }
   }
   if (options.theme) files.push(themeFile(options.theme))
-  const entries = outputs.map((output) => output.entry)
-  files.push(
-    manifestFile(
-      entries,
-      files.map((file) => file.path),
-      options,
-    ),
-  )
+  if (options.contract) {
+    const entries = outputs.map((output) => output.entry)
+    files.push(
+      manifestFile(
+        entries,
+        files.map((file) => file.path),
+        options,
+      ),
+    )
+  }
   return files.sort((a, b) => (a.path < b.path ? -1 : 1))
 }
 

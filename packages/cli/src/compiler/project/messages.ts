@@ -1,10 +1,11 @@
 import { existsSync, readFileSync } from "node:fs"
-import { join } from "node:path"
+import { dirname } from "node:path"
 
 import { EmailKitError } from "@email-kit/core/internal"
 
 import { isPseudo } from "../../i18n/pseudo.ts"
 import type { ResolvedConfig } from "../config/index.ts"
+import { messagesFile } from "./layout.ts"
 
 /** One locale's messages for a template, and the file they come from. */
 export interface Catalogue {
@@ -14,15 +15,18 @@ export interface Catalogue {
 }
 
 /**
- * Each real locale's messages for a template, from `<messages>/<locale>/<id>.json`, in config
- * order, so the default locale comes first. Pseudo-locales have no file: they're made from the
- * default locale's messages.
+ * Each real locale's messages for a template, from `messages.<locale>.json` beside its
+ * `template.tsx`, in config order, so the default locale comes first. Pseudo-locales have no
+ * file: they're made from the default locale's messages.
  */
-export function readCatalogues(config: ResolvedConfig, id: string): Catalogue[] {
+export function readCatalogues(
+  config: Pick<ResolvedConfig, "locales">,
+  templateFile: string,
+): Catalogue[] {
   return config.locales
     .filter((locale) => !isPseudo(locale))
     .map((locale) => {
-      const file = join(config.messages, locale, `${id}.json`)
+      const file = messagesFile(dirname(templateFile), locale)
       return { locale, file, messages: readMessages(file) }
     })
 }

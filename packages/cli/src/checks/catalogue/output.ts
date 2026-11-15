@@ -1,6 +1,8 @@
 import { createHash } from "node:crypto"
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs"
-import { join } from "node:path"
+import { join, relative } from "node:path"
+
+import { toPosix } from "../../paths.ts"
 
 import type { Check, CheckContext } from "../types.ts"
 
@@ -17,32 +19,23 @@ function onDisk(context: CheckContext, path: string): string | undefined {
   return existsSync(file) ? readFileSync(file, "utf8") : undefined
 }
 
-/** The decoded double-quoted string literals of a generated module (.ts or oxc-printed .mjs). */
-function literals(module: string): Set<string> {
-  const out = new Set<string>()
-  for (const match of module.matchAll(/"(?:[^"\\\n]|\\.)*"/g)) {
-    try {
-      out.add(JSON.parse(asJson(match[0])) as string)
-    } catch {}
-  }
-  return out
-}
-
-/** The escapes JavaScript has and JSON lacks, as JSON writes them. */
-const JSON_ESCAPES: Readonly<Record<string, string>> = {
-  "'": "'",
-  v: "\\u000b",
-  "0": "\\u0000",
+/** Every file in a folder, as `/`-separated relative paths, except those under a `.` name. */
+function filesIn(folder: string): string[] {
+  if (!existsSync(folder)) return []
+  return readdirSync(folder, { recursive: true, withFileTypes: true })
+    .filter((entry) => entry.isFile())
+    .map((entry) => toPosix(relative(folder, join(entry.parentPath, entry.name))))
+    .filter((path) => !path.split("/").some((part) => part.startsWith(".")))
+    .sort()
 }
 
 /**
- * A JavaScript string literal as JSON: oxc writes `\\xA0`, `\\'`, `\\v` and `\\0`, which JSON
- * lacks.
+ * Whether a file sits in a folder named like no template: `output.no-orphans` reports that
+ * folder once, so `output.drift` leaves its files out.
  */
-function asJson(literal: string): string {
-  return literal.replace(/\\(x[0-9a-fA-F]{2}|['v]|0(?![0-9])|[\s\S])/g, (sequence, code: string) =>
-    code[0] === "x" ? `\\u00${code.slice(1)}` : (JSON_ESCAPES[code] ?? sequence),
-  )
+function isTemplateFolderFile(context: CheckContext, path: string): boolean {
+  const [folder, ...rest] = path.split("/")
+  return rest.length > 0 && !context.templates.some((t) => t.id === folder)
 }
 
 /** The `output.*` checks: the committed output folder matches what a compile writes now. */
@@ -55,7 +48,7 @@ export const OUTPUT: readonly Check[] = [
     run: (context, report) => {
       const { output } = context
       const file = (path: string) => `${output.dir}/${path}`
-      if (onDisk(context, "manifest.json") === undefined) {
+      if (onDisk(context, "index.ts") === undefined && onDisk(context, "index.mjs") === undefined) {
         if (!output.gitignored) {
           report({ message: `${output.dir} hasn't been compiled`, subject: { file: output.dir } })
         }
@@ -72,14 +65,25 @@ export const OUTPUT: readonly Check[] = [
           })
         }
       }
+      const expected = new Set(output.expected.map((e) => e.path))
+      for (const path of filesIn(output.absolute)) {
+        if (!expected.has(path) && !isTemplateFolderFile(context, path)) {
+          report({
+            message: `${path} isn't written by a fresh compile`,
+            subject: { file: file(path) },
+          })
+        }
+      }
     },
   },
   {
     id: "output.manifest",
     level: "error",
-    rule: "The manifest lists exactly the compiled templates and locales, and its hashes match the files.",
+    rule: "With `contract: true`, the manifest lists exactly the compiled templates and locales, and its hashes match the files.",
     fix: "Don't edit compiled files by hand: change the template or messages and run `email-kit compile`.",
     run: (context, report) => {
+      // Without contract a compile writes no manifest, and output.drift reports a stray one.
+      if (!context.output.expected.some((file) => file.path === "manifest.json")) return
       const text = onDisk(context, "manifest.json")
       if (text === undefined) return
       const subject = { file: `${context.output.dir}/manifest.json` }
@@ -117,30 +121,9 @@ export const OUTPUT: readonly Check[] = [
     },
   },
   {
-    id: "output.module-matches",
-    level: "error",
-    rule: "The templates inside the generated module equal the .html and .txt files beside it.",
-    fix: "Run `email-kit compile`: the module and the files must come from the same compile.",
-    run: (context, report) => {
-      const module = onDisk(context, "index.ts") ?? onDisk(context, "index.mjs")
-      if (module === undefined) return
-      const strings = literals(module)
-      for (const expected of context.output.expected) {
-        if (!/\/[^/]+\.(html|txt)$/.test(expected.path)) continue
-        const actual = onDisk(context, expected.path)
-        if (actual !== undefined && !strings.has(actual)) {
-          report({
-            message: `The module's copy of ${expected.path} differs from the file`,
-            subject: { file: `${context.output.dir}/${expected.path}` },
-          })
-        }
-      }
-    },
-  },
-  {
     id: "output.no-orphans",
     level: "error",
-    rule: "Every compiled template in the output folder has a source template.",
+    rule: "Every template folder in the output folder has a source template.",
     fix: "Delete the folder, or restore its template: the module may still export a template that no longer exists.",
     run: (context, report) => {
       const dir = context.output.absolute
@@ -148,17 +131,30 @@ export const OUTPUT: readonly Check[] = [
       const ids = new Set(context.templates.map((t) => t.id))
       for (const name of readdirSync(dir)) {
         const path = join(dir, name)
-        if (
-          statSync(path).isDirectory() &&
-          !ids.has(name) &&
-          existsSync(join(path, "schema.json"))
-        ) {
+        if (statSync(path).isDirectory() && !name.startsWith(".") && !ids.has(name)) {
           report({
             message: `${name}/ is compiled output with no template`,
             subject: { file: `${context.output.dir}/${name}` },
           })
         }
       }
+    },
+  },
+  {
+    id: "output.runtime-dependency",
+    level: "error",
+    rule: "`@email-kit/runtime` is in the app's dependencies, not its devDependencies: the generated module imports it when the app runs.",
+    fix: "Install it as a dependency: `npm install @email-kit/runtime` (or your package manager's equivalent). Production installs leave devDependencies out.",
+    run: (context, report) => {
+      const runtime = context.output.runtime
+      if (!runtime || runtime.section === "dependencies") return
+      report({
+        message:
+          runtime.section === "missing"
+            ? `${runtime.file} doesn't list @email-kit/runtime, which the generated module imports`
+            : `${runtime.file} lists @email-kit/runtime in devDependencies: a production install leaves it out`,
+        subject: { file: runtime.file },
+      })
     },
   },
   {

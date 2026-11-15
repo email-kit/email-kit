@@ -26,7 +26,8 @@ Works today:
 - Every email centred in a fluid container (600px by default) with a ghost table for classic
   Outlook, and fifteen components, including `Button`, `OtpCode`, `DataTable`, `LineItems` and a
   transactional `Footer`.
-- A dependency-free generated module with a runtime data validator; `.ts`, or `.mjs` with types.
+- A small generated module that renders with `@email-kit/runtime` (zero dependencies, about 1.5
+  KB to 3 KB gzipped), with a runtime data validator; `.ts`, or `.mjs` with types.
 - `email-kit check`: 111 of the 175 planned checks, over the output, renders of every fixture,
   the sources and the theme; human, JSON and GitHub reporters; team checks.
 

@@ -1,3 +1,4 @@
+import { GENERATED_FOLDER } from "../compiler/config/paths.ts"
 import type { SchemaLibrary } from "./detect.ts"
 import type { ImportStrategy } from "./imports.ts"
 
@@ -38,12 +39,13 @@ ${lines.join("\n")}
 }
 
 /**
- * The folder's `index.ts`, which the app imports: it re-exports the compiled module. A subpath
+ * The folder's `index.ts`, which the app imports: it re-exports the generated module. A subpath
  * import needs the module's file name, since Node resolves it without a bundler.
  */
 export function indexFile(strategy: ImportStrategy): string {
-  const target = strategy.kind === "subpath" ? `./compiled/index.${strategy.module}` : "./compiled"
-  return `// The emails, compiled by \`email-kit compile\` into ./compiled.\nexport * from "${target}"\n`
+  const folder = `./${GENERATED_FOLDER}`
+  const target = strategy.kind === "subpath" ? `${folder}/index.${strategy.module}` : folder
+  return `// The emails, compiled by \`email-kit compile\` into ${folder}.\nexport * from "${target}"\n`
 }
 
 /** A schema field in a scaffolded template: required text, or a URL (the `url` marker). */

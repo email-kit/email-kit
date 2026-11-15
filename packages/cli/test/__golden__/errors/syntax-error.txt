@@ -1,4 +1,4 @@
-✗ src/email-kit/templates/order-confirmation.tsx:35:17 [syntax-error]
+✗ src/email-kit/order-confirmation/template.tsx:35:17 [syntax-error]
   Expected `...` but found `Identifier`
 
     33 |   component: ({ data, t, sender }) => (

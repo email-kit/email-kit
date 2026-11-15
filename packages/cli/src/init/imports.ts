@@ -1,5 +1,7 @@
 import { posix } from "node:path"
 
+import { GENERATED_FOLDER } from "../compiler/config/paths.ts"
+
 import type { Project } from "./detect.ts"
 
 /** How the app imports the emails. */
@@ -40,7 +42,7 @@ export function importStrategy(project: Project, folder: string): ImportStrategy
   }
   if ((project.host === "tsc" || project.host === "node-strip") && !imports?.[SUBPATH]) {
     return project.host === "tsc"
-      ? { kind: "subpath", target: `./${folder}/compiled/index.mjs`, module: "mjs" }
+      ? { kind: "subpath", target: `./${folder}/${GENERATED_FOLDER}/index.mjs`, module: "mjs" }
       : { kind: "subpath", target: `./${folder}/index.ts`, module: "ts" }
   }
   return { kind: "relative" }

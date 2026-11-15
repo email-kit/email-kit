@@ -1,4 +1,4 @@
-import type { LocaleData } from "@email-kit/dialect/module"
+import { type LocaleData, resolveLocale } from "@email-kit/runtime/locale"
 import likely from "cldr-core/supplemental/likelySubtags.json" with { type: "json" }
 import parents from "cldr-core/supplemental/parentLocales.json" with { type: "json" }
 
@@ -21,11 +21,14 @@ const REGION = /^([A-Z]{2}|\d{3})$/
  * - `regions`: the regions that use another script than their language (`zh-tw` → `hant`), so
  *   `zh-TW` finds `zh-Hant`.
  *
- * Every tag is lowercase, as the runtime compares them.
+ * Every tag is lowercase, as the runtime compares them. Parents that change no resolution are
+ * left out (see `pruneParents`), so an English-only project carries none; `prune: false` keeps
+ * them, for tests.
  */
 export function localeData(
   locales: readonly string[],
   fallback: Readonly<Record<string, string>> = {},
+  options: { readonly prune?: boolean } = {},
 ): LocaleData {
   const languages = new Set([...locales, ...Object.keys(fallback)].map(languageOf))
   const data = {
@@ -49,7 +52,31 @@ export function localeData(
     const script = scriptOf(maximal)
     if (script && script !== data.scripts[language]) data.regions[tag.toLowerCase()] = script
   }
-  return data
+  return options.prune === false ? data : { ...data, parents: pruneParents(data, locales) }
+}
+
+/**
+ * The parents that change where some tag resolves. Each is dropped in turn when every listed tag
+ * still resolves to the same compiled locale without it: `en-gb` → `en-001` goes when `en-001`
+ * isn't compiled, since dropping the region reaches `en` anyway. A tag that isn't listed resolves
+ * by dropping parts until it reaches a listed tag, so checking the listed ones covers it.
+ *
+ * Languages with a region that changes the script (`zh-tw` → Hant) keep all their parents: the
+ * runtime rewrites a requested tag before following parents, so the check above can't stand for
+ * a tag reached part-way through.
+ */
+function pruneParents(data: LocaleData, locales: readonly string[]): Record<string, string> {
+  const scripted = new Set(Object.keys(data.regions).map(languageOf))
+  const tags = Object.keys(data.parents)
+  const resolved = new Map(tags.map((tag) => [tag, resolveLocale(tag, locales, data)]))
+  const parents: Record<string, string> = { ...data.parents }
+  for (const tag of tags) {
+    if (scripted.has(languageOf(tag))) continue
+    const { [tag]: _dropped, ...rest } = parents
+    const trial: LocaleData = { ...data, parents: rest }
+    if (tags.every((t) => resolveLocale(t, locales, trial) === resolved.get(t))) delete parents[tag]
+  }
+  return parents
 }
 
 /** A tag's language, in lowercase: `pt` for `pt-BR`. */

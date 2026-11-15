@@ -4,12 +4,16 @@ import type { ResolvedConfig } from "./index.ts"
 
 import type { Problems } from "./shared.ts"
 
+/** The output folder's name inside the email-kit folder, by default. */
+export const GENERATED_FOLDER = "_generated"
+
 /** The folders in a resolved config. */
-export type ConfigPaths = Pick<ResolvedConfig, "root" | "templates" | "messages" | "out">
+export type ConfigPaths = Pick<ResolvedConfig, "root" | "out">
 
 /**
- * Reads the folders. `root` defaults by project layout and the others sit inside it. The compiler
- * writes and removes files in `out`, so it must not overlap the source folders or hold the project.
+ * Reads the folders. `root` defaults by project layout and `out` sits inside it. The compiler
+ * writes and removes files in `out`, so it must not be the root folder, hold it, or hold the
+ * project.
  */
 export function readPaths(
   config: Record<string, unknown>,
@@ -29,25 +33,19 @@ export function readPaths(
   const root =
     path("root") ??
     (isDirectory(join(dir, "src")) ? join(dir, "src", "email-kit") : join(dir, "email-kit"))
-  const templates = path("templates") ?? join(root, "templates")
-  const messages = path("messages") ?? join(root, "messages")
-  const out = path("out") ?? join(root, "compiled")
-
-  for (const [name, folder] of [
-    ["templates", templates],
-    ["messages", messages],
-  ] as const) {
-    if (isWithin(folder, out) || isWithin(out, folder)) {
-      problems.push(`out: must not overlap the ${name} folder (${relative(dir, folder)})`)
-    }
-  }
+  const out = path("out") ?? join(root, GENERATED_FOLDER)
 
   if (isWithin(out, dir)) {
     problems.push(
-      "out: must not contain the project; use its own folder, such as src/email-kit/compiled",
+      "out: must not contain the project; use its own folder, such as src/email-kit/_generated",
+    )
+  } else if (isWithin(out, root)) {
+    problems.push(
+      `out: must not be or contain the email-kit folder (${relative(dir, root) || "."}); ` +
+        "use its own folder, such as src/email-kit/_generated",
     )
   }
-  return { root, templates, messages, out }
+  return { root, out }
 }
 
 /**

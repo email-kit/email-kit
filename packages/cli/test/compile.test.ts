@@ -17,7 +17,7 @@ const emailKit = (path: string) => fixture(`project/src/email-kit/${path}`)
 export const cacheDir = fileURLToPath(new URL("../node_modules/.cache/email-kit/", import.meta.url))
 const messages = (locale: string) =>
   JSON.parse(
-    readFileSync(emailKit(`messages/${locale}/order-confirmation.json`), "utf8"),
+    readFileSync(emailKit(`order-confirmation/messages.${locale}.json`), "utf8"),
   ) as Record<string, string>
 
 const golden = (name: string) => `__golden__/order-confirmation/${name}`
@@ -26,7 +26,7 @@ let loaded: LoadedTemplate
 const compiled: Record<string, CompiledEmail> = {}
 
 beforeAll(async () => {
-  loaded = await loadTemplate(emailKit("templates/order-confirmation.tsx"), { cacheDir })
+  loaded = await loadTemplate(emailKit("order-confirmation/template.tsx"), { cacheDir })
   for (const locale of ["en", "de"]) {
     compiled[locale] = compileEmail(loaded.definition, {
       locale,
@@ -50,15 +50,12 @@ function renderAll(email: CompiledEmail, fields: object) {
 describe("loadTemplate", () => {
   it("bundles the template and its components", () => {
     expect(loaded.definition.id).toBe("order-confirmation")
-    expect(loaded.files.map((file) => basename(file)).sort()).toEqual([
-      "Card.tsx",
-      "order-confirmation.tsx",
-    ])
+    expect(loaded.files.map((file) => basename(file)).sort()).toEqual(["Card.tsx", "template.tsx"])
   })
 
   it("reads the template's schema as portable JSON Schema", async () => {
     const schema = await readSchema(loaded.definition.schema, {
-      resolveFrom: emailKit("templates/order-confirmation.tsx"),
+      resolveFrom: emailKit("order-confirmation/template.tsx"),
     })
     expect(schema.issues).toEqual([])
     await expect(`${JSON.stringify(schema.jsonSchema, null, 2)}\n`).toMatchFileSnapshot(

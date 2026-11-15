@@ -114,8 +114,9 @@ function dedupe(findings: readonly Finding[], context: CheckContext): Finding[] 
 }
 
 /**
- * Where a problem is: a line in a source file or in a compiled email. A render isn't a file on
- * disk, so its offsets don't point into the compiled HTML, and only its fixture is given.
+ * Where a problem is: a line in a source file or in a compiled email's `.html` file. A render
+ * isn't a file on disk, so its offsets don't point into the compiled HTML, and only its fixture is
+ * given. Without `.html` files (no `contract`), an email's problem points at its template.
  */
 function subjectOf(problem: Problem): Subject {
   if (problem.subject) return problem.subject
@@ -132,7 +133,8 @@ function subjectOf(problem: Problem): Subject {
   if (!email) return {}
   const base = { template: email.template, locale: email.locale, file: email.file }
   if (email.fixture !== undefined) return { ...base, fixture: email.fixture }
-  const position = problem.at === undefined ? undefined : email.parsed.position(problem.at)
+  const position =
+    problem.at === undefined || !email.htmlFile ? undefined : email.parsed.position(problem.at)
   return { ...base, ...(position && { line: position.line, column: position.column }) }
 }
 

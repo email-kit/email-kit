@@ -9,7 +9,7 @@ import {
   type OrderConfirmationData,
   type RenderedEmail,
   type TemplateId,
-} from "./fixtures/project/src/email-kit/compiled/index.ts"
+} from "./fixtures/project/src/email-kit/_generated/index.ts"
 
 const emails = createEmails({ siteUrl: "https://shop.example" })
 
@@ -25,7 +25,6 @@ const email: RenderedEmail<"order-confirmation"> = emails.orderConfirmation.rend
 })
 const id: TemplateId = email.meta.id
 const locale: Locale = email.meta.locale
-const raw: string = emails.orderConfirmation.templates.de.html
 const withUndefined = emails.orderConfirmation.render({ ...data, discount: undefined })
 const issues: readonly DataIssue[] = emails.orderConfirmation.validate(JSON.parse("{}"))
 
@@ -35,27 +34,26 @@ const missing = emails.orderConfirmation.render({ customerName: "Ada" })
 const wrongType = emails.orderConfirmation.render({ ...data, items: [{ name: "Tea", qty: "2" }] })
 // @ts-expect-error: no such template
 const noTemplate = emails.welcome
-// @ts-expect-error: no such locale among the raw templates
-const noLocale = emails.orderConfirmation.templates.fr
+// @ts-expect-error: the raw templates aren't part of the runtime API (contract files carry them)
+const noRaw = emails.orderConfirmation.templates
 // @ts-expect-error: TemplateId is a closed union
 const unknownId: TemplateId = "welcome"
 // @ts-expect-error: the runtime context is required
 const noContext = createEmails({})
 // @ts-expect-error: with a runtime key, there is no ready-made \`emails\` export
-const notExported = (await import("./fixtures/project/src/email-kit/compiled/index.ts")).emails
+const notExported = (await import("./fixtures/project/src/email-kit/_generated/index.ts")).emails
 
 export const checks: readonly unknown[] = [
   email,
   id,
   locale,
-  raw,
   withUndefined,
   issues,
   locales,
   missing,
   wrongType,
   noTemplate,
-  noLocale,
+  noRaw,
   unknownId,
   noContext,
   notExported,

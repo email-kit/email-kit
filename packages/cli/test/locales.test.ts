@@ -5,7 +5,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs"
 import { join } from "node:path"
 import { fileURLToPath, pathToFileURL } from "node:url"
 
-import { resolveLocale } from "@email-kit/dialect/module"
+import { resolveLocale } from "@email-kit/runtime/locale"
 import { afterAll, describe, expect, it } from "vitest"
 
 import { compile } from "../src/compiler/build.ts"
@@ -59,8 +59,35 @@ describe("resolving a requested locale", () => {
     expect(resolve(["en", "pt-BR"], "pt-AO", { pt: "pt-BR" })).toBe("pt-BR")
   })
 
+  it("leaves out parents that change no resolution", () => {
+    expect(localeData(["en"]).parents).toEqual({})
+    expect(localeData(["en", "en-GB"]).parents).toEqual({})
+    expect(localeData(["es", "es-419"]).parents).toMatchObject({ "es-ar": "es-419" })
+    expect(localeData(["en", "pt-BR"], { pt: "pt-BR" }).parents).toEqual({ pt: "pt-br" })
+  })
+
+  it.each([
+    [["en"], {}],
+    [["en-US", "en-GB", "en-001"], {}],
+    [["en", "es", "es-419"], {}],
+    [["en", "pt-BR"], { pt: "pt-BR" }],
+    [["pt", "pt-PT", "de", "fr"], {}],
+    [["en", "zh", "zh-Hant"], {}],
+  ])("resolves every CLDR parent tag the same after pruning: %j", (available, fallback) => {
+    const full = localeData(available, fallback, { prune: false })
+    const pruned = localeData(available, fallback)
+    for (const tag of Object.keys(full.parents)) {
+      for (const requested of [tag, `${tag}-x-private`]) {
+        expect([requested, resolveLocale(requested, available, pruned)]).toEqual([
+          requested,
+          resolveLocale(requested, available, full),
+        ])
+      }
+    }
+  })
+
   it("keeps only the project's languages", () => {
-    const data = localeData(["en", "de"])
+    const data = localeData(["en", "de"], {}, { prune: false })
     expect(Object.keys(data.parents).every((tag) => /^(en|de)-/.test(tag))).toBe(true)
     expect(data.scripts).toEqual({ de: "latn", en: "latn" })
     expect(localeData(["zh"]).regions).toMatchObject({ "zh-tw": "hant", "zh-hk": "hant" })
@@ -101,9 +128,9 @@ describe("in a generated module", () => {
 export default defineConfig({ locales: { default: "en", list: ${JSON.stringify(locales)}, fallback: { pt: "pt-BR", "pt-PT": "pt-BR" } } })
 `,
     )
-    mkdirSync(join(dir, "src/email-kit/templates"), { recursive: true })
+    mkdirSync(join(dir, "src/email-kit/hello"), { recursive: true })
     writeFileSync(
-      join(dir, "src/email-kit/templates/hello.tsx"),
+      join(dir, "src/email-kit/hello/template.tsx"),
       `/** @jsxImportSource @email-kit/core */
 import { defineEmail } from "@email-kit/core"
 import { z } from "zod"
@@ -118,15 +145,14 @@ export default defineEmail({
 `,
     )
     for (const locale of locales) {
-      mkdirSync(join(dir, "src/email-kit/messages", locale), { recursive: true })
       writeFileSync(
-        join(dir, "src/email-kit/messages", locale, "hello.json"),
+        join(dir, `src/email-kit/hello/messages.${locale}.json`),
         JSON.stringify({ subject: `Hello ${locale}` }),
       )
     }
     await compile({ cwd: dir })
     const { emails } = (await import(
-      pathToFileURL(join(dir, "src/email-kit/compiled/index.ts")).href
+      pathToFileURL(join(dir, "src/email-kit/_generated/index.ts")).href
     )) as {
       emails: {
         hello: {

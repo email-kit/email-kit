@@ -6,6 +6,7 @@ import {
   existsSync,
   mkdirSync,
   mkdtempSync,
+  readdirSync,
   readFileSync,
   rmSync,
   writeFileSync,
@@ -39,8 +40,9 @@ export default defineEmail({
 async function project(module: "ts" | "mjs" = "ts"): Promise<string> {
   mkdirSync(TMP, { recursive: true })
   const dir = mkdtempSync(join(TMP, `${module}-`))
-  cpSync(FIXTURE, dir, { recursive: true, filter: (path) => !path.includes(`${sep}compiled`) })
-  writeFileSync(join(dir, "src", "email-kit", "templates", "welcome.tsx"), WELCOME)
+  cpSync(FIXTURE, dir, { recursive: true, filter: (path) => !path.includes(`${sep}_generated`) })
+  mkdirSync(join(dir, "src", "email-kit", "welcome"))
+  writeFileSync(join(dir, "src", "email-kit", "welcome", "template.tsx"), WELCOME)
   const config = join(dir, "email-kit.config.ts")
   writeFileSync(
     config,
@@ -85,12 +87,13 @@ async function bundle(dir: string, importPath: string): Promise<string> {
 describe("per-template entry points", () => {
   it("bundles only the imported template, and it runs on web APIs", async () => {
     const dir = await project()
-    const single = await bundle(dir, "./src/email-kit/compiled/order-confirmation/index.ts")
-    expect(single).toContain("Thanks, {{customerName}}!")
+    const single = await bundle(dir, "./src/email-kit/_generated/order-confirmation/index.ts")
+    // The parsed template; the minifier may quote its strings with backticks.
+    expect(single).toMatch(/Thanks, ["`],\[0,["`]customerName["`]\]/)
     expect(single).not.toContain("Welcome aboard")
 
     // The control: the all-templates module brings every template along.
-    const all = await bundle(dir, "./src/email-kit/compiled/index.ts")
+    const all = await bundle(dir, "./src/email-kit/_generated/index.ts")
     expect(all).toContain("Welcome aboard")
     expect(single.length).toBeLessThan(all.length)
 
@@ -104,11 +107,11 @@ describe("per-template entry points", () => {
 
   it("writes an entry per template, owned like every other output file", async () => {
     const dir = await project()
-    const compiled = join(dir, "src", "email-kit", "compiled")
-    const manifest = JSON.parse(readFileSync(join(compiled, "manifest.json"), "utf8")) as {
-      files: string[]
-    }
-    expect(manifest.files.filter((file) => file.endsWith("index.ts"))).toEqual([
+    const compiled = join(dir, "src", "email-kit", "_generated")
+    const files = readdirSync(compiled, { recursive: true }).map((f) =>
+      String(f).split(sep).join("/"),
+    )
+    expect(files.filter((file) => file.endsWith("index.ts")).sort()).toEqual([
       "index.ts",
       "order-confirmation/index.ts",
       "welcome/index.ts",
@@ -120,7 +123,7 @@ describe("per-template entry points", () => {
 
   it("follows the module format", async () => {
     const dir = await project("mjs")
-    const compiled = join(dir, "src", "email-kit", "compiled")
+    const compiled = join(dir, "src", "email-kit", "_generated")
     for (const file of ["index.mjs", "index.d.mts", "welcome/index.mjs", "welcome/index.d.mts"]) {
       expect(existsSync(join(compiled, ...file.split("/"))), file).toBe(true)
     }

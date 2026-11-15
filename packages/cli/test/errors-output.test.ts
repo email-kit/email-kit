@@ -29,7 +29,7 @@ afterAll(() => rmSync(TMP, { recursive: true, force: true }))
 function project(): string {
   mkdirSync(TMP, { recursive: true })
   const dir = mkdtempSync(join(TMP, "project-"))
-  cpSync(FIXTURE, dir, { recursive: true, filter: (path) => !path.includes(`${sep}compiled`) })
+  cpSync(FIXTURE, dir, { recursive: true, filter: (path) => !path.includes(`${sep}_generated`) })
   return dir
 }
 
@@ -53,7 +53,7 @@ async function output(dir: string): Promise<string> {
 }
 
 const golden = (name: string) => `__golden__/errors/${name}.txt`
-const TEMPLATE = "src/email-kit/templates/order-confirmation.tsx"
+const TEMPLATE = "src/email-kit/order-confirmation/template.tsx"
 
 describe("error output", () => {
   it("points a syntax error at the line, with a code frame", async () => {
@@ -71,7 +71,7 @@ describe("error output", () => {
       "{item.name} × {(item.qty as unknown as number) * 2}",
     )
     const text = await output(dir)
-    expect(text).toMatch(/order-confirmation\.tsx:\d+:\d+ \[placeholder-misuse\]/)
+    expect(text).toMatch(/order-confirmation\/template\.tsx:\d+:\d+ \[placeholder-misuse\]/)
     await expect(text).toMatchFileSnapshot(golden("placeholder-misuse"))
   })
 
@@ -92,7 +92,7 @@ describe("error output", () => {
     const dir = project()
     edit(
       dir,
-      "src/email-kit/messages/de/order-confirmation.json",
+      "src/email-kit/order-confirmation/messages.de.json",
       '"view": "Bestellung ansehen"',
       '"vie": "x"',
     )
@@ -112,10 +112,11 @@ describe("error output", () => {
 
   it("reports several problems at once", async () => {
     const dir = project()
-    const templates = join(dir, "src", "email-kit", "templates")
-    cpSync(join(templates, "order-confirmation.tsx"), join(templates, "receipt.tsx"))
-    edit(dir, "src/email-kit/templates/receipt.tsx", '"order-confirmation"', '"Receipt"')
-    writeFileSync(join(templates, "welcome.tsx"), "export const notATemplate = true\n")
+    const root = join(dir, "src", "email-kit")
+    cpSync(join(root, "order-confirmation"), join(root, "receipt"), { recursive: true })
+    edit(dir, "src/email-kit/receipt/template.tsx", '"order-confirmation"', '"Receipt"')
+    mkdirSync(join(root, "welcome"))
+    writeFileSync(join(root, "welcome", "template.tsx"), "export const notATemplate = true\n")
     await expect(await output(dir)).toMatchFileSnapshot(golden("several"))
   })
 
@@ -151,15 +152,11 @@ describe("locations", () => {
       "    at validateFixtures (file:///opt/email-kit/cli/dist/cli.js:4840:11)",
       "    at async file:///opt/email-kit/cli/dist/cli.js:4848:22",
     ].join("\n")
-    const problem = toProblem(
-      error,
-      "/work/shop/email-kit/templates/sign-in-code.tsx",
-      "/work/shop",
-    )
+    const problem = toProblem(error, "/work/shop/email-kit/sign-in-code/template.tsx", "/work/shop")
     expect(problem).toEqual({
       code: "invalid-fixture",
       message: "sign-in-code: a fixture doesn't match the schema",
-      file: "email-kit/templates/sign-in-code.tsx",
+      file: "email-kit/sign-in-code/template.tsx",
     })
   })
 })

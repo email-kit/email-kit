@@ -38,8 +38,13 @@ export interface Finding {
 export interface CheckedEmail {
   readonly template: string
   readonly locale: string
-  /** The compiled HTML file, relative to the project folder. */
+  /**
+   * Where its findings point, relative to the project folder: the compiled `.html` file when the
+   * output has one (`contract: true`), otherwise the template's source file.
+   */
   readonly file: string
+  /** Whether `file` is the compiled HTML, so offsets into `html` are lines and columns in it. */
+  readonly htmlFile: boolean
   readonly subject: string
   readonly preheader: string
   readonly html: string
@@ -96,6 +101,17 @@ export interface CheckContext {
     readonly absolute: string
     readonly expected: readonly OutputFile[]
     readonly gitignored: boolean
+    /**
+     * Where the app's package.json (the nearest above the config) lists `@email-kit/runtime`,
+     * which the generated module imports; `undefined` without a package.json.
+     */
+    readonly runtime?:
+      | {
+          /** The package.json, relative to the project folder. */
+          readonly file: string
+          readonly section: "dependencies" | "devDependencies" | "missing"
+        }
+      | undefined
   }
   /** The project's own source files the templates bundle: templates and user components. */
   readonly sources: readonly SourceFile[]

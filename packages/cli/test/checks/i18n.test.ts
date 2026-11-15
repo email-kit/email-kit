@@ -14,12 +14,12 @@ const FIXTURE = fileURLToPath(new URL("../fixtures/project/", import.meta.url))
 const TMP = fileURLToPath(new URL("../.tmp/i18n-test/", import.meta.url))
 afterAll(() => rmSync(TMP, { recursive: true, force: true }))
 
-const TEMPLATE = "src/email-kit/templates/order-confirmation.tsx"
+const TEMPLATE = "src/email-kit/order-confirmation/template.tsx"
 
 function project(edits: Record<string, (s: string) => string>): string {
   mkdirSync(TMP, { recursive: true })
   const dir = mkdtempSync(join(TMP, "project-"))
-  cpSync(FIXTURE, dir, { recursive: true, filter: (path) => !path.includes(`${sep}compiled`) })
+  cpSync(FIXTURE, dir, { recursive: true, filter: (path) => !path.includes(`${sep}_generated`) })
   for (const [file, edit] of Object.entries(edits)) {
     writeFileSync(join(dir, file), edit(readFileSync(join(dir, file), "utf8")))
   }
@@ -28,7 +28,7 @@ function project(edits: Record<string, (s: string) => string>): string {
 
 /** Adds or changes messages in one locale's file (one edit per file). */
 const messages = (locale: string, entries: Record<string, string>) => ({
-  [`src/email-kit/messages/${locale}/order-confirmation.json`]: (s: string) =>
+  [`src/email-kit/order-confirmation/messages.${locale}.json`]: (s: string) =>
     JSON.stringify({ ...JSON.parse(s), ...entries }),
 })
 
@@ -52,18 +52,18 @@ describe("i18n.intl-format", () => {
     expect(found.map((f) => [f.subject.locale, f.subject.file, f.message])).toEqual([
       [
         "en",
-        "src/email-kit/messages/en/order-confirmation.json",
+        "src/email-kit/order-confirmation/messages.en.json",
         // biome-ignore lint/suspicious/noTemplateCurlyInString: the ICU message, quoted back
         '"discount" puts a currency symbol next to an argument: You saved ${discount}.',
       ],
       [
         "de",
-        "src/email-kit/messages/de/order-confirmation.json",
+        "src/email-kit/order-confirmation/messages.de.json",
         '"discount" puts a currency symbol next to an argument: Sie haben {discount} € gespart.',
       ],
       [
         "de",
-        "src/email-kit/messages/de/order-confirmation.json",
+        "src/email-kit/order-confirmation/messages.de.json",
         '"shipped" builds a date from parts: Versendet am {day}.{month}.{year}',
       ],
     ])
@@ -90,12 +90,12 @@ describe("i18n.unused-keys", () => {
     expect(found.map((f) => [f.level, f.subject.file, f.message])).toEqual([
       [
         "warn",
-        "src/email-kit/messages/en/order-confirmation.json",
+        "src/email-kit/order-confirmation/messages.en.json",
         '"oldPromo" isn\'t used by order-confirmation',
       ],
       [
         "warn",
-        "src/email-kit/messages/de/order-confirmation.json",
+        "src/email-kit/order-confirmation/messages.de.json",
         '"oldPromo" isn\'t used by order-confirmation',
       ],
     ])
@@ -118,6 +118,7 @@ describe("i18n.rtl-explicit", () => {
 describe("caller-formatted values", () => {
   it("carries the formatted() hint into schema.json and the data types", async () => {
     const dir = project({
+      "email-kit.config.ts": (s) => s.replace("locales:", "contract: true,\n  locales:"),
       [TEMPLATE]: (s) =>
         s
           .replace(
@@ -130,7 +131,7 @@ describe("caller-formatted values", () => {
           ),
     })
     await compile({ cwd: dir })
-    const out = join(dir, "src/email-kit/compiled")
+    const out = join(dir, "src/email-kit/_generated")
     const schema = JSON.parse(readFileSync(join(out, "order-confirmation/schema.json"), "utf8"))
     expect(schema.properties.total).toEqual({
       type: "string",

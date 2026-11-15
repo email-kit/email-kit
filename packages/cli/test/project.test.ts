@@ -1,5 +1,5 @@
 // M1.1 end to end: `email-kit compile` on a fixture project shaped like a user's, compared with
-// the committed output in fixtures/project/src/email-kit/compiled/, then rendered through the
+// the committed output in fixtures/project/src/email-kit/_generated/, then rendered through the
 // generated module.
 
 import {
@@ -7,7 +7,9 @@ import {
   existsSync,
   mkdirSync,
   mkdtempSync,
+  readdirSync,
   readFileSync,
+  renameSync,
   rmSync,
   writeFileSync,
 } from "node:fs"
@@ -21,18 +23,28 @@ import { resolveConfig } from "../src/compiler/config/index.ts"
 import { CompileError } from "../src/compiler/project/index.ts"
 
 const FIXTURE = fileURLToPath(new URL("fixtures/project/", import.meta.url))
-const COMMITTED = join(FIXTURE, "src", "email-kit", "compiled")
+const COMMITTED = join(FIXTURE, "src", "email-kit", "_generated")
 // Inside the package, so the copies resolve @email-kit/core and zod from its node_modules.
 const TMP = fileURLToPath(new URL(".tmp/project-test/", import.meta.url))
 
 function copyProject(): string {
   mkdirSync(TMP, { recursive: true })
   const dir = mkdtempSync(join(TMP, "project-"))
-  cpSync(FIXTURE, dir, { recursive: true, filter: (path) => !path.includes(`${sep}compiled`) })
+  cpSync(FIXTURE, dir, { recursive: true, filter: (path) => !path.includes(`${sep}_generated`) })
   return dir
 }
 
-const compiledDir = (dir: string) => join(dir, "src", "email-kit", "compiled")
+/** Turns on `contract`, so the output also has the parts, schemas and manifest as files. */
+function withContract(dir: string): string {
+  const config = join(dir, "email-kit.config.ts")
+  writeFileSync(
+    config,
+    readFileSync(config, "utf8").replace("locales:", "contract: true,\n  locales:"),
+  )
+  return dir
+}
+
+const compiledDir = (dir: string) => join(dir, "src", "email-kit", "_generated")
 const read = (dir: string, path: string) => readFileSync(join(compiledDir(dir), path), "utf8")
 
 afterAll(() => rmSync(TMP, { recursive: true, force: true }))
@@ -68,12 +80,21 @@ const order = {
 }
 
 describe("email-kit compile", () => {
-  it("writes the committed output for the fixture project", async () => {
+  it("writes the committed output for the fixture project: the module and t() types", async () => {
     const dir = copyProject()
     const result = await compile({ cwd: dir })
     expect(summarize(result)).toBe(
-      "Compiled 1 template × 2 locales into src/email-kit/compiled (8 files: 8 written, 0 unchanged, 0 removed)",
+      "Compiled 1 template × 2 locales into src/email-kit/_generated (2 files: 2 written, 0 unchanged, 0 removed)",
     )
+    expect(readdirSync(compiledDir(dir)).sort()).toEqual(["index.ts", "messages.d.ts"])
+    for (const path of ["index.ts", "messages.d.ts"]) {
+      await expect(read(dir, path)).toMatchFileSnapshot(join(COMMITTED, path))
+    }
+  })
+
+  it("with contract, also writes the parts, schemas and manifest as files", async () => {
+    const dir = withContract(copyProject())
+    await compile({ cwd: dir })
     const manifest = JSON.parse(read(dir, "manifest.json")) as { files: string[] }
     expect(manifest.files).toEqual([
       "index.ts",
@@ -85,9 +106,11 @@ describe("email-kit compile", () => {
       "order-confirmation/en.txt",
       "order-confirmation/schema.json",
     ])
-    for (const path of manifest.files) {
-      await expect(read(dir, path)).toMatchFileSnapshot(join(COMMITTED, ...path.split("/")))
-    }
+    expect(readdirSync(compiledDir(dir), { recursive: true }).length).toBe(9)
+    expect(read(dir, "order-confirmation/en.txt")).toContain("Thanks, {{customerName}}!")
+    // The files hold the parts as {{placeholder}} templates; the module holds them parsed.
+    expect(read(dir, "order-confirmation/de.html")).toContain("{{customerName}}")
+    expect(read(dir, "index.ts")).toContain('[0, "customerName"]')
   })
 
   it("generates a module that renders every locale with fallback", async () => {
@@ -133,7 +156,7 @@ describe("email-kit compile", () => {
   })
 
   it("fills sender values: constants at compile time, runtime keys from createEmails()", async () => {
-    const dir = copyProject()
+    const dir = withContract(copyProject())
     await compile({ cwd: dir })
     // The constant is text in the compiled template; the runtime key is a placeholder.
     expect(read(dir, "order-confirmation/en.html")).toContain(
@@ -202,7 +225,7 @@ describe("email-kit compile", () => {
     expect(emails.orderConfirmation.validate(order)).toEqual([])
   })
 
-  it("leaves validation to validate() when the config turns it off", async () => {
+  it("with validate: false, renders without checking and leaves the validator out", async () => {
     const dir = copyProject()
     const config = join(dir, "email-kit.config.ts")
     writeFileSync(
@@ -216,7 +239,12 @@ describe("email-kit compile", () => {
     const emails = createEmails({ siteUrl: "https://shop.example" })
     const bad = { ...order, items: [{ name: "Tea", qty: "2" }] }
     expect(emails.orderConfirmation.render(bad).html).toContain('class="ek-c--ink">Tea × 2</li>')
-    expect(emails.orderConfirmation.validate(bad)).toHaveLength(1)
+    expect("validate" in emails.orderConfirmation).toBe(false)
+    const module = read(dir, "index.ts")
+    expect(module).not.toContain("@email-kit/runtime/validate")
+    expect(module).toContain(
+      'Omit<EmailTemplate<"order-confirmation", OrderConfirmationData, Locale>, "validate">',
+    )
   })
 
   it("is deterministic: a second compile changes nothing", async () => {
@@ -225,25 +253,48 @@ describe("email-kit compile", () => {
     const first = read(dir, "index.ts")
     const second = await compile({ cwd: dir })
     expect(second.files.written).toEqual([])
-    expect(second.files.unchanged).toHaveLength(8)
+    expect(second.files.unchanged).toHaveLength(2)
     expect(read(dir, "index.ts")).toBe(first)
   })
 
-  it("removes only files it owns", async () => {
-    const dir = copyProject()
+  it("owns the output folder: removes what it didn't write, except names starting with .", async () => {
+    const dir = withContract(copyProject())
     await compile({ cwd: dir })
     writeFileSync(join(compiledDir(dir), "NOTES.md"), "mine")
+    writeFileSync(join(compiledDir(dir), ".gitkeep"), "")
     writeFileSync(
       join(dir, "email-kit.config.ts"),
-      'import { defineConfig } from "@email-kit/core"\nexport default defineConfig({ locales: { default: "en" }, sender: { productName: "Shop Example", siteUrl: { runtime: true } } })\n',
+      'import { defineConfig } from "@email-kit/core"\nexport default defineConfig({ contract: true, locales: { default: "en" }, sender: { productName: "Shop Example", siteUrl: { runtime: true } } })\n',
     )
     const result = await compile({ cwd: dir })
     expect(result.files.deleted).toEqual([
+      "NOTES.md",
       "order-confirmation/de.html",
       "order-confirmation/de.txt",
     ])
     expect(existsSync(join(compiledDir(dir), "order-confirmation", "de.html"))).toBe(false)
-    expect(read(dir, "NOTES.md")).toBe("mine")
+    expect(existsSync(join(compiledDir(dir), ".gitkeep"))).toBe(true)
+
+    // Turning contract off removes the files it wrote, and their folder.
+    writeFileSync(
+      join(dir, "email-kit.config.ts"),
+      'import { defineConfig } from "@email-kit/core"\nexport default defineConfig({ locales: { default: "en" }, sender: { productName: "Shop Example", siteUrl: { runtime: true } } })\n',
+    )
+    await compile({ cwd: dir })
+    expect(readdirSync(compiledDir(dir)).sort()).toEqual([".gitkeep", "index.ts", "messages.d.ts"])
+  })
+
+  it("refuses an output folder holding files it didn't write", async () => {
+    const dir = copyProject()
+    mkdirSync(join(dir, "lib"))
+    writeFileSync(join(dir, "lib", "db.ts"), "export const db = 1\n")
+    const config = join(dir, "email-kit.config.ts")
+    writeFileSync(
+      config,
+      readFileSync(config, "utf8").replace("locales:", 'out: "lib",\n  locales:'),
+    )
+    await expect(compile({ cwd: dir })).rejects.toMatchObject({ code: "out-not-owned" })
+    expect(readdirSync(join(dir, "lib"))).toEqual(["db.ts"])
   })
 })
 
@@ -258,31 +309,67 @@ describe("compile errors", () => {
     throw new Error("expected the compile to fail")
   }
 
-  it("reports a duplicate template id", async () => {
+  it("reports an id that isn't its folder's name", async () => {
     const dir = copyProject()
-    const templates = join(dir, "src", "email-kit", "templates")
-    cpSync(join(templates, "order-confirmation.tsx"), join(templates, "order-copy.tsx"))
+    const root = join(dir, "src", "email-kit")
+    cpSync(join(root, "order-confirmation"), join(root, "order-copy"), { recursive: true })
     expect(await problems(dir)).toEqual([
       expect.objectContaining({
-        file: join("src", "email-kit", "templates", "order-copy.tsx"),
-        code: "duplicate-id",
+        file: join("src", "email-kit", "order-copy", "template.tsx"),
+        code: "id-mismatch",
+        message: expect.stringContaining('doesn\'t match its folder "order-copy"'),
       }),
     ])
   })
 
+  it("compiles only folders with template.tsx, skipping _ folders and the output", async () => {
+    const dir = copyProject()
+    const root = join(dir, "src", "email-kit")
+    // A shared folder, a non-template folder, and stray .tsx files: none of them is a template.
+    mkdirSync(join(root, "_shared"))
+    writeFileSync(join(root, "_shared", "template.tsx"), "export const notATemplate = true\n")
+    mkdirSync(join(root, "fixtures"))
+    writeFileSync(join(root, "fixtures", "data.json"), "{}")
+    writeFileSync(join(root, "stray.tsx"), "export const notATemplate = true\n")
+    const result = await compile({ cwd: dir })
+    expect(result.templates.map((template) => template.id)).toEqual(["order-confirmation"])
+  })
+
+  it("reports a folder with messages but no template.tsx", async () => {
+    const dir = copyProject()
+    const folder = join(dir, "src", "email-kit", "order-confirmation")
+    renameSync(join(folder, "template.tsx"), join(folder, "templete.tsx"))
+    expect(await problems(dir)).toEqual([
+      expect.objectContaining({
+        file: "src/email-kit/order-confirmation",
+        code: "missing-template",
+      }),
+    ])
+  })
+
+  it("explains how to move from the old templates/ and messages/ layout", async () => {
+    const dir = copyProject()
+    const root = join(dir, "src", "email-kit")
+    mkdirSync(join(root, "templates"))
+    renameSync(join(root, "order-confirmation", "template.tsx"), join(root, "templates", "x.tsx"))
+    const found = await problems(dir)
+    expect(found.map((problem) => problem.code)).toEqual(["missing-template", "old-layout"])
+    expect(found[1]?.message).toContain("<root>/<id>/template.tsx")
+  })
+
   it("points a missing message at the file to add it to", async () => {
     const dir = copyProject()
-    rmSync(join(dir, "src", "email-kit", "messages", "de", "order-confirmation.json"))
+    rmSync(join(dir, "src", "email-kit", "order-confirmation", "messages.de.json"))
     const [problem] = await problems(dir)
     expect(problem?.code).toBe("missing-message")
     expect(problem?.message).toContain(
-      join("src", "email-kit", "messages", "de", "order-confirmation.json"),
+      join("src", "email-kit", "order-confirmation", "messages.de.json"),
     )
   })
 
   it("reports a non-portable schema with the field path", async () => {
     const dir = copyProject()
-    const file = join(dir, "src", "email-kit", "templates", "order-confirmation.tsx")
+    const file = join(dir, "src", "email-kit", "order-confirmation", "template.tsx")
     writeFileSync(
       file,
       readFileSync(file, "utf8").replace(
@@ -311,7 +398,7 @@ describe("config validation", () => {
   it("resolves the defaults relative to the config file", () => {
     const config = resolveConfig({}, { file, cacheDir: TMP })
     expect(config.root).toBe(join(FIXTURE, "src", "email-kit"))
-    expect(config.out).toBe(join(FIXTURE, "src", "email-kit", "compiled"))
+    expect(config.out).toBe(join(FIXTURE, "src", "email-kit", "_generated"))
     expect(config.locales).toEqual(["en"])
   })
 
@@ -364,14 +451,16 @@ describe("config validation", () => {
     expect(
       resolve({
         templets: "x",
-        out: "src/email-kit/templates/out",
+        templates: "src/email-kit/templates",
+        out: "src/email-kit",
         locales: { default: "en", list: ["en_US", "pt-br", "de", "de"] },
       }),
     ).toThrow(
       [
-        "has 6 problems:",
-        "  • templets: unknown option (known: root, templates, messages, out, module, perTemplateEntries, validate, sender, theme, locales, checks, customChecks, importPath)",
-        "  • out: must not overlap the templates folder (src/email-kit/templates)",
+        "has 7 problems:",
+        "  • templates: removed: each template is a folder in root, <root>/<id>/template.tsx, with its messages beside it as messages.<locale>.json",
+        "  • templets: unknown option (known: root, out, contract, module, perTemplateEntries, validate, sender, theme, locales, checks, customChecks, importPath)",
+        "  • out: must not be or contain the email-kit folder (src/email-kit); use its own folder, such as src/email-kit/_generated",
         '  • locales.list[0]: "en_US" isn\'t a BCP 47 locale tag, such as "en" or "pt-BR"',
         '  • locales.list[1]: write "pt-br" as "pt-BR"',
         '  • locales.list[3]: "de" is listed twice',

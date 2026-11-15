@@ -25,8 +25,8 @@ afterAll(() => rmSync(TMP, { recursive: true, force: true }))
 function project(edit: (template: string) => string): string {
   mkdirSync(TMP, { recursive: true })
   const dir = mkdtempSync(join(TMP, "project-"))
-  cpSync(FIXTURE, dir, { recursive: true, filter: (path) => !path.includes(`${sep}compiled`) })
-  const file = join(dir, "src/email-kit/templates/order-confirmation.tsx")
+  cpSync(FIXTURE, dir, { recursive: true, filter: (path) => !path.includes(`${sep}_generated`) })
+  const file = join(dir, "src/email-kit/order-confirmation/template.tsx")
   writeFileSync(file, edit(readFileSync(file, "utf8")))
   return dir
 }
@@ -187,6 +187,7 @@ describe("checks on renders", () => {
     template: "welcome",
     locale: "en",
     file: "out/welcome/en.html",
+    htmlFile: true,
     subject: "Welcome",
     preheader: "Your account is ready",
     html,
