@@ -4,4 +4,4 @@ next-env.d.ts
 *.tsbuildinfo
 
 # Written by `email-kit compile`
-/src/email-kit/compiled/
+/src/email-kit/_generated/

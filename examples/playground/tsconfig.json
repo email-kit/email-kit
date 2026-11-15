@@ -9,8 +9,8 @@
   },
   "include": [
     "email-kit.config.ts",
-    "email-kit/templates",
-    "email-kit/fixtures",
-    "email-kit/compiled/messages.d.ts"
+    "email-kit/*/template.tsx",
+    "email-kit/*/fixtures.json",
+    "email-kit/_generated/messages.d.ts"
   ]
 }

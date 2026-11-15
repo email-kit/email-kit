@@ -12,7 +12,7 @@ import {
 import { defineEmail, If, url } from "@email-kit/core"
 import { z } from "zod"
 
-import fixtures from "../fixtures/receipt.json" with { type: "json" }
+import fixtures from "./fixtures.json" with { type: "json" }
 
 // A receipt (research 05 §9): order facts, itemised lines and totals in a real data table, a link
 // to the full receipt, and help. Amounts arrive formatted (Intl.NumberFormat in the backend).

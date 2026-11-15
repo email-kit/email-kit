@@ -1,4 +1,4 @@
-import { EmailRenderError, emails } from "@/email-kit/compiled"
+import { EmailRenderError, emails } from "@/email-kit/_generated"
 
 // GET /api/email/welcome?name=Ada&days=1 → the HTML, to look at in a browser.
 export async function GET(request: Request) {

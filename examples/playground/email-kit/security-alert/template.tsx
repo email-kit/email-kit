@@ -11,7 +11,7 @@ import {
 import { defineEmail, url } from "@email-kit/core"
 import { z } from "zod"
 
-import fixtures from "../fixtures/security-alert.json" with { type: "json" }
+import fixtures from "./fixtures.json" with { type: "json" }
 
 // A new sign-in alert (research 05 §9): what happened, when (with the time zone), where
 // (labelled approximate), on what device, and what to do if it wasn't you.

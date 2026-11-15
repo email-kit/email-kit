@@ -21,8 +21,9 @@ cd examples/playground
 
 ## Things to try
 
-1. **Compile.** `pnpm compile` writes `email-kit/compiled/`: per template and locale an `.html` and
-   a `.txt`, plus `schema.json`, `manifest.json` and the typed module `index.mjs` / `index.d.mts`.
+1. **Compile.** `pnpm compile` writes `email-kit/_generated/`: the typed module `index.mjs` /
+   `index.d.mts` and `messages.d.ts`. Add `contract: true` to the config to also get each email's
+   `.html` and `.txt`, `schema.json` and `manifest.json`.
    Add `--verbose` for sizes, or run `pnpm exec email-kit compile --watch` and edit a message.
 2. **Preview.** `pnpm preview` compiles, renders every fixture in both locales and writes
    `preview/index.html`. Open it in a browser. Switch your OS to dark mode and reload: the
@@ -39,9 +40,9 @@ cd examples/playground
    - Break things and watch them get caught:
      - `style={{ color: "#333" }}` in a template: `source.no-literal-colour`, with the line;
      - an `Image` with `src="https://…/logo.svg"`: the compile fails with `invalid-image`;
-     - remove `.min(1)` from `customerName` in `receipt.tsx`: the generated empty fixture renders
+     - remove `.min(1)` from `customerName` in `receipt/template.tsx`: the generated empty fixture renders
        "Thanks, !" and `copy.placeholder-fallbacks` fails, naming the fixture;
-     - change `"minutes": 10` to `"10"` in `fixtures/sign-in-code.json`: the compile fails with
+     - change `"minutes": 10` to `"10"` in `sign-in-code/fixtures.json`: the compile fails with
        `invalid-fixture` and the path.
 5. **Plurals.** The sign-in code's expiry is an ICU plural:
    `{minutes, plural, one {# minute} other {# minutes}}`. The `one-minute` fixture renders
@@ -49,7 +50,7 @@ cd examples/playground
 6. **Pseudo-locales.** `pnpm check` also builds every template in `en-XA` (accented, bracketed,
    up to three times longer) and `ar-XB` (right to left). Set `locales.pseudo: true` in the config
    and run `pnpm preview` to look at them in the browser.
-7. **The module.** `email-kit/compiled/index.d.mts` is what a backend imports: `createEmails`,
+7. **The module.** `email-kit/_generated/index.d.mts` is what a backend imports: `createEmails`,
    `render(data, { locale })` and the data types. `preview.mjs` uses it the way a backend would.
 
 ## Real email clients

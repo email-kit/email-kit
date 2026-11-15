@@ -10,7 +10,7 @@
         "package.json",
         "tsconfig.json"
       ],
-      "outputs": [".next/**", "!.next/cache/**", "src/email-kit/compiled/**"]
+      "outputs": [".next/**", "!.next/cache/**", "src/email-kit/_generated/**"]
     }
   }
 }

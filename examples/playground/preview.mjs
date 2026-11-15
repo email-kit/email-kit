@@ -1,9 +1,9 @@
 // Renders every template with each of its fixtures, in every locale, into preview/, with an
 // index page to open in a browser. Run with `pnpm preview`, which compiles first.
 
-import { mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs"
+import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs"
 
-import { createEmails } from "./email-kit/compiled/index.mjs"
+import { createEmails } from "./email-kit/_generated/index.mjs"
 
 const LOCALES = ["en", "de"]
 // The backend passes this once at startup; here, a stand-in.
@@ -15,9 +15,10 @@ const escapeHtml = (s) =>
 rmSync("preview", { recursive: true, force: true })
 mkdirSync("preview")
 const rows = []
-for (const file of readdirSync("email-kit/fixtures").sort()) {
-  const id = file.replace(/\.json$/, "")
-  const fixtures = JSON.parse(readFileSync(`email-kit/fixtures/${file}`, "utf8"))
+// Each template's folder holds its fixtures beside template.tsx.
+const ids = readdirSync("email-kit").filter((id) => existsSync(`email-kit/${id}/fixtures.json`))
+for (const id of ids.sort()) {
+  const fixtures = JSON.parse(readFileSync(`email-kit/${id}/fixtures.json`, "utf8"))
   for (const [name, data] of Object.entries(fixtures)) {
     for (const locale of LOCALES) {
       const email = emails[camel(id)].render(data, { locale })
