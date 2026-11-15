@@ -1,4 +1,4 @@
-# Writing templates
+# Templates
 
 Each template is a folder in the email-kit folder (`root`), named by its id: `order-shipped/`
 holds `template.tsx`, whose default export is `defineEmail({ … })`, and its messages, one
@@ -13,104 +13,31 @@ src/email-kit/
   _shared/          components the templates import; folders starting with _ are never templates
 ```
 
+For a step-by-step walkthrough, see [Your first email](first-email.md). A template file looks
+like this:
+
 ```tsx
 /** @jsxImportSource @email-kit/core */
-import { Button, Footer, Heading, KeyValue, List, ListItem, Text } from "@email-kit/components"
-import { defineEmail, Each, formatted, If, Unless, url } from "@email-kit/core"
+import { Button, Footer, Heading, Text } from "@email-kit/components"
+import { defineEmail, url } from "@email-kit/core"
 import { z } from "zod"
 
 export default defineEmail({
-  id: "order-shipped",
+  id: "password-reset",
   purpose: "transactional",
-  schema: z.object({
-    name: z.string().min(1),
-    orderNumber: z.string().min(1),
-    carrier: z.enum(["dhl", "ups", "other"]),
-    trackingUrl: z.string().meta(url),
-    deliveryDate: z.string().min(1).meta(formatted("date")),
-    itemCount: z.number().int().min(1),
-    items: z.array(z.object({ name: z.string().min(1), qty: z.number().int().min(1) })).min(1),
-    express: z.boolean(),
-    giftMessage: z.string().min(1).optional(),
-  }),
-  subject: (data, t) => t("subject", { order: data.orderNumber }),
-  preheader: (data, t) => t("preheader", { date: data.deliveryDate }),
-  fixtures: {
-    default: {
-      name: "Ada",
-      orderNumber: "A-1042",
-      carrier: "dhl",
-      trackingUrl: "https://track.example.com/A-1042",
-      deliveryDate: "3 November 2026",
-      itemCount: 2,
-      items: [
-        { name: "Tea", qty: 1 },
-        { name: "Cake", qty: 1 },
-      ],
-      express: false,
-    },
-  },
+  schema: z.object({ name: z.string().min(1), resetUrl: z.string().meta(url) }),
+  subject: (data, t) => t("subject"),
+  preheader: (data, t) => t("preheader"),
+  fixtures: { default: { name: "Ada", resetUrl: "https://example.com/reset/abc" } },
   component: ({ data, t, sender }) => (
     <>
       <Heading>{t("heading", { name: data.name })}</Heading>
-      <Text>{t("intro", { count: data.itemCount, carrier: data.carrier })}</Text>
-      <KeyValue
-        items={[
-          { label: t("order"), value: data.orderNumber, copyable: true },
-          { label: t("delivery"), value: data.deliveryDate },
-        ]}
-      />
-      <List>
-        <Each of={data.items}>
-          {(item) => (
-            <ListItem>
-              {item.name} × {item.qty}
-            </ListItem>
-          )}
-        </Each>
-      </List>
-      <If when={data.express}>
-        <Text>{t("express")}</Text>
-      </If>
-      <Unless when={data.express}>
-        <Text tone="muted">{t("standard")}</Text>
-      </Unless>
-      <If when={data.giftMessage}>
-        {(message) => <Text tone="muted">{t("gift", { message })}</Text>}
-      </If>
-      <Button href={data.trackingUrl}>{t("track")}</Button>
-      <Footer
-        reason={t("footer", { product: sender.productName })}
-        sender={sender.legalName}
-        address={sender.postalAddress}
-        links={[
-          { href: sender.helpUrl, label: t("help") },
-          { href: sender.privacyUrl, label: t("privacy") },
-        ]}
-      />
+      <Text>{t("body")}</Text>
+      <Button href={data.resetUrl}>{t("cta")}</Button>
+      <Footer reason={t("footer", { product: sender.productName })} sender={sender.productName} />
     </>
   ),
 })
-```
-
-With its copy in `order-shipped/messages.en.json`:
-
-```json
-{
-  "subject": "Order {order} has shipped",
-  "preheader": "Arriving {date}",
-  "heading": "It's on its way, {name}",
-  "intro": "{count, plural, one {# item is} other {# items are}} on the way with {carrier, select, dhl {DHL} ups {UPS} other {our courier}}.",
-  "order": "Order",
-  "delivery": "Expected delivery",
-  "express": "You chose express delivery.",
-  "standard": "You chose standard delivery.",
-  "gift": "Your gift message: {message}",
-  "track": "Track your parcel",
-  "footer": "You're receiving this email because you ordered from {product}.",
-  "help": "Help centre",
-  "privacy": "Privacy policy"
-}
 ```
 
 The first line, `/** @jsxImportSource @email-kit/core */`, tells TypeScript and the compiler which
@@ -154,7 +81,7 @@ The component's props:
 | Prop | What it is |
 |---|---|
 | `data` | The data, as placeholders typed from the schema |
-| `t` | Looks up a message in the locale being compiled. See [Messages](#messages) |
+| `t` | Looks up a message in the locale being compiled. See [Messages and locales](messages.md) |
 | `locale` | The locale being compiled, such as `"de"` |
 | `sender` | Values from the config, such as `sender.productName`. See [Sender values](#sender-values) |
 
@@ -296,98 +223,6 @@ JavaScript ([`static-condition`](../reference/errors.md#static-condition)).
 `Conditional` is for content one kind of output needs and another doesn't. `when` is `htmlOnly`
 (the HTML part), `textOnly` (the plain-text part), `mso` (only classic Outlook on Windows) or
 `notMso` (every other client). The components already use it; you rarely need it in a template.
-
-## Messages
-
-Copy lives in message files, one per template and locale: `<messages>/<locale>/<id>.json`, a flat
-object of keys and ICU messages. `t(key, params)` looks a message up in the locale being compiled.
-
-```json
-{
-  "heading": "Thanks, {name}!",
-  "items": "{count, plural, one {# item} other {# items}}"
-}
-```
-
-```tsx
-<Heading>{t("heading", { name: data.customerName })}</Heading>
-```
-
-Every locale needs every key the template uses, and `t()` must pass exactly the parameters the
-message uses: a missing key, a missing parameter or an unused one fails the compile.
-
-A parameter can be text, a number, a data field, a sender value, or another message:
-`t("footer", { product: sender.productName })`.
-
-### Typed t()
-
-`email-kit compile` writes `_generated/messages.d.ts` from the default locale's messages. With it in
-your TypeScript project, `t()` knows each template's keys and parameters: a misspelt key, a
-missing parameter or a string passed to a plural is an editor error. Until the first compile,
-`t()` is untyped.
-
-### Plurals
-
-```json
-{ "expiry": "It expires in {minutes, plural, one {# minute} other {# minutes}}." }
-```
-
-```tsx
-<Text>{t("expiry", { minutes: data.minutes })}</Text>
-```
-
-A plural takes a number field (or a literal number). Its category is chosen at send time with the
-locale's CLDR plural rules, which the generated module carries. `#` prints the number as digits,
-without locale formatting.
-
-The message must give every category the locale uses, so no number falls through: `one` and
-`other` in English and German, `zero`, `one`, `two`, `few`, `many` and `other` in Arabic. A
-category the locale never uses is an error too; English has no `zero`, so write `=0` for exactly
-zero. `=N` cases match exact whole numbers before the categories. `other` is always required, and
-plural offsets aren't supported. See [`invalid-plural`](../reference/errors.md#invalid-plural).
-
-### Selects
-
-```json
-{ "shipping": "Sent with {carrier, select, dhl {DHL} ups {UPS} other {our courier}}." }
-```
-
-A select takes a field with fixed values, such as `z.enum(["dhl", "ups", "other"])`. Each case
-must be one of its values, and `other` is required. A free string field is refused
-([`invalid-select`](../reference/errors.md#invalid-select)).
-
-### What messages can't do
-
-Only plain `{name}` arguments, `plural` and `select` are supported. `{amount, number}`,
-`{date, date}` and the like fail the compile ([`unsupported-message`](../reference/errors.md#unsupported-message)):
-pass the value formatted by your backend as a string instead.
-
-ICU quoting applies: `'{'` is a literal brace and `''` is an apostrophe. An apostrophe on its own,
-as in "You're", needs no quoting.
-
-## Locales
-
-The config lists the locales to compile (see [locales](configuration.md#locales)). Each template is
-compiled once per locale, from that locale's message file.
-
-- The default locale is the first in the output, and the one `render()` falls back to.
-- A locale whose language is written right to left (Arabic, Hebrew, Persian, Urdu and a few
-  others) gets `dir="rtl"`, and the components align to match.
-- `render(data, { locale })` takes any BCP 47 tag and falls back through your `locales.fallback`
-  map and CLDR's parents (`de-AT` to `de`, `es-AR` to `es-419` to `es`), then to the default. See
-  [Rendering and sending](sending.md#locales).
-
-### Pseudo-locales
-
-Two pseudo-locales are generated from the default locale's messages, for testing layout without
-translations:
-
-- `en-XA`: accented, bracketed and padded up to three times longer, to show truncation and
-  overflow;
-- `ar-XB`: wrapped in right-to-left overrides, to show mirroring problems.
-
-`email-kit check` builds both every time and runs the checks on them. To ship them in the module,
-for QA on staging, set `locales.pseudo: true` (or a list of them).
 
 ## Sender values
 

@@ -1,7 +1,7 @@
 # Components
 
 `@email-kit/components` has the building blocks of an email body. Every value they draw with
-(colours, type, spacing, radius) comes from the [theme](configuration.md#theme), and each colour
+(colours, type, spacing, radius) comes from the [theme](theme.md), and each colour
 gets its dark-mode rule from it. They are built from tables and cell padding rather than margins,
 following what email clients are known to support; they haven't been tested in real email
 clients yet.
@@ -420,4 +420,4 @@ export function Note(props: { readonly children?: Child }) {
 }
 ```
 
-The colour roles are listed under [roles](configuration.md#roles).
+The colour roles are listed under [roles](theme.md#roles).

@@ -49,9 +49,11 @@ Not yet:
 
 ## Docs
 
-- [User guide](docs/guide/README.md): getting started, templates, components, configuration and
-  sending
-- Reference: [the checks](docs/reference/checks.md), [error codes](docs/reference/errors.md) and
+- [Getting started](docs/guide/getting-started.md), then [your first email](docs/guide/first-email.md)
+- [User guide](docs/guide/README.md): templates, components, messages and locales, theme, checks
+  and sending
+- Reference: [CLI](docs/reference/cli.md), [configuration](docs/reference/configuration.md),
+  [checks](docs/reference/checks.md), [error codes](docs/reference/errors.md) and
   [mustache-core](docs/reference/mustache-core.md), the placeholder language (draft), with its
   [conformance suite](conformance/mustache-core/README.md)
 - [Architecture decision records](docs/adr/README.md)
