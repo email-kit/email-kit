@@ -8,11 +8,11 @@
      9 |   id: "Receipt",
     10 |   purpose: "transactional",
 
-  Docs: https://github.com/email-kit/email-kit/blob/main/docs/errors.md#invalid-id
+  Docs: https://github.com/email-kit/email-kit/blob/main/docs/reference/errors.md#invalid-id
 
 ✗ src/email-kit/welcome/template.tsx [no-definition]
   src/email-kit/welcome/template.tsx must have `export default defineEmail({ … })`
 
-  Docs: https://github.com/email-kit/email-kit/blob/main/docs/errors.md#no-definition
+  Docs: https://github.com/email-kit/email-kit/blob/main/docs/reference/errors.md#no-definition
 
 2 problems; nothing was written.

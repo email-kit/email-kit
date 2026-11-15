@@ -1,5 +1,5 @@
 # Asks email-kit/docs-site to rebuild when the docs it publishes change on main. The site copies
-# docs/guide, docs/recipes, docs/checks.md and docs/errors.md at build time (its
+# docs/guide and docs/reference at build time (its
 # scripts/sync-docs.mjs), and its deploy workflow listens for this `docs-updated` event.
 #
 # Needs the DOCS_SITE_TOKEN secret: a fine-grained token for email-kit/docs-site with
@@ -12,9 +12,7 @@ on:
     branches: [main]
     paths:
       - docs/guide/**
-      - docs/recipes/**
-      - docs/checks.md
-      - docs/errors.md
+      - docs/reference/**
       - .github/workflows/docs-site.yml
   workflow_dispatch:
 

@@ -1,7 +1,7 @@
 # ADR 0007: Folder per template, a small `_generated` folder, and a runtime package
 
 **Status:** Accepted (2026-11-15). Supersedes the "self-contained module" parts of
-[architecture-direction.md](../architecture-direction.md), PRD PKG-02, OUT-01, OUT-02, OUT-05,
+`architecture-direction.md` (removed in commit `9727c5d`; in git history), PRD PKG-02, OUT-01, OUT-02, OUT-05,
 G5 and NFR-01, as listed under Consequences.
 
 ## Context

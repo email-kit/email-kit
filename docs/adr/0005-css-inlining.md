@@ -1,7 +1,7 @@
 # ADR 0005: CSS inlining
 
 **Status:** Accepted (2026-10-30). **Task:** P0-09 (SPK-07), recorded in P0-12.
-**Evidence:** [`docs/spikes/p0-09-css-inliner.md`](../spikes/p0-09-css-inliner.md). The bench, `spikes/css-inliner/`,
+**Evidence:** `docs/spikes/p0-09-css-inliner.md` (removed in commit `23d757a`; in git history). The bench, `spikes/css-inliner/`,
 was removed after phase 0 (in git history before commit `0151249`).
 
 ## Context

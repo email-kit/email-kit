@@ -1,6 +1,6 @@
 # Formatting dates, money and numbers
 
-email-kit templates don't format values at send time (R5). Your backend formats them for the
+email-kit templates don't format values at send time ([ADR 0008](../adr/0008-backend-formats-values.md)). Your backend formats them for the
 recipient and passes strings; the template prints them as they are. That keeps the output
 identical whichever language renders it, and puts the recipient's locale and time zone where
 they're known: in your backend.
@@ -72,4 +72,4 @@ output against the JavaScript or Python result for your locales, since email-kit
 
 A date-time without the recipient's time zone is wrong for most of them. Store the zone with the
 account, format in it, and name it when it matters ("14:05 CET"). Security alerts must say when
-something happened in a zone the reader recognises (research 05 §9).
+something happened in a zone the reader recognises.

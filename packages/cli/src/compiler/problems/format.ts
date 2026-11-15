@@ -6,7 +6,7 @@ import { CompileError, type Problem, SourceError, where } from "./errors.ts"
 import { problemAt } from "./frame.ts"
 
 /** The error docs. Each error code has an entry, linked as `#<code>`. */
-const DOCS_URL = "https://github.com/email-kit/email-kit/blob/main/docs/errors.md"
+const DOCS_URL = "https://github.com/email-kit/email-kit/blob/main/docs/reference/errors.md"
 
 /** Colours text for the terminal, or leaves it as it is without colours. */
 type Paint = (format: Parameters<typeof styleText>[0], text: string) => string

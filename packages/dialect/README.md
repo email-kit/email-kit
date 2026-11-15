@@ -1,6 +1,6 @@
 # @email-kit/dialect (internal)
 
-The parser and TS reference renderer for [mustache-core](../../docs/spec/mustache-core.md), the
+The parser and TS reference renderer for [mustache-core](../../docs/reference/mustache-core.md), the
 placeholder dialect of compiled email-kit templates. It isn't published: the CLI bundles it. The
 compiler parses each template with `parse()` and writes it into the generated module with
 `compile()`, in the compact form [`@email-kit/runtime`](../runtime/README.md) renders. `render()`

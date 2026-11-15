@@ -18,7 +18,7 @@
       },
       "message": "An <img> has no alt; readers announce its file name",
       "fix": "Describe what the image says, or use alt=\"\" for decoration.",
-      "docs": "https://github.com/email-kit/email-kit/blob/main/docs/checks.md#imgalt"
+      "docs": "https://github.com/email-kit/email-kit/blob/main/docs/reference/checks.md#imgalt"
     },
     {
       "id": "img.fluid-width",
@@ -32,7 +32,7 @@
       },
       "message": "An <img> has max-width:100% without width:100%",
       "fix": "Give width:100% too.",
-      "docs": "https://github.com/email-kit/email-kit/blob/main/docs/checks.md#imgfluid-width"
+      "docs": "https://github.com/email-kit/email-kit/blob/main/docs/reference/checks.md#imgfluid-width"
     },
     {
       "id": "tokens.gmail-fill",
@@ -42,7 +42,7 @@
       },
       "message": "The primary fill #e5e5e5 is light, 50%: a, b",
       "fix": "Adjust the colour.",
-      "docs": "https://github.com/email-kit/email-kit/blob/main/docs/checks.md#tokensgmail-fill"
+      "docs": "https://github.com/email-kit/email-kit/blob/main/docs/reference/checks.md#tokensgmail-fill"
     }
   ]
 }

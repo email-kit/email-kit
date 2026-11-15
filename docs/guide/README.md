@@ -9,10 +9,10 @@ changing.
 - [Components](components.md): every component in `@email-kit/components`, with its props.
 - [Configuration](configuration.md): every option of `email-kit.config.ts`, the theme, check levels and team checks.
 - [Rendering and sending](sending.md): the generated module's API, data validation, and handing the result to your mail provider.
+- [Formatting dates, money and numbers](formatting.md): formatting values in your backend before `render()`.
 
-Reference pages elsewhere in `docs/`:
+Reference pages:
 
-- [Checks](../checks.md): every check `email-kit check` runs, with its default level and fix.
-- [Errors](../errors.md): every error id, why it happens and how to fix it.
-- [Formatting dates, money and numbers](../recipes/formatting.md)
-- [mustache-core](../spec/mustache-core.md): the placeholder language of the compiled output.
+- [Checks](../reference/checks.md): every check `email-kit check` runs, with its default level and fix.
+- [Errors](../reference/errors.md): every error id, why it happens and how to fix it.
+- [mustache-core](../reference/mustache-core.md): the placeholder language of the compiled output.

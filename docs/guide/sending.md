@@ -136,7 +136,7 @@ module tries your `locales.fallback` map and CLDR's parent locales, dropping sub
 it renders the default. `meta.locale` says which locale was used.
 
 Pass the same locale you used to format dates and amounts for the recipient (see
-[Formatting dates, money and numbers](../recipes/formatting.md)).
+[Formatting dates, money and numbers](formatting.md)).
 
 ## Runtime sender values
 
@@ -181,10 +181,10 @@ import { emails } from "./email-kit/_generated/order-shipped/index.ts"
 | `missing-context` | `createEmails()` lacks a runtime sender value, or it's empty |
 | `invalid-context` | A URL sender value passed to `createEmails()` isn't `https://`, or `supportEmail` isn't an email address |
 | `subject-line-break` | The rendered subject contains CR or LF, usually from user data. Strip line breaks before rendering |
-| `missing-value`, `non-scalar-value`, `invalid-number` | A value can't fill its placeholder (spec [§10](../spec/mustache-core.md#10-errors)). With validation on, data that passes it doesn't cause these |
+| `missing-value`, `non-scalar-value`, `invalid-number` | A value can't fill its placeholder (spec [§10](../reference/mustache-core.md#10-errors)). With validation on, data that passes it doesn't cause these |
 | `incompatible-module` | The installed `@email-kit/runtime` is a different version from the CLI that compiled the module. Install the same version and run `email-kit compile` |
 
-See the [error reference](../errors.md#at-send-time).
+See the [error reference](../reference/errors.md#at-send-time).
 
 ## Sending
 
@@ -233,7 +233,7 @@ With `contract: true` in the config, the output folder also holds each email as 
 `<id>/<locale>.html` and `.txt` with `{{placeholders}}`, `<id>/schema.json` (JSON Schema 2020-12)
 and `manifest.json` with the subjects, preheaders and hashes.
 
-They're written in [mustache-core](../spec/mustache-core.md), a small subset of Mustache. A
+They're written in [mustache-core](../reference/mustache-core.md), a small subset of Mustache. A
 backend in another language can render them with a renderer that follows the spec, including the
 data preparation for plurals and selects (§15) and the locale resolution (§16). email-kit only
 ships the JavaScript renderer, `@email-kit/runtime`; the

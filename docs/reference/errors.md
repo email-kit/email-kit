@@ -184,7 +184,7 @@ in an optional object and test that with `<If>`, or pass a boolean field such as
 
 ### unsupported-message
 **Why:** the message uses ICU syntax email-kit doesn't support: a `number`, `date` or `time` argument (or another type besides `plural` and `select`), or a plural `offset:`.
-**Fix:** format numbers, dates and times in your backend and pass the text, marked with `formatted()` in the schema (see [the formatting recipe](recipes/formatting.md)); write plurals without an offset.
+**Fix:** format numbers, dates and times in your backend and pass the text, marked with `formatted()` in the schema (see [the formatting recipe](../guide/formatting.md)); write plurals without an offset.
 
 ### invalid-message
 **Why:** a message has an unbalanced `{` or `}`.
@@ -254,7 +254,7 @@ in an optional object and test that with `<If>`, or pass a boolean field such as
 
 These come from the generated module in a backend, not from the CLI, as an `EmailRenderError` from `@email-kit/runtime`.
 
-- **`missing-value`, `non-scalar-value`, `invalid-number`:** from the placeholder renderer, when the data doesn't match the template. See the [mustache-core spec](spec/mustache-core.md#10-errors).
+- **`missing-value`, `non-scalar-value`, `invalid-number`:** from the placeholder renderer, when the data doesn't match the template. See the [mustache-core spec](mustache-core.md#10-errors).
 - **`invalid-data`:** with validation on (the default), the data passed to `render()` doesn't match the template's schema. The error's `issues` list each problem with its path, such as `items[1].qty: expected a number, got "2"`. Call `validate(data)` to check data without rendering, for example when it arrives from a queue.
 - **`missing-context`:** `createEmails()` was called without a value the config marks `{ runtime: true }`, or with an empty one. Pass every runtime key as a non-empty string.
 - **`invalid-context`:** a value passed to `createEmails()` isn't what that sender value has to be: `siteUrl`, `helpUrl` and `privacyUrl` must be `https://` URLs and `supportEmail` an email address, the same rules the config applies to values set there.

@@ -2,7 +2,7 @@
 
 **Status:** Proposed (2026-10-30). **Task:** P0-07 (SPK-05), recorded in P0-12.
 **Evidence:**
-- [`docs/spec/mustache-core.md`](../spec/mustache-core.md) (the spec);
+- [`docs/reference/mustache-core.md`](../reference/mustache-core.md) (the spec);
 - [`conformance/mustache-core/`](../../conformance/mustache-core/README.md) (142 cases);
 - [`packages/dialect`](../../packages/dialect/src/index.ts) (TS reference renderer, 1.4 KB
   min+gzip).

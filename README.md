@@ -51,14 +51,10 @@ Not yet:
 
 - [User guide](docs/guide/README.md): getting started, templates, components, configuration and
   sending
-- [The checks](docs/checks.md) and [error codes](docs/errors.md)
-- [PRD](docs/prd.md) and [backlog](docs/backlog.md)
-- [Phase 1 scope](docs/phase-1-scope.md) and [architecture direction](docs/architecture-direction.md)
-- [Research](docs/research/README.md): email-client rendering, dark mode and accessibility, law,
-  deliverability, design and theming, tooling
-- [Architecture decision records](docs/adr/README.md)
-- Specs: [mustache-core](docs/spec/mustache-core.md), the placeholder dialect (draft), and its
+- Reference: [the checks](docs/reference/checks.md), [error codes](docs/reference/errors.md) and
+  [mustache-core](docs/reference/mustache-core.md), the placeholder language (draft), with its
   [conformance suite](conformance/mustache-core/README.md)
+- [Architecture decision records](docs/adr/README.md)
 
 ## Contributing
 

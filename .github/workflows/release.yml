@@ -2,7 +2,7 @@ name: Release
 
 # Publishes with npm trusted publishing (OIDC): no npm token is stored anywhere.
 # Each package must have this repository + workflow + environment configured as a
-# trusted publisher on npmjs.com first. See docs/setup/reserve-names.md.
+# trusted publisher on npmjs.com first. See "Releasing" in CONTRIBUTING.md.
 
 # Paused while the implementation is incomplete: manual runs only.
 # To re-enable, restore the trigger below and remove workflow_dispatch.

@@ -1,10 +1,10 @@
 # ADR 0006: Package split and the JSX transform
 
 **Status:** Proposed (2026-10-30). **Tasks:** P0-11 (SPK-11), P0-12 (SPK-12).
-**Evidence:**
-- [`docs/spikes/p0-11-jsx-transform.md`](../spikes/p0-11-jsx-transform.md);
-- [`docs/spikes/p0-03-compiler.md`](../spikes/p0-03-compiler.md) (finding 4);
-- [`docs/spikes/p0-05-jsx-pragma.md`](../spikes/p0-05-jsx-pragma.md).
+**Evidence** (spike notes removed in commit `23d757a`; in git history):
+- `docs/spikes/p0-11-jsx-transform.md`;
+- `docs/spikes/p0-03-compiler.md` (finding 4);
+- `docs/spikes/p0-05-jsx-pragma.md`.
 
 ## Context
 

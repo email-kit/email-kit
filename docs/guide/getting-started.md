@@ -126,7 +126,7 @@ as files; see [Other backends](sending.md#other-backends).
 | `--config <path>` | Use this config file instead of `./email-kit.config.ts` |
 
 `email-kit generate` is the same command. Errors carry an id, such as `[placeholder-misuse]`; the
-[error reference](../errors.md) explains each one.
+[error reference](../reference/errors.md) explains each one.
 
 Keep `messages.d.ts` in your TypeScript project (it is, if your `tsconfig.json` includes the
 `_generated/` folder): it gives `t()` its keys and parameter types.
@@ -162,7 +162,7 @@ pass values that differ by environment with `createEmails()`.
 npx email-kit check
 ```
 
-`check` compiles in memory (it writes nothing) and runs the [checks](../checks.md) over the
+`check` compiles in memory (it writes nothing) and runs the [checks](../reference/checks.md) over the
 compiled emails, the renders of every fixture, the template sources and the theme. It exits 1 on
 any error, and 0 when there are only warnings and notes.
 

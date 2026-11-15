@@ -155,7 +155,7 @@ export interface Check {
    * `render`s of the fixture sweep, or `both`, for values that may come from data.
    */
   readonly on?: "template" | "render" | "both"
-  /** A docs page other than docs/checks.md, for team checks. */
+  /** A docs page other than docs/reference/checks.md, for team checks. */
   readonly docs?: string
   /**
    * Enforced by the compiler: a compile that fails with one of these error codes is reported as

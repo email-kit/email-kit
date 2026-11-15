@@ -1,5 +1,5 @@
 // P1-088: what people see when something goes wrong: `file:line:col [id]`, the message, a code
-// frame and the docs link. Snapshots of the real output, plus a check that docs/errors.md covers
+// frame and the docs link. Snapshots of the real output, plus a check that docs/reference/errors.md covers
 // every error id the code can raise.
 
 import {
@@ -161,9 +161,9 @@ describe("locations", () => {
   })
 })
 
-describe("docs/errors.md", () => {
+describe("docs/reference/errors.md", () => {
   it("has an entry for every error id the code can raise", () => {
-    const docs = readFileSync(join(REPO, "docs", "errors.md"), "utf8")
+    const docs = readFileSync(join(REPO, "docs", "reference", "errors.md"), "utf8")
     const documented = new Set([...docs.matchAll(/^### ([a-z][a-z-]*)$/gm)].map((m) => m[1]))
     const raised = new Set<string>()
     for (const dir of ["packages/core/src", "packages/cli/src", "packages/components/src"]) {

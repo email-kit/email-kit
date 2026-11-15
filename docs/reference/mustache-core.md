@@ -1,11 +1,11 @@
 # mustache-core v1
 
-**Dialect id:** `mustache-core@1` · **Status:** draft (backlog P0-07). It is published as v1 in
-P1-040 and recorded in ADR 0002 (P0-12). Until then, cases may change.
+**Dialect id:** `mustache-core@1` · **Status:** draft. It becomes final with the first stable
+release; until then, cases may change. The decision behind it is
+[ADR 0002](../adr/0002-mustache-core-dialect.md).
 
 mustache-core is the placeholder language of compiled email-kit templates. The compiler writes it;
-a small runtime in each backend language renders it at send time (architecture-direction R1–R3,
-R8). This document defines the dialect. The conformance suite in
+a small runtime in each backend language renders it at send time. This document defines the dialect. The conformance suite in
 [`conformance/mustache-core/`](../../conformance/mustache-core/) defines the exact bytes. When the
 two disagree, that is a bug in one of them, and the fix goes into both.
 
@@ -20,7 +20,7 @@ The TS reference renderer is [`packages/dialect`](../../packages/dialect/src/ind
 - **A subset of Mustache.** Every mustache-core template is a valid
   [Mustache](https://github.com/mustache/spec) template. Section 13 lists where stock engines
   render it differently.
-- **Fail loudly.** A missing value is an error, never a silent blank (DLG-03).
+- **Fail loudly.** A missing value is an error, never a silent blank.
 
 ## 2. Terms
 
@@ -169,11 +169,12 @@ The number format is the shortest decimal string that converts back to the same 
 - **Go:** `strconv.FormatFloat(x, 'g', -1, 64)` gives the same digits, also with layout fixes.
 
 Templates should rarely print raw numbers anyway, because values that depend on the locale arrive
-already formatted as strings (R5).
+already formatted as strings
+([ADR 0008](../adr/0008-backend-formats-values.md)).
 
 ## 9. Escaping profiles
 
-Each template part is rendered with one profile (R3):
+Each template part is rendered with one profile:
 
 | Part | Profile |
 |---|---|
@@ -200,8 +201,8 @@ attribute contexts alike. No other character is changed.
 
 Rules that depend on where a value is used are not part of the dialect. They belong to the
 compiler and the generated module:
-- which fields may appear in `href` and `src` (JSX-08, SEC-02);
-- rejecting CR and LF in the subject (RUN-06).
+- which fields may appear in `href` and `src`;
+- rejecting CR and LF in the subject.
 
 A runtime API should treat an unknown profile as `html`, so a mistake fails safe.
 
@@ -236,8 +237,8 @@ groups cases by topic. Each case gives:
 
 A runtime conforms to `mustache-core@1` when it passes every case in every file.
 
-The seed suite (P0-07) has 142 cases. P1-043 grows it to at least 200, adding very long (10 KB)
-values and cases from the Mustache spec.
+The suite has 142 cases. It will grow to at least 200, adding very long (10 KB) values and cases
+from the Mustache spec.
 
 ## 12. What producers guarantee
 
@@ -246,14 +247,15 @@ The email-kit compiler only writes templates that:
 - **Parse without errors.** Every name is valid.
 - **Contain no literal `{{`.** In HTML it writes `&#123;&#123;` instead. In the text part and the
   subject, copy containing `{{` is a compile error.
-- **Use `{{{ }}}` only behind the `<Raw>` allow-list** (AUTH-10). Data is always escaped.
+- **Use `{{{ }}}` only behind the `<Raw>` allow-list**. Data is always escaped.
 - **Reference only names the data schema defines**, so a `missing-value` error at send time means
-  the data didn't match the schema. Validating before rendering (OUT-08) catches this earlier.
+  the data didn't match the schema. Validating before rendering catches this earlier.
 
 ## 13. Compatibility with stock engines
 
-Backends may render compiled templates with their own Mustache or Handlebars engine (DLG-05).
-These are the known differences; P1-044 verifies them and runs the suite against both engines.
+Backends may render compiled templates with their own Mustache or Handlebars engine.
+These are the known differences; they haven't yet been verified by running the suite against
+those engines.
 
 | Engine | Difference |
 |---|---|
@@ -271,17 +273,18 @@ For output that is identical byte for byte, use an email-kit runtime.
 | Name lookup | Mustache's context-stack search | Required for stock-engine compatibility. The compiler emits names that resolve the intended way |
 | Falsy values | nothing, `false`, `0`, `""`, `[]` | Matches mustache.js and Handlebars, and how JS and Python authors read optional fields. Mustache leaves this to each language, so it has to be fixed here |
 | `true` in a section | Context unchanged | Matches mustache.js |
-| Missing variable | Error | DLG-03: a silent blank in a sent email is worse than a failed send |
+| Missing variable | Error | A silent blank in a sent email is worse than a failed send |
 | Booleans as text | `true` / `false` | Every language can produce them. Printing one is usually a template bug, but not an ambiguous one |
 | Numbers as text | ECMAScript `Number::toString` | One exact, documented algorithm, native in the TS runtime and reproducible elsewhere |
 | `'` escape | `&#39;` | What mustache.js writes; decimal is understood by every HTML parser, including old email clients |
 | Escaped characters | Only `& < > " '` | Enough for HTML text and quoted attributes. A smaller table is easier to match exactly in every language |
-| Not supported | Comments, partials, delimiters, `&`, lambdas | R1 and R2: no code and no runtime composition, and less for each runtime to implement |
+| Not supported | Comments, partials, delimiters, `&`, lambdas | Templates carry no code and are never composed at runtime, and less for each runtime to implement |
 
 ## 15. Data preparation in generated modules
 
 mustache-core itself has no logic. A generated module's `render(data, { locale })` prepares the
-data before filling the templates (ADR 0003, P1-040). A runtime in another language must produce
+data before filling the templates
+([ADR 0003](../adr/0003-runtime-plurals.md)). A runtime in another language must produce
 the same prepared data, byte for byte in what the templates can see.
 
 1. **Project** the data onto the schema's model: unknown keys go; a missing optional key becomes
@@ -314,8 +317,8 @@ value, `w` and `t` the same without trailing zeros, `c` and `e` zero.
 
 ## 16. Locale resolution in generated modules
 
-`render(data, { locale })` picks one of the compiled locales for the requested BCP 47 tag
-(I18N-04): RFC 4647 lookup, honouring CLDR's parent locales. The generated module embeds the
+`render(data, { locale })` picks one of the compiled locales for the requested BCP 47 tag:
+RFC 4647 lookup, honouring CLDR's parent locales. The generated module embeds the
 data, from the CLDR version in the manifest, filtered to the project's languages: `parents`
 (a lowercase tag → the next tag; `und` means the root), `scripts` (a language → its likely
 script) and `regions` (`language-region` → the script it implies, when that differs from the

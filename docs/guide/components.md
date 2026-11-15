@@ -3,7 +3,7 @@
 `@email-kit/components` has the building blocks of an email body. Every value they draw with
 (colours, type, spacing, radius) comes from the [theme](configuration.md#theme), and each colour
 gets its dark-mode rule from it. They are built from tables and cell padding rather than margins,
-following the email-client research in `docs/research`; they haven't been tested in real email
+following what email clients are known to support; they haven't been tested in real email
 clients yet.
 
 ```tsx
@@ -146,7 +146,7 @@ A content image. `kind` says what the image is for, and decides which props it n
 
 A literal `src` is checked when the template compiles: SVG, WebP, AVIF, `http:` URLs, relative
 paths and widths or heights that aren't whole numbers fail with
-[`invalid-image`](../errors.md#invalid-image), as does an empty `alt` on an informative or
+[`invalid-image`](../reference/errors.md#invalid-image), as does an empty `alt` on an informative or
 functional image.
 
 ## Divider
@@ -275,7 +275,7 @@ the end of the line. The plain-text part lists each row as `Header: value` lines
 |---|---|---|---|
 | `caption` | `Child` | | Names the table |
 | `rows` | a list field | | Such as `data.logins` |
-| `columns` | `DataTableColumn[]` | | At least two ([`invalid-table`](../errors.md#invalid-table)); use `KeyValue` or `List` for one |
+| `columns` | `DataTableColumn[]` | | At least two ([`invalid-table`](../reference/errors.md#invalid-table)); use `KeyValue` or `List` for one |
 | `rowHeaders` | `boolean` | `true` | The first column heads its row |
 | `summary` | `(SummaryRow \| OptionalRow)[]` | | Rows under the data, such as totals |
 
@@ -308,7 +308,7 @@ present.
 
 Itemised lines and totals for receipts and invoices: a `DataTable` of the items, then the
 subtotal, discounts, shipping, taxes and the total, in that order. Amounts are strings your backend
-formats (see [Formatting dates, money and numbers](../recipes/formatting.md)).
+formats (see [Formatting dates, money and numbers](formatting.md)).
 
 | Prop | Type | Default | |
 |---|---|---|---|

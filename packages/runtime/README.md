@@ -43,7 +43,7 @@ Bun, Deno, Cloudflare Workers, AWS Lambda and Next.js server code.
 ## Errors
 
 Rendering problems throw an `EmailRenderError` with a `code`, which the generated module
-re-exports. See the [error reference](https://github.com/email-kit/email-kit/blob/main/docs/errors.md#at-send-time).
+re-exports. See the [error reference](https://github.com/email-kit/email-kit/blob/main/docs/reference/errors.md#at-send-time).
 
 ## Versions
 

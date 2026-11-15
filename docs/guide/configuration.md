@@ -25,7 +25,7 @@ export default defineConfig({
 ```
 
 Paths are relative to the config file. An unknown option, or one with the wrong type, fails every
-command with [`invalid-config`](../errors.md#invalid-config), listing each problem.
+command with [`invalid-config`](../reference/errors.md#invalid-config), listing each problem.
 
 ## Options
 
@@ -188,15 +188,15 @@ theme: {
 }
 ```
 
-A source error fails the compile with [`invalid-theme`](../errors.md#invalid-theme) or
-[`invalid-colour`](../errors.md#invalid-colour).
+A source error fails the compile with [`invalid-theme`](../reference/errors.md#invalid-theme) or
+[`invalid-colour`](../reference/errors.md#invalid-colour).
 
 ### Roles
 
 Components never use raw colours; they use roles, which email-kit resolves from the source's
 variables for each mode. Each role takes the first of its variables that the source has. A role
 with none of them uses email-kit's default where there is one, and otherwise fails with
-[`unresolved-role`](../errors.md#unresolved-role) until you add the variable or set the role in
+[`unresolved-role`](../reference/errors.md#unresolved-role) until you add the variable or set the role in
 `roles`.
 
 | Role | From |
@@ -258,7 +258,7 @@ mode, the email declares no dark support and clients that darken emails do it th
 
 ## Checks
 
-`email-kit check` runs the [check catalogue](../checks.md), each check at a default level. Change
+`email-kit check` runs the [check catalogue](../reference/checks.md), each check at a default level. Change
 a level per project, with the reason a reviewer will read:
 
 ```ts
@@ -327,4 +327,4 @@ export default defineConfig({
 `report({ message, email?, at?, fix? })` records a problem: leave out `email` for a project-wide
 one, give `at` (an element's `offset`) to point at a place in the HTML, and `fix` to replace the
 check's usual fix. A check that throws is reported as
-[`check-failed`](../errors.md#check-failed).
+[`check-failed`](../reference/errors.md#check-failed).

@@ -1,6 +1,6 @@
 # mustache-core conformance suite
 
-Golden cases for the [mustache-core](../../docs/spec/mustache-core.md) placeholder dialect. Every
+Golden cases for the [mustache-core](../../docs/reference/mustache-core.md) placeholder dialect. Every
 email-kit runtime, in any language, must pass every case in every file here (R8).
 
 ## Format

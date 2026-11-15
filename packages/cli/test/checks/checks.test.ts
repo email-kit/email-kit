@@ -366,7 +366,7 @@ describe("each check, with one rule broken", () => {
       column: 1,
     })
     expect(finding?.docs).toBe(
-      "https://github.com/email-kit/email-kit/blob/main/docs/checks.md#imghttps",
+      "https://github.com/email-kit/email-kit/blob/main/docs/reference/checks.md#imghttps",
     )
   })
 
@@ -652,9 +652,9 @@ describe("email-kit check", () => {
   })
 })
 
-describe("docs/checks.md", () => {
+describe("docs/reference/checks.md", () => {
   it("is generated from the catalogue, one entry per id", async () => {
-    await expect(checksMarkdown()).toMatchFileSnapshot(`${REPO}docs/checks.md`)
+    await expect(checksMarkdown()).toMatchFileSnapshot(`${REPO}docs/reference/checks.md`)
     const headings = [...checksMarkdown().matchAll(/^### (\S+)$/gm)].map((m) => m[1])
     expect(headings.sort()).toEqual([...CATALOGUE, ...TOKEN_CHECKS].map((c) => c.id).sort())
   })

@@ -125,7 +125,7 @@ fills it at send time.
 
 So a template can place data but can't compute with it. Arithmetic, string methods, template
 literals and `.map()` on a data field fail the compile with
-[`placeholder-misuse`](../errors.md#placeholder-misuse). Compute the value in your backend and pass
+[`placeholder-misuse`](../reference/errors.md#placeholder-misuse). Compute the value in your backend and pass
 it as a field of its own, and use `<Each>` for lists.
 
 Conditions that don't depend on data are plain JavaScript, decided when the template compiles:
@@ -182,7 +182,7 @@ type({ name: "string > 0", resetUrl: type.string.configure(url) })
 email-kit converts the schema to JSON Schema (written as `schema.json` with `contract: true`, and
 into the module's data types either way). It must stay within
 a portable subset that backends in other languages can also represent, or the compile fails with
-[`schema-not-portable`](../errors.md#schema-not-portable), naming the field:
+[`schema-not-portable`](../reference/errors.md#schema-not-portable), naming the field:
 
 - strings (optionally an enum), numbers, integers, booleans, arrays and objects, each optionally
   nullable or optional;
@@ -191,7 +191,7 @@ a portable subset that backends in other languages can also represent, or the co
 - no unions, records, tuples, `Date`, `bigint`, `any`, defaults or transforms.
 
 Dates and amounts arrive as strings your backend has formatted (see
-[Formatting dates, money and numbers](../recipes/formatting.md)). Field names are letters, digits
+[Formatting dates, money and numbers](formatting.md)). Field names are letters, digits
 and `_`.
 
 Constraints matter beyond validation. `check` renders each template with generated data as well
@@ -226,7 +226,7 @@ A literal URL in a template (`href="https://help.example.com"`) must start with 
 ## Fixtures
 
 Fixtures are named sample data. `check` renders every one, and the compile fails with
-[`invalid-fixture`](../errors.md#invalid-fixture) if one doesn't match the schema. The first
+[`invalid-fixture`](../reference/errors.md#invalid-fixture) if one doesn't match the schema. The first
 fixture is the base for the generated variants. Add fixtures for the cases that change the email,
 such as an optional field left out or a count of one.
 
@@ -271,7 +271,7 @@ With a function child, `If` passes the field as a required value, so it can go w
 one is expected, such as a `t()` parameter.
 
 `If` doesn't take a list, since a list section repeats its content per item
-([`list-condition`](../errors.md#list-condition)). Use `<Each>` for the items and `<Unless>` for
+([`list-condition`](../reference/errors.md#list-condition)). Use `<Each>` for the items and `<Unless>` for
 the empty case. When content around the items, such as a heading or a `<List>`, should only show
 when there are items, wrap the list in an optional object and test that:
 
@@ -286,12 +286,12 @@ when there are items, wrap the list in an optional object and test that:
 </If>
 ```
 
-"Missing" follows the [placeholder language](../spec/mustache-core.md#7-sections-and-truthiness):
+"Missing" follows the [placeholder language](../reference/mustache-core.md#7-sections-and-truthiness):
 a missing value, `null`, `false`, `0`, `""` and `[]` all count as missing. An optional number
 that may be 0 needs a boolean of its own if 0 should show.
 
 `If`, `Unless` and `Each` need a field from `data`; a condition known at compile time is plain
-JavaScript ([`static-condition`](../errors.md#static-condition)).
+JavaScript ([`static-condition`](../reference/errors.md#static-condition)).
 
 `Conditional` is for content one kind of output needs and another doesn't. `when` is `htmlOnly`
 (the HTML part), `textOnly` (the plain-text part), `mso` (only classic Outlook on Windows) or
@@ -344,7 +344,7 @@ The message must give every category the locale uses, so no number falls through
 `other` in English and German, `zero`, `one`, `two`, `few`, `many` and `other` in Arabic. A
 category the locale never uses is an error too; English has no `zero`, so write `=0` for exactly
 zero. `=N` cases match exact whole numbers before the categories. `other` is always required, and
-plural offsets aren't supported. See [`invalid-plural`](../errors.md#invalid-plural).
+plural offsets aren't supported. See [`invalid-plural`](../reference/errors.md#invalid-plural).
 
 ### Selects
 
@@ -354,12 +354,12 @@ plural offsets aren't supported. See [`invalid-plural`](../errors.md#invalid-plu
 
 A select takes a field with fixed values, such as `z.enum(["dhl", "ups", "other"])`. Each case
 must be one of its values, and `other` is required. A free string field is refused
-([`invalid-select`](../errors.md#invalid-select)).
+([`invalid-select`](../reference/errors.md#invalid-select)).
 
 ### What messages can't do
 
 Only plain `{name}` arguments, `plural` and `select` are supported. `{amount, number}`,
-`{date, date}` and the like fail the compile ([`unsupported-message`](../errors.md#unsupported-message)):
+`{date, date}` and the like fail the compile ([`unsupported-message`](../reference/errors.md#unsupported-message)):
 pass the value formatted by your backend as a string instead.
 
 ICU quoting applies: `'{'` is a literal brace and `''` is an apostrophe. An apostrophe on its own,
@@ -407,7 +407,7 @@ sender: {
 
 The keys are `productName`, `name`, `legalName`, `postalAddress`, `privacyUrl`, `helpUrl`,
 `supportEmail` and `siteUrl`. A template that reads a key the config doesn't set fails the compile
-([`sender-value-missing`](../errors.md#sender-value-missing)).
+([`sender-value-missing`](../reference/errors.md#sender-value-missing)).
 
 There are two kinds:
 

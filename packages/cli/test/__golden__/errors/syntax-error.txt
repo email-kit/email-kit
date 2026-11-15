@@ -8,6 +8,6 @@
     36 |       <Text>{t("orderLine", { order: data.orderNumber })}</Text>
     37 |       <List>
 
-  Docs: https://github.com/email-kit/email-kit/blob/main/docs/errors.md#syntax-error
+  Docs: https://github.com/email-kit/email-kit/blob/main/docs/reference/errors.md#syntax-error
 
 1 problem; nothing was written.

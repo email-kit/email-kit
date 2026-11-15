@@ -8,7 +8,7 @@ import { CATALOGUE } from "./catalogue/index.ts"
 import type { Check, CheckContext, Finding, Problem, Subject } from "./types.ts"
 
 /** The checks reference page. */
-const CHECKS_DOCS_URL = "https://github.com/email-kit/email-kit/blob/main/docs/checks.md"
+const CHECKS_DOCS_URL = "https://github.com/email-kit/email-kit/blob/main/docs/reference/checks.md"
 
 /** A check's entry on the reference page. GitHub's anchor drops dots: `img.alt` → `#imgalt`. */
 export function docsUrl(id: string): string {
