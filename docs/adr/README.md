@@ -10,7 +10,7 @@ Drafted from the phase-0 spikes, for the maintainer to accept, change or reject.
 
 | ADR | Decision | Evidence |
 |---|---|---|
-| 0001 | Authoring primitives: own tables vs MJML | _Waiting for P0-04 (real-client screenshots)_ |
+| [0001](0001-authoring-primitives.md) | Our own table primitives, not MJML; the page shell adds the MSO ghost table. Accepted once checked in real email clients | Code follows it; real-client screenshots pending |
 | [0002](0002-mustache-core-dialect.md) | `mustache-core@1`: a strict Mustache subset with fixed truthiness, numbers, missing-value errors and a 5-character escaping table | Spec, 142 conformance cases |
 | [0006](0006-package-split-and-jsx-transform.md) | Two packages (`core` for authoring, `cli` for the toolchain) with a version check; rolldown loads templates | Transform bench, pragma matrix |
 
