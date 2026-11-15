@@ -31,10 +31,9 @@ command with [`invalid-config`](../errors.md#invalid-config), listing each probl
 
 | Option | Type | Default | |
 |---|---|---|---|
-| `root` | `string` | `src/email-kit` if there's a `src/` folder, else `email-kit` | The email-kit folder |
-| `templates` | `string` | `<root>/templates` | Where the `.tsx` templates are |
-| `messages` | `string` | `<root>/messages` | Message files, as `<messages>/<locale>/<template id>.json` |
-| `out` | `string` | `<root>/compiled` | The output folder. The compiler owns it; it can't overlap the templates or messages, or contain the project |
+| `root` | `string` | `src/email-kit` if there's a `src/` folder, else `email-kit` | The email-kit folder: a folder per template, `<root>/<id>/template.tsx`, with `messages.<locale>.json` beside it |
+| `out` | `string` | `<root>/_generated` | The output folder. The compiler owns it: each compile removes what it didn't write (names starting with `.` stay). It can't be or contain the email-kit folder, or contain the project, and a folder with files email-kit didn't write is refused |
+| `contract` | `boolean` | `false` | Also write each email's parts as files, for backends that don't run the module: `<out>/<id>/<locale>.html` and `.txt`, `<out>/<id>/schema.json` and `<out>/manifest.json`. See [Other backends](sending.md#other-backends) |
 | `module` | `"ts"` or `"mjs"` | `"ts"` | The generated module: `index.ts`, or `index.mjs` with `index.d.mts` for projects built with plain `tsc` |
 | `perTemplateEntries` | `boolean` | `false` | Also write a self-contained module per template, `<out>/<id>/index.ts`, so a function that sends one email bundles only that one |
 | `validate` | `boolean` | `true` | `render()` validates data against the schema before rendering. `validate()` is there either way |

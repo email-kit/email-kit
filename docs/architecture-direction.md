@@ -65,6 +65,11 @@ Type safety covers both sides: writing templates and using them.
 
 ### When using the compiled output
 
+> **Changed by [ADR 0007](adr/0007-project-layout-and-runtime-package.md) (2026-11-15):** the
+> renderer is no longer inlined. The generated module imports `@email-kit/runtime`, a published
+> package with no dependencies, installed as the app's one email-kit dependency, and only the entry
+> points its templates use. Templates are parsed at compile time. The rest of this section holds.
+
 The generated `index.ts` is self-contained: no imports, no runtime dependencies. Its types are
 **emitted from `schema.json`**, not imported from Zod, so a backend never needs Zod, React or
 email-kit at runtime:

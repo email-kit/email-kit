@@ -1,9 +1,12 @@
 # Rendering and sending
 
 `email-kit compile` writes one module, `<out>/index.ts` (or `index.mjs` with `index.d.mts`), that
-your server imports. It has no imports and no dependencies: the templates, the data validator, the
-placeholder renderer and the plural rules are all inside it. email-kit doesn't send email; you
-hand what `render()` returns to whatever sends your mail.
+your server imports. It holds your templates, already parsed, with their types, and renders them
+with [`@email-kit/runtime`](../../packages/runtime/README.md): the only email-kit package your app
+needs when it runs, so it's a `dependency` while everything else is a devDependency. The runtime
+has no dependencies, and the module imports only the parts of it your templates use (about 1.5 KB
+to 3 KB, minified and gzipped). email-kit doesn't send email; you hand what `render()` returns to
+whatever sends your mail.
 
 ```ts
 import { EmailRenderError, emails } from "@/email-kit"
@@ -38,8 +41,7 @@ email.meta    // { id: "order-shipped", locale: "en", purpose: "transactional" }
 | `emails` | Every template, by the camelCase form of its id: `order-shipped` is `emails.orderShipped`. Only when the config has no [runtime sender values](#runtime-sender-values) |
 | `createEmails(context)` | Builds the same object with the values that differ by environment. Always exported |
 | `locales` | The compiled locales, the default first |
-| `EmailRenderError`, `MustacheCoreError` | The errors `render()` and `createEmails()` throw. See [Errors](#errors) |
-| `DIALECT` | The placeholder language of the templates: `"mustache-core@1"` |
+| `EmailRenderError` | The error `render()` and `createEmails()` throw. See [Errors](#errors) |
 
 And these types:
 
@@ -47,7 +49,7 @@ And these types:
 |---|---|
 | `OrderShippedData` (one per template) | The data `render()` takes, from the schema. A [`formatted`](templates.md#field-markers) field carries a comment saying how to format it |
 | `TemplateId`, `Locale`, `Purpose` | Unions of the template ids, the compiled locales and the purposes |
-| `Emails`, `EmailTemplate<Id, Data>` | The `emails` object and one entry of it |
+| `Emails`, `EmailTemplate<Id, Data, Locale>` | The `emails` object and one entry of it |
 | `RenderOptions`, `RenderedEmail<Id>`, `EmailParts` | `render()`'s options and result |
 | `EmailContext` | What `createEmails()` takes |
 | `DataIssue` | `{ path, message }`: one value that doesn't match the schema |
@@ -57,9 +59,8 @@ And these types:
 | Member | |
 |---|---|
 | `render(data, options?)` | Validates the data, picks the locale and fills the templates. Returns a `RenderedEmail` |
-| `validate(data)` | Checks data against the schema without rendering. Returns a list of `DataIssue`s, empty when the data is valid |
+| `validate(data)` | Checks data against the schema without rendering. Returns a list of `DataIssue`s, empty when the data is valid. Not there with `validate: false`, which leaves the validator out of your bundle |
 | `meta` | `{ id, purpose, locales }` |
-| `templates` | The raw templates per locale, `{ subject, preheader, html, text }`, with `{{placeholders}}`. See [Other backends](#other-backends) |
 
 `render()` returns:
 
@@ -119,8 +120,9 @@ if (issues.length > 0) return Response.json({ issues }, { status: 400 })
 ```
 
 The generated types catch most mistakes in TypeScript; validation is for data whose type the
-compiler can't see. With `validate: false` in the config, `render()` skips it, and bad data either
-throws a `MustacheCoreError` (such as `missing-value`) or renders as given.
+compiler can't see. With `validate: false` in the config, the module doesn't import the validator:
+`render()` skips it, there's no `validate()`, and bad data either throws an `EmailRenderError`
+from the renderer (such as `missing-value`) or renders as given.
 
 ## Locales
 
@@ -166,7 +168,7 @@ email, for a function that sends one kind of email and should bundle nothing els
 path in the output folder:
 
 ```ts
-import { emails } from "./email-kit/compiled/order-shipped/index.ts"
+import { emails } from "./email-kit/_generated/order-shipped/index.ts"
 ```
 
 ## Errors
@@ -179,11 +181,10 @@ import { emails } from "./email-kit/compiled/order-shipped/index.ts"
 | `missing-context` | `createEmails()` lacks a runtime sender value, or it's empty |
 | `invalid-context` | A URL sender value passed to `createEmails()` isn't `https://`, or `supportEmail` isn't an email address |
 | `subject-line-break` | The rendered subject contains CR or LF, usually from user data. Strip line breaks before rendering |
+| `missing-value`, `non-scalar-value`, `invalid-number` | A value can't fill its placeholder (spec [§10](../spec/mustache-core.md#10-errors)). With validation on, data that passes it doesn't cause these |
+| `incompatible-module` | The installed `@email-kit/runtime` is a different version from the CLI that compiled the module. Install the same version and run `email-kit compile` |
 
-`MustacheCoreError` comes from the placeholder renderer, with the codes `missing-value`,
-`non-scalar-value` and `invalid-number`. With validation on, data that passes it doesn't cause
-them. See the [error reference](../errors.md#at-send-time) and the
-[spec](../spec/mustache-core.md#10-errors).
+See the [error reference](../errors.md#at-send-time).
 
 ## Sending
 
@@ -228,12 +229,12 @@ provider's reference.
 
 ## Other backends
 
-The compiled folder also holds each email as files: `<id>/<locale>.html` and `.txt` with
-`{{placeholders}}`, `<id>/schema.json` (JSON Schema 2020-12) and `manifest.json` with the subjects,
-preheaders and hashes. The same templates are in the module, as `emails.<id>.templates`.
+With `contract: true` in the config, the output folder also holds each email as files:
+`<id>/<locale>.html` and `.txt` with `{{placeholders}}`, `<id>/schema.json` (JSON Schema 2020-12)
+and `manifest.json` with the subjects, preheaders and hashes.
 
 They're written in [mustache-core](../spec/mustache-core.md), a small subset of Mustache. A
 backend in another language can render them with a renderer that follows the spec, including the
 data preparation for plurals and selects (§15) and the locale resolution (§16). email-kit only
-ships the JavaScript renderer, inside the generated module; the
+ships the JavaScript renderer, `@email-kit/runtime`; the
 [conformance suite](../../conformance/mustache-core/README.md) is there to test others.

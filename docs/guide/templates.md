@@ -1,8 +1,17 @@
 # Writing templates
 
-A template is a `.tsx` file in the templates folder (`<root>/templates`) whose default export is
-`defineEmail({ … })`. Files whose name starts with `_` are skipped, so helpers can sit beside the
-templates; components of your own are better in a folder of their own.
+Each template is a folder in the email-kit folder (`root`), named by its id: `order-shipped/`
+holds `template.tsx`, whose default export is `defineEmail({ … })`, and its messages, one
+`messages.<locale>.json` per locale. The `id` in `defineEmail()` must match the folder's name.
+
+```
+src/email-kit/
+  order-shipped/
+    template.tsx
+    messages.en.json
+    messages.de.json
+  _shared/          components the templates import; folders starting with _ are never templates
+```
 
 ```tsx
 /** @jsxImportSource @email-kit/core */
@@ -84,7 +93,7 @@ export default defineEmail({
 })
 ```
 
-With its copy in `messages/en/order-shipped.json`:
+With its copy in `order-shipped/messages.en.json`:
 
 ```json
 {
@@ -132,8 +141,8 @@ Conditions that don't depend on data are plain JavaScript, decided when the temp
 
 | Field | Type | Required | What it is |
 |---|---|---|---|
-| `id` | `string` | yes | Lowercase words joined by hyphens, such as `order-shipped`. It names the output folder and becomes `emails.orderShipped` and the type `OrderShippedData`. Don't rename an id that has shipped: backends call it by name |
-| `purpose` | `"transactional"`, `"marketing"` or `"consent-request"` | yes | The legal purpose. It's recorded in the manifest and in `render()`'s `meta`, and the compile fails without it (`legal.purpose-declared`). `marketing` and `consent-request` emails must show a postal address (`legal.postal-address`); the marketing footer parts (unsubscribe) don't exist yet |
+| `id` | `string` | yes | Lowercase words joined by hyphens, such as `order-shipped`. It's the name of the template's folder, and becomes `emails.orderShipped` and the type `OrderShippedData`. Don't rename an id that has shipped: backends call it by name |
+| `purpose` | `"transactional"`, `"marketing"` or `"consent-request"` | yes | The legal purpose. It's recorded in `render()`'s `meta` (and the manifest, with `contract: true`), and the compile fails without it (`legal.purpose-declared`). `marketing` and `consent-request` emails must show a postal address (`legal.postal-address`); the marketing footer parts (unsubscribe) don't exist yet |
 | `schema` | a Zod 4, Valibot or ArkType 2 schema | yes | The data the email takes. `data`, `fixtures` and the generated types come from it |
 | `subject` | `(data, t, sender) => …` | yes | The subject line: text only, one line |
 | `preheader` | `(data, t, sender) => …` | no | The inbox preview text after the subject: one line. Without it `check` warns (`preheader.length`) |
@@ -170,7 +179,8 @@ import { type } from "arktype"
 type({ name: "string > 0", resetUrl: type.string.configure(url) })
 ```
 
-email-kit converts the schema to JSON Schema and writes it as `schema.json`. It must stay within
+email-kit converts the schema to JSON Schema (written as `schema.json` with `contract: true`, and
+into the module's data types either way). It must stay within
 a portable subset that backends in other languages can also represent, or the compile fails with
 [`schema-not-portable`](../errors.md#schema-not-portable), naming the field:
 
@@ -196,8 +206,9 @@ metadata key on ArkType's global `ArkEnv`, so no declaration of your own is need
 
 ## Field markers
 
-Markers are schema metadata from `@email-kit/core`. They're written into `schema.json` under
-`"x-email-kit"`, so they survive into every backend.
+Markers are schema metadata from `@email-kit/core`. They reach the generated module, and with
+`contract: true` they're written into `schema.json` under `"x-email-kit"`, so they survive into
+every backend.
 
 | Marker | Zod | Means |
 |---|---|---|
@@ -294,7 +305,7 @@ A parameter can be text, a number, a data field, a sender value, or another mess
 
 ### Typed t()
 
-`email-kit compile` writes `compiled/messages.d.ts` from the default locale's messages. With it in
+`email-kit compile` writes `_generated/messages.d.ts` from the default locale's messages. With it in
 your TypeScript project, `t()` knows each template's keys and parameters: a misspelt key, a
 missing parameter or a string passed to a plural is an editor error. Until the first compile,
 `t()` is untyped.
@@ -394,6 +405,6 @@ Data passed to `render()` can't override a sender value.
 
 ## Your own components
 
-A component is a function that returns JSX. Put it outside the templates folder and import it with
-a relative path; start the file with the same `@jsxImportSource` comment. See
+A component is a function that returns JSX. Put it in a folder whose name starts with `_`, such as
+`_shared/`, and import it with a relative path (`../_shared/Card`); start the file with the same `@jsxImportSource` comment. See
 [Components](components.md#your-own-components).

@@ -62,6 +62,10 @@ A **code generator** for email, in the spirit of `drizzle-kit generate`:
 Backend code imports that module and passes the result to whatever sends its email (Resend, SES,
 SMTP, …). **Phase 1 never sends email.** It only produces what goes inside one.
 
+> **Changed by [ADR 0007](adr/0007-project-layout-and-runtime-package.md) (2026-11-15):** the
+> generated module imports `@email-kit/runtime`, the one email-kit package installed as a
+> dependency; the toolchain stays a devDependency.
+
 Because the generated module is self-contained (no imports, no runtime dependencies), the framework
 is only needed while developing and generating. It is installed as a **devDependency**, as
 `drizzle-kit` is.
@@ -334,6 +338,11 @@ The framework must work in all three without a nested `tsconfig.json`:
 | **To verify in the prototype** | How the pragma behaves under each host setting (`preserve` in Next.js, `react-jsx` + `hono/jsx`, unset) and with `tsc --noEmit` in CI |
 
 ## The output folder name: `compiled/` (decided)
+
+> **Superseded by [ADR 0007](adr/0007-project-layout-and-runtime-package.md) (2026-11-15):** the
+> output is `_generated/`, and each template is a folder, `<id>/template.tsx` with
+> `messages.<locale>.json` beside it, instead of `templates/` and `messages/`. The folder trees in
+> this document show the earlier layout.
 
 The output lives at `email-kit/compiled/`, beside `email-kit/templates/`. The pair reads as source →
 output: you write `templates/`, and the compiler writes `compiled/`. The name says what the folder
