@@ -70,6 +70,10 @@ src/email-kit/
   _generated/                       written by `email-kit compile`; don't edit
 ```
 
+The welcome template is a real email that also shows each part of a template: plain copy, a
+select, plurals, `If`, `Unless` and `Each`, with a fixture for each branch. Its comments point to
+[Writing templates](templates.md). Change it into your own welcome email, or delete it.
+
 A folder holding `template.tsx` is a template. Folders whose names start with `_`, such as
 `_shared/` for components the templates import, never are.
 
@@ -141,6 +145,7 @@ import { emails } from "@/email-kit"
 
 const { subject, html, text } = emails.welcome.render({
   name: "Ada",
+  plan: "pro",
   startUrl: "https://example.com/start",
 })
 ```

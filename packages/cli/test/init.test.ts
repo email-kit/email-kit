@@ -47,6 +47,9 @@ async function init(dir: string, args: string[] = ["--yes", "--no-install"], pro
   return { code, out: out.join("\n"), err: err.join("\n") }
 }
 
+/** Data for the welcome template `init` writes. */
+const WELCOME_DATA = '{ name: "Ada", plan: "pro", startUrl: "https://x.test" }'
+
 const read = (dir: string, path: string) => readFileSync(join(dir, path), "utf8")
 const json = (dir: string, path: string) => JSON.parse(read(dir, path))
 const tree = (dir: string) =>
@@ -168,7 +171,7 @@ describe("a tsc project run with node", () => {
     expect(out).toContain('  import { emails } from "#email-kit"')
     writeFileSync(
       join(dir, "dist.mjs"),
-      'import { emails } from "#email-kit"\nconsole.log(emails.welcome.render({ name: "Ada", startUrl: "https://x.test" }).subject)\n',
+      `import { emails } from "#email-kit"\nconsole.log(emails.welcome.render(${WELCOME_DATA}).subject)\n`,
     )
     expect(execFileSync("node", ["dist.mjs"], { cwd: dir, encoding: "utf8" })).toBe(
       "Welcome to Api, Ada\n",
@@ -188,7 +191,7 @@ describe("Node type stripping, no build", () => {
     expect(read(dir, "src/email-kit/index.ts")).toContain('export * from "./_generated/index.ts"')
     writeFileSync(
       join(dir, "src/send.ts"),
-      'import { emails } from "#email-kit"\nconsole.log(emails.welcome.render({ name: "Ada", startUrl: "https://x.test" }).subject)\n',
+      `import { emails } from "#email-kit"\nconsole.log(emails.welcome.render(${WELCOME_DATA}).subject)\n`,
     )
     expect(execFileSync("node", ["src/send.ts"], { cwd: dir, encoding: "utf8" })).toBe(
       "Welcome to Worker, Ada\n",
@@ -359,6 +362,12 @@ describe("the project's schema library", () => {
     expect(read(dir, "src/email-kit/_generated/index.ts")).toContain(
       '"startUrl":{"type":"string","url":true}',
     )
+    // It passes the checks with no warnings: every fixture, and the generated variants. (The
+    // temp folder is inside a gitignored one, hence output.gitignored.)
+    const checked: string[] = []
+    const push = (t: string) => checked.push(t)
+    expect(await run(["check"], { cwd: dir, out: push, err: push })).toBe(0)
+    expect(checked.join("\n")).not.toMatch(/^ {2}! (?!output\.gitignored)/m)
 
     // `new` writes the same library's schema, and it compiles.
     const result = await run(["new", "order-shipped"], { cwd: dir, out: () => {}, err: () => {} })

@@ -251,7 +251,11 @@ function nextSteps(
     "",
     `  import { emails } from "${importPath}"`,
     "",
-    '  const { subject, html, text } = emails.welcome.render({ name: "Ada", startUrl: "https://example.com/start" })',
+    "  const { subject, html, text } = emails.welcome.render({",
+    '    name: "Ada",',
+    '    plan: "pro",',
+    '    startUrl: "https://example.com/start",',
+    "  })",
     "",
     ...columns([
       [command("compile"), "after changing a template or message"],

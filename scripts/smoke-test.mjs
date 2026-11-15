@@ -112,7 +112,7 @@ try {
       join(route, "route.ts"),
       `import { emails } from "@/email-kit"
       export async function GET() {
-        const email = emails.welcome.render({ name: "Grace", startUrl: "https://shop.example/start" })
+        const email = emails.welcome.render({ name: "Grace", plan: "pro", startUrl: "https://shop.example/start" })
         return new Response(email.html, { headers: { "content-type": "text/html; charset=utf-8" } })
       }`,
     )
@@ -123,7 +123,7 @@ try {
     writeFileSync(
       join(app, "src/send.ts"),
       `import { emails } from "#email-kit"
-      const email = emails.welcome.render({ name: "Grace", startUrl: "https://shop.example/start" })
+      const email = emails.welcome.render({ name: "Grace", plan: "pro", startUrl: "https://shop.example/start" })
       console.log(JSON.stringify({ subject: email.subject, html: email.html, text: email.text }))`,
     )
     const output = run("node", ["src/send.ts"], app, { capture: true })
