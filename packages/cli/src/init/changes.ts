@@ -69,7 +69,7 @@ function runtimeChange(
  *   has none);
  * - `@email-kit/runtime` in `dependencies`: the generated module imports it when the app runs, so
  *   a production install without devDependencies must have it;
- * - `compile` and `check` scripts, under the first prefix that's free or already email-kit's;
+ * - `compile`, `check` and `watch` scripts, under the first prefix that's free or already email-kit's;
  * - the `#email-kit` subpath import, for an app that imports through one;
  * - tsconfig's `jsx`, and the `@/email-kit` path for an alias;
  * - lines marking the output folder as generated, in `.gitattributes` and the ignore files the
@@ -117,6 +117,7 @@ export function plannedChanges(
   const wanted = (prefix: string): [string, string][] => [
     [`${prefix}:compile`, "email-kit compile"],
     [`${prefix}:check`, "email-kit check"],
+    [`${prefix}:watch`, "email-kit compile --watch"],
   ]
   const scriptPrefix = SCRIPT_PREFIXES.find((prefix) =>
     wanted(prefix).every(([name, command]) => [undefined, command].includes(scripts[name])),
@@ -125,7 +126,7 @@ export function plannedChanges(
     changes.push({
       id: "scripts",
       file: "package.json",
-      summary: `add the scripts ${scriptPrefix}:compile and ${scriptPrefix}:check`,
+      summary: `add the scripts ${scriptPrefix}:compile, ${scriptPrefix}:check and ${scriptPrefix}:watch`,
       apply: editPackage((json) => {
         json.scripts = {
           ...(json.scripts as object | undefined),

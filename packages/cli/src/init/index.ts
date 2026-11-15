@@ -241,10 +241,10 @@ function nextSteps(
   importPath: string,
   scriptPrefix: string | undefined,
 ): string {
-  const command = (task: "compile" | "check") =>
+  const command = (task: "compile" | "check" | "watch") =>
     scriptPrefix
       ? `${pm === "npm" || pm === "bun" ? `${pm} run` : pm} ${scriptPrefix}:${task}`
-      : `${RUNNER[pm]} email-kit ${task}`
+      : `${RUNNER[pm]} email-kit ${task === "watch" ? "compile --watch" : task}`
   return [
     "",
     "Done. Render the welcome email in your server code:",
@@ -259,6 +259,7 @@ function nextSteps(
     "",
     ...columns([
       [command("compile"), "after changing a template or message"],
+      [command("watch"), "recompile on every change, while you work"],
       [command("check"), "the checks, for CI"],
       [`${RUNNER[pm]} email-kit new <id>`, "another template"],
     ]),

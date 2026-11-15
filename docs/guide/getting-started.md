@@ -87,8 +87,9 @@ With your agreement, `init` also:
   a schema library: the one the project already uses (Valibot also gets
   `@valibot/to-json-schema`; ArkType needs nothing more), or `zod` if it uses none. The welcome
   template, and every template `email-kit new` writes, uses that library;
-- adds the scripts `email-kit:compile` and `email-kit:check` (or under the prefix `emails:` or
-  `ek:` if those are taken);
+- adds the scripts `email-kit:compile`, `email-kit:check` and `email-kit:watch`
+  (`email-kit compile --watch`), or the same under the prefix `emails:` or `ek:` if those are
+  taken;
 - adds `"jsx": "react-jsx"` to `tsconfig.json` when it has no JSX setting;
 - marks the `_generated` folder as generated in `.gitattributes`, and ignores it in
   `.prettierignore` and `.eslintignore` if you have them.

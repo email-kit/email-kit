@@ -95,6 +95,7 @@ describe("Next.js with src/", () => {
         build: "next build",
         "email-kit:compile": "email-kit compile",
         "email-kit:check": "email-kit check",
+        "email-kit:watch": "email-kit compile --watch",
       },
       // The generated module imports the runtime when the app runs; the rest is build-time.
       dependencies: { next: "16.4.2", "@email-kit/runtime": expect.any(String) },
@@ -113,6 +114,7 @@ describe("Next.js with src/", () => {
     expect(out).toContain("Compiled 1 template × 1 locale into src/email-kit/_generated")
     expect(out).toContain('  import { emails } from "@/email-kit"')
     expect(out).toContain("  npm run email-kit:compile   after changing a template or message")
+    expect(out).toContain("  npm run email-kit:watch     recompile on every change, while you work")
     expect(out).toContain("  npm run email-kit:check     the checks, for CI")
   })
 
@@ -256,7 +258,7 @@ describe("asking first", () => {
       "Create these files?",
       "package.json: add the devDependencies @email-kit/cli, @email-kit/core, @email-kit/components, zod?",
       "package.json: add the dependency @email-kit/runtime, which the generated module imports when the app runs?",
-      "package.json: add the scripts email-kit:compile and email-kit:check?",
+      "package.json: add the scripts email-kit:compile, email-kit:check and email-kit:watch?",
       'tsconfig.json: add "jsx": "react-jsx" (templates name their JSX runtime themselves)?',
       ".gitattributes: mark src/email-kit/_generated/ as generated?",
     ])
