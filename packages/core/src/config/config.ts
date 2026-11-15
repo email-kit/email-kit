@@ -5,16 +5,25 @@ import type { Sender } from "./sender.ts"
 /** The settings in email-kit.config.ts. Everything is optional; paths are relative to the file. */
 export interface EmailKitConfig {
   /**
-   * The email-kit folder. Default: `src/email-kit` when the project has a `src/` folder,
-   * otherwise `email-kit`.
+   * The email-kit folder. Each template is a folder in it, named by the template id, holding
+   * `template.tsx` and its messages as `messages.<locale>.json`. Folders starting with `_` are
+   * never templates, so shared components can go in `_shared/`. Default: `src/email-kit` when the
+   * project has a `src/` folder, otherwise `email-kit`.
    */
   readonly root?: string
-  /** Template files (`*.tsx`). Default: `<root>/templates`. */
-  readonly templates?: string
-  /** Messages, as `<messages>/<locale>/<template id>.json`. Default: `<root>/messages`. */
-  readonly messages?: string
-  /** The output folder, owned by the compiler. Default: `<root>/compiled`. */
+  /**
+   * The output folder. The compiler owns it: each compile removes what it didn't write. Default:
+   * `<root>/_generated`.
+   */
   readonly out?: string
+  /**
+   * Also write each template's parts as plain files, for backends that don't run the generated
+   * TypeScript module, such as another language or your own template engine:
+   * `<out>/<id>/<locale>.html` and `.txt` with `{{placeholders}}`, `<out>/<id>/schema.json`
+   * (JSON Schema 2020-12), and `<out>/manifest.json`, which lists them with each subject and
+   * preheader. Default: `false`.
+   */
+  readonly contract?: boolean
   /**
    * The generated module's format. `"ts"` writes `index.ts`. `"mjs"` writes
    * `index.mjs` + `index.d.mts`, for projects built with plain `tsc`. Default: `"ts"`.

@@ -1,6 +1,11 @@
-import { has } from "./shared.ts"
+/**
+ * `@email-kit/runtime/locale`: picks the compiled locale for a requested one. The generated module
+ * imports it when it has more than one locale, or `locales.fallback`.
+ *
+ * @packageDocumentation
+ */
 
-// --- inlined into generated modules from here ---
+import { has } from "./shared.ts"
 
 /** CLDR data for resolving a requested locale. Tags are lowercase. */
 export interface LocaleData {

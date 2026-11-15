@@ -1,13 +1,42 @@
 import { describe, expect, it } from "vitest"
 
+import { readContext } from "../src/context.ts"
 import {
   createTemplate,
+  EmailRenderError,
+  FORMAT,
+  fill,
   type Model,
-  project,
-  readContext,
-  resolveLocale,
-  validate,
-} from "../src/module.ts"
+  type TemplateOptions,
+} from "../src/index.ts"
+import { resolveLocale } from "../src/locale.ts"
+import { prepare } from "../src/plural.ts"
+import { project } from "../src/project.ts"
+import { validate } from "../src/validate.ts"
+
+describe("fill", () => {
+  it("writes text, escaped and raw variables, sections and inverted sections", () => {
+    const template = [
+      "Hi ",
+      [0, "name"],
+      " ",
+      [1, "name"],
+      [2, "items", [[0, "."], ","]],
+      [3, "items", ["none"]],
+    ] as const
+    expect(fill(template, { name: "<A&B>", items: ["x", "y"] }, true)).toBe(
+      "Hi &lt;A&amp;B&gt; <A&B>x,y,",
+    )
+    expect(fill(template, { name: "<A&B>", items: [] }, false)).toBe("Hi <A&B> <A&B>none")
+  })
+
+  it("reports a missing value as an EmailRenderError", () => {
+    expect(() => fill([[0, "name"]], {}, true)).toThrow(EmailRenderError)
+    expect(() => fill([[0, "name"]], {}, true)).toThrow(
+      expect.objectContaining({ code: "missing-value", message: 'No value for "name"' }),
+    )
+  })
+})
 
 describe("resolveLocale", () => {
   const locales = ["en", "de", "pt-BR", "pt"]
@@ -182,34 +211,46 @@ describe("createTemplate", () => {
     },
     required: ["name", "currency", "items"],
   }
-  const template = (checkData: boolean) =>
-    createTemplate(
-      "order",
-      "transactional",
-      model,
-      ["en", "de"],
-      {
-        en: {
-          subject: "Order for {{name}}",
-          preheader: "Thanks",
-          // An optional field renders inside its own section, as the compiler emits it.
-          html: "<p>{{name}}</p>{{#items}}<i>{{label}} {{#currency}}{{currency}}{{/currency}}</i>{{/items}}{{^discount}}<b>none</b>{{/discount}}",
-          text: "{{name}} & co",
-        },
-        de: {
-          subject: "Bestellung für {{name}}",
-          preheader: "Danke",
-          html: "<p>{{name}}</p>",
-          text: "{{name}}",
-        },
+  const spec = {
+    id: "order",
+    purpose: "transactional",
+    model,
+    locales: ["en", "de"],
+    parts: {
+      en: {
+        subject: ["Order for ", [0, "name"]],
+        preheader: ["Thanks"],
+        // An optional field renders inside its own section, as the compiler emits it.
+        html: [
+          "<p>",
+          [0, "name"],
+          "</p>",
+          [2, "items", ["<i>", [0, "label"], " ", [2, "currency", [[0, "currency"]]], "</i>"]],
+          [3, "discount", ["<b>none</b>"]],
+        ],
+        text: [[0, "name"], " & co"],
       },
-      {},
-      checkData,
-      {},
-    )
+      de: {
+        subject: ["Bestellung für ", [0, "name"]],
+        preheader: ["Danke"],
+        html: ["<p>", [0, "name"], "</p>"],
+        text: [[0, "name"]],
+      },
+    },
+  } as const
+  /** The template with validation and locale resolution on; `undefined` turns one off. */
+  const template = (
+    options: { [K in keyof TemplateOptions]?: TemplateOptions[K] | undefined } = {},
+  ) =>
+    createTemplate(spec, {
+      format: FORMAT,
+      validate,
+      resolve: (requested, available) => resolveLocale(requested, available),
+      ...options,
+    } as TemplateOptions)
 
   it("renders every part with the right profile and falls back by locale", () => {
-    const email = template(true).render(
+    const email = template().render(
       { name: "A & B", currency: "EUR", items: [{ label: "x" }] },
       { locale: "en-GB" },
     )
@@ -222,12 +263,20 @@ describe("createTemplate", () => {
       meta: { id: "order", locale: "en", purpose: "transactional" },
     })
     expect(
-      template(true).render({ name: "A", currency: "EUR", items: [] }, { locale: "de-AT" }).subject,
+      template().render({ name: "A", currency: "EUR", items: [] }, { locale: "de-AT" }).subject,
     ).toBe("Bestellung für A")
   })
 
+  it("renders in the default locale without a resolver: the module has one locale", () => {
+    const email = template({ resolve: undefined }).render(
+      { name: "A", currency: "EUR", items: [] },
+      { locale: "de" },
+    )
+    expect(email.meta.locale).toBe("en")
+  })
+
   it("lets an item's own optional key win over an outer value of the same name", () => {
-    const html = template(true).render({
+    const html = template().render({
       name: "A",
       currency: "EUR",
       items: [{ label: "x", currency: "USD" }, { label: "y" }],
@@ -236,7 +285,7 @@ describe("createTemplate", () => {
   })
 
   it("rejects invalid data before rendering, with every issue", () => {
-    const run = () => template(true).render({ name: 1, items: [{}] })
+    const run = () => template().render({ name: 1, items: [{}] })
     expect(run).toThrow(
       expect.objectContaining({
         code: "invalid-data",
@@ -249,55 +298,102 @@ describe("createTemplate", () => {
         ],
       }),
     )
-  })
-
-  it("skips validation when turned off, and still offers validate()", () => {
-    // Without validation the renderer is the only guard: it reports the first missing value.
-    expect(() => template(false).render({ items: [] })).toThrow(
-      expect.objectContaining({ code: "missing-value" }),
-    )
-    expect(template(false).validate({ items: [] })).toEqual([
+    expect(template().validate?.({ items: [] })).toEqual([
       { path: "name", message: "is required" },
       { path: "currency", message: "is required" },
     ])
   })
 
+  it("without a validator, renders without checking and has no validate()", () => {
+    const renderOnly = template({ validate: undefined })
+    // The renderer is then the only guard: it reports the first missing value.
+    expect(() => renderOnly.render({ items: [] })).toThrow(
+      expect.objectContaining({ code: "missing-value" }),
+    )
+    expect(renderOnly.validate).toBeUndefined()
+  })
+
   it("rejects a line break in the subject", () => {
-    expect(() => template(true).render({ name: "A\r\nBcc: x", currency: "", items: [] })).toThrow(
+    expect(() => template().render({ name: "A\r\nBcc: x", currency: "", items: [] })).toThrow(
       expect.objectContaining({ code: "subject-line-break" }),
     )
+  })
+
+  it("refuses a module compiled for another format", () => {
+    expect(() => template({ format: FORMAT + 1 })).toThrow(
+      expect.objectContaining({ code: "incompatible-module" }),
+    )
+  })
+
+  it("adds the plural flags with the locale's rule when given them", () => {
+    const counted = createTemplate(
+      {
+        id: "cart",
+        purpose: "transactional",
+        model: { type: "object", properties: { n: { type: "integer" } }, required: ["n"] },
+        locales: ["en"],
+        parts: {
+          en: {
+            subject: [
+              [2, "_ek.plural.n.one", ["one item"]],
+              [2, "_ek.plural.n.other", [[0, "n"], " items"]],
+            ],
+            preheader: [],
+            html: [],
+            text: [],
+          },
+        },
+      },
+      { format: FORMAT, plural: { prepare, rules: { en: (n) => (n === 1 ? "one" : "other") } } },
+    )
+    expect(counted.render({ n: 1 }).subject).toBe("one item")
+    expect(counted.render({ n: 3 }).subject).toBe("3 items")
   })
 })
 
 describe("runtime context (RUN-04)", () => {
   const template = createTemplate(
-    "welcome",
-    "transactional",
     {
-      type: "object",
-      properties: {
-        name: { type: "string" },
-        links: {
-          type: "array",
-          items: { type: "object", properties: { label: { type: "string" } }, required: ["label"] },
+      id: "welcome",
+      purpose: "transactional",
+      model: {
+        type: "object",
+        properties: {
+          name: { type: "string" },
+          links: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: { label: { type: "string" } },
+              required: ["label"],
+            },
+          },
+        },
+        required: ["name", "links"],
+      },
+      locales: ["en"],
+      parts: {
+        en: {
+          subject: ["Welcome"],
+          preheader: [],
+          html: [
+            '<a href="',
+            [0, "_ek.context.siteUrl"],
+            '">',
+            [0, "name"],
+            "</a>",
+            [2, "links", ["<i>", [0, "label"], " ", [0, "_ek.context.siteUrl"], "</i>"]],
+          ],
+          text: [[0, "_ek.context.siteUrl"]],
         },
       },
-      required: ["name", "links"],
     },
-    ["en"],
     {
-      en: {
-        subject: "Welcome",
-        preheader: "",
-        html: '<a href="{{_ek.context.siteUrl}}">{{name}}</a>{{#links}}<i>{{label}} {{_ek.context.siteUrl}}</i>{{/links}}',
-        text: "{{_ek.context.siteUrl}}",
-      },
+      format: FORMAT,
+      validate,
+      context: readContext(["siteUrl"], { siteUrl: "https://shop.example", ignored: "x" }),
     },
-    readContext(["siteUrl"], { siteUrl: "https://shop.example", ignored: "x" }),
-    true,
-    {},
   )
-
   it("fills context placeholders", () => {
     const email = template.render({ name: "Ada", links: [] })
     expect(email.html).toBe('<a href="https://shop.example">Ada</a>')

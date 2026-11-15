@@ -1,8 +1,14 @@
-import { isObject } from "../index.ts"
-import { describe, HTTPS_URL, has } from "./shared.ts"
+/**
+ * `@email-kit/runtime/validate`: checks data against a template's schema. The generated module
+ * imports it unless the project compiles with `validate: false`.
+ *
+ * @packageDocumentation
+ */
+
+import { describe, HTTPS_URL, has, isObject } from "./shared.ts"
 import type { DataIssue, Model } from "./types.ts"
 
-// --- inlined into generated modules from here ---
+export type { DataIssue, Model } from "./types.ts"
 
 function counted(n: number, word: string): string {
   return `${n} ${word}${n === 1 ? "" : "s"}`

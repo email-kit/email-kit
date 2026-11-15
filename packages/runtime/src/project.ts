@@ -1,8 +1,5 @@
-import { isObject } from "../index.ts"
-import { has } from "./shared.ts"
+import { has, isObject } from "./shared.ts"
 import type { Model } from "./types.ts"
-
-// --- inlined into generated modules from here ---
 
 /**
  * A copy of the data with only the fields the schema has, and `null` for missing optional fields,

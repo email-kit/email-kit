@@ -72,7 +72,7 @@ describe("email-kit tokens with a resolver", () => {
     mkdirSync(TMP, { recursive: true })
     const dir = mkdtempSync(join(TMP, "project-"))
     const fixture = fileURLToPath(new URL("../fixtures/project/", import.meta.url))
-    cpSync(fixture, dir, { recursive: true, filter: (path) => !path.includes(`${sep}compiled`) })
+    cpSync(fixture, dir, { recursive: true, filter: (path) => !path.includes(`${sep}_generated`) })
     cpSync(DIR, join(dir, "tokens"), { recursive: true })
     const config = join(dir, "email-kit.config.ts")
     writeFileSync(

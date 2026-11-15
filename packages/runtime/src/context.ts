@@ -1,8 +1,12 @@
-import { isObject } from "../index.ts"
-import { describe, HTTPS_URL } from "./shared.ts"
-import { EmailRenderError } from "./types.ts"
+/**
+ * `@email-kit/runtime/context`: checks the sender values passed to `createEmails()`. The generated
+ * module imports it when the config has sender values set with `{ runtime: true }`.
+ *
+ * @packageDocumentation
+ */
 
-// --- inlined into generated modules from here ---
+import { EmailRenderError } from "./errors.ts"
+import { describe, HTTPS_URL, isObject } from "./shared.ts"
 
 const URL_CONTEXT_KEYS: readonly string[] = ["helpUrl", "privacyUrl", "siteUrl"]
 const EMAIL_ADDRESS = /^[^\s@<>"]+@[^\s@<>"]+$/

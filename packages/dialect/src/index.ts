@@ -1,15 +1,15 @@
 /**
- * mustache-core@1, the placeholder language of compiled email-kit templates: its parser and
- * reference renderer. The conformance suite in conformance/mustache-core/ decides how it behaves.
- *
- * Everything below the marker line, here and in runtime/, is copied into every generated module,
- * which compiles under the host project's tsconfig. So that code has no imports beyond these
- * files, uses nothing newer than ES2020, and stays small.
+ * mustache-core@1, the placeholder language of compiled email-kit templates: its parser, the
+ * compiler from parsed templates to what `@email-kit/runtime` renders, and the reference renderer
+ * (parse, compile, then the runtime's `fill`). The conformance suite in conformance/mustache-core/
+ * decides how it behaves, so it tests the renderer that ships.
  *
  * @packageDocumentation
  */
 
-// --- inlined into generated modules from here ---
+import { type Node as CompiledNode, EmailRenderError, escapeHtml, fill } from "@email-kit/runtime"
+
+export { escapeHtml }
 
 /** The placeholder language compiled templates are written in, and its version. */
 export const DIALECT = "mustache-core@1" as const
@@ -17,7 +17,7 @@ export const DIALECT = "mustache-core@1" as const
 /** How values are written: escaped for `html`, as they are for `text`. */
 export type Profile = "html" | "text"
 
-/** The characters escaped in HTML, and what replaces them. */
+/** The characters escaped in HTML, and what replaces them (the runtime's table, §6). */
 export const HTML_ESCAPES: Readonly<Record<string, string>> = {
   "&": "&amp;",
   "<": "&lt;",
@@ -80,58 +80,6 @@ const UNSUPPORTED_SIGIL = /^[!>=&<$]/
 const PADDING = /^[ \t]+|[ \t]+$/g
 const LINE_END = /[ \t]*(?:\r?\n|$)/y
 
-/**
- * Finds `name` in the innermost context that has its first part, then follows the rest of the
- * path in that context only. `.` is the innermost context itself.
- */
-function lookup(stack: readonly unknown[], name: string): unknown {
-  if (name === ".") return stack[stack.length - 1]
-  const [first = "", ...rest] = name.split(".")
-  for (let i = stack.length - 1; i >= 0; i--) {
-    const context = stack[i]
-    if (isObject(context) && hasOwn(context, first)) {
-      let value = context[first]
-      for (const key of rest) {
-        if (!isObject(value) || !hasOwn(value, key)) return undefined
-        value = value[key]
-      }
-      return value
-    }
-  }
-  return undefined
-}
-
-/** Whether a section shows. Missing, `null`, `false`, `""`, `0` and an empty list don't. */
-function isTruthy(value: unknown, name: string): boolean {
-  if (typeof value === "number") return finite(value, name) !== 0
-  if (Array.isArray(value)) return value.length > 0
-  return !(value === undefined || value === null || value === false || value === "")
-}
-
-/** A value as text. A missing value, or one that isn't a string, number or boolean, throws. */
-function toText(value: unknown, name: string): string {
-  if (typeof value === "string") return value
-  if (typeof value === "number") return String(finite(value, name))
-  if (typeof value === "boolean") return value ? "true" : "false"
-  if (value === undefined || value === null) fail("missing-value", `No value for "${name}"`)
-  return fail("non-scalar-value", `"${name}" is not a string, number or boolean`)
-}
-
-function finite(value: number, name: string): number {
-  if (!Number.isFinite(value)) fail("invalid-number", `"${name}" is ${value}`)
-  return value
-}
-
-function hasOwn(object: object, key: string): boolean {
-  // biome-ignore lint/suspicious/noPrototypeBuiltins: Object.hasOwn needs lib ES2022 in the host
-  return Object.prototype.hasOwnProperty.call(object, key)
-}
-
-/** A plain object: not `null` and not an array. */
-export function isObject(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value)
-}
-
 function isBlank(text: string, from: number, to: number): boolean {
   for (let i = from; i < to; i++) {
     if (text[i] !== " " && text[i] !== "\t") return false
@@ -141,38 +89,6 @@ function isBlank(text: string, from: number, to: number): boolean {
 
 function fail(code: ErrorCode, message: string): never {
   throw new MustacheCoreError(code, message)
-}
-
-/** Renders nodes against a stack of contexts, the innermost last. */
-function renderNodes(nodes: readonly Node[], stack: unknown[], html: boolean): string {
-  let out = ""
-  for (const node of nodes) {
-    if (typeof node === "string") {
-      out += node
-    } else if (node.type === "variable") {
-      const value = toText(lookup(stack, node.name), node.name)
-      out += html && !node.raw ? escapeHtml(value) : value
-    } else {
-      const value = lookup(stack, node.name)
-      const truthy = isTruthy(value, node.name)
-      if (node.type === "inverted") {
-        if (!truthy) out += renderNodes(node.children, stack, html)
-      } else if (Array.isArray(value)) {
-        for (const item of value) {
-          stack.push(item)
-          out += renderNodes(node.children, stack, html)
-          stack.pop()
-        }
-      } else if (value === true) {
-        out += renderNodes(node.children, stack, html)
-      } else if (truthy) {
-        stack.push(value)
-        out += renderNodes(node.children, stack, html)
-        stack.pop()
-      }
-    }
-  }
-  return out
 }
 
 /**
@@ -249,13 +165,39 @@ export function parse(template: string): ParsedTemplate {
   return { nodes }
 }
 
-/** Fills a template with data. Values are escaped for the `html` profile only. */
-export function render(template: string | ParsedTemplate, data: unknown, profile: Profile): string {
+/**
+ * A parsed template in the compact form the generated module carries and `@email-kit/runtime`
+ * renders: text, and `[kind, name, children?]` for each tag (see the runtime's `Node`).
+ */
+export function compile(template: string | ParsedTemplate): CompiledNode[] {
   const { nodes } = typeof template === "string" ? parse(template) : template
-  return renderNodes(nodes, [data], profile !== "text")
+  return nodes.map(compileNode)
 }
 
-/** Escapes `&`, `<`, `>`, `"` and `'` for HTML. */
-export function escapeHtml(value: string): string {
-  return value.replace(/[&<>"']/g, (char) => HTML_ESCAPES[char] as string)
+function compileNode(node: Node): CompiledNode {
+  if (typeof node === "string") return node
+  if (node.type === "variable") return [node.raw ? 1 : 0, node.name]
+  return [node.type === "section" ? 2 : 3, node.name, node.children.map(compileNode)]
+}
+
+/** The render errors the spec defines (§10), which the runtime reports as `EmailRenderError`. */
+const RENDER_CODES: ReadonlySet<string> = new Set([
+  "missing-value",
+  "non-scalar-value",
+  "invalid-number",
+])
+
+/**
+ * Fills a template with data. Values are escaped for the `html` profile only. It's the runtime's
+ * renderer on the compiled template, so errors are `MustacheCoreError`s as the spec names them.
+ */
+export function render(template: string | ParsedTemplate, data: unknown, profile: Profile): string {
+  try {
+    return fill(compile(template), data, profile !== "text")
+  } catch (error) {
+    if (error instanceof EmailRenderError && RENDER_CODES.has(error.code)) {
+      throw new MustacheCoreError(error.code as ErrorCode, error.message)
+    }
+    throw error
+  }
 }

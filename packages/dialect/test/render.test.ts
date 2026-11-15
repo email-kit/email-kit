@@ -4,6 +4,7 @@
 import { describe, expect, it } from "vitest"
 
 import {
+  compile,
   escapeHtml,
   HTML_ESCAPES,
   MustacheCoreError,
@@ -45,6 +46,17 @@ describe("parse", () => {
       code: "mismatched-close",
       message: '"{{/b}}" at offset 10 does not close "a" (offset 3)',
     })
+  })
+})
+
+describe("compile", () => {
+  it("writes the compact form the runtime renders", () => {
+    expect(compile("Hi {{name}}{{#items}}{{{.}}}{{/items}}{{^items}}none{{/items}}")).toEqual([
+      "Hi ",
+      [0, "name"],
+      [2, "items", [[1, "."]]],
+      [3, "items", ["none"]],
+    ])
   })
 })
 

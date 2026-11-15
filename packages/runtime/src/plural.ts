@@ -1,7 +1,12 @@
-import { isObject } from "../index.ts"
-import type { Model } from "./types.ts"
+/**
+ * `@email-kit/runtime/plural`: the flags compiled plurals and selects test. The generated module
+ * imports it when a template has `{n, plural, …}` or `{x, select, …}` in its messages.
+ *
+ * @packageDocumentation
+ */
 
-// --- inlined into generated modules from here ---
+import { EK, isObject } from "./shared.ts"
+import type { Model } from "./types.ts"
 
 /** The flag name for a select value, safe in a tag: `"pro-plan"` → `v_pro_2d_plan`. */
 export function selectKey(value: string): string {
@@ -9,8 +14,6 @@ export function selectKey(value: string): string {
 }
 
 type Tree = Record<string, unknown>
-/** The data key that holds the flags, and the sender values passed at send time. */
-export const EK = "_ek"
 
 /**
  * Adds the plural and select flags that compiled messages test, under `_ek` on each object in the

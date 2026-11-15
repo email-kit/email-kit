@@ -32,4 +32,4 @@ export default defineEmail({
 ```
 
 Templates run at compile time only: your server imports the module `email-kit compile` writes, which
-has no dependencies. MIT licensed.
+needs only [`@email-kit/runtime`](../runtime/README.md) when it runs. MIT licensed.

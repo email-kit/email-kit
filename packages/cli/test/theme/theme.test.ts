@@ -200,7 +200,7 @@ describe("checks beyond colour", () => {
 function project(theme: string): string {
   mkdirSync(TMP, { recursive: true })
   const dir = mkdtempSync(join(TMP, "project-"))
-  cpSync(FIXTURE, dir, { recursive: true, filter: (path) => !path.includes(`${sep}compiled`) })
+  cpSync(FIXTURE, dir, { recursive: true, filter: (path) => !path.includes(`${sep}_generated`) })
   cpSync(join(THEMES, "shadcn-neutral.css"), join(dir, "app.css"))
   const config = join(dir, "email-kit.config.ts")
   writeFileSync(
@@ -244,7 +244,7 @@ describe("compile with a theme", () => {
       "Theme: 0 errors, 4 warnings. Run `email-kit tokens` for details.",
     )
     const theme = JSON.parse(
-      readFileSync(join(dir, "src", "email-kit", "compiled", "theme.json"), "utf8"),
+      readFileSync(join(dir, "src", "email-kit", "_generated", "theme.json"), "utf8"),
     )
     expect(theme).toMatchObject({
       source: "app.css",
@@ -252,10 +252,7 @@ describe("compile with a theme", () => {
       roles: { light: { canvas: "#ffffff" } },
     })
     expect(theme.files).toBeUndefined()
-    const manifest = JSON.parse(
-      readFileSync(join(dir, "src", "email-kit", "compiled", "manifest.json"), "utf8"),
-    )
-    expect(manifest.files).toContain("theme.json")
+    expect(result.files.written).toContain("theme.json")
   })
 
   it("checks the theme config's names, with suggestions", () => {
