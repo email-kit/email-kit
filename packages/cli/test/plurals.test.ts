@@ -111,14 +111,13 @@ function project(
     join(dir, "email-kit.config.ts"),
     `import { defineConfig } from "@email-kit/core"\nexport default defineConfig({ locales: { default: "${locales[0]}", list: ${JSON.stringify(locales)} } })\n`,
   )
-  mkdirSync(join(dir, "src/email-kit/templates"), { recursive: true })
+  mkdirSync(join(dir, "src/email-kit/cart"), { recursive: true })
   writeFileSync(
-    join(dir, "src/email-kit/templates/cart.tsx"),
+    join(dir, "src/email-kit/cart/template.tsx"),
     TEMPLATE(options.schema ?? SCHEMA, options.body ?? BODY),
   )
   for (const [locale, entries] of Object.entries(messages)) {
-    mkdirSync(join(dir, "src/email-kit/messages", locale), { recursive: true })
-    writeFileSync(join(dir, "src/email-kit/messages", locale, "cart.json"), JSON.stringify(entries))
+    writeFileSync(join(dir, `src/email-kit/cart/messages.${locale}.json`), JSON.stringify(entries))
   }
   return dir
 }
@@ -141,8 +140,10 @@ describe("plural and select in a compiled project", () => {
   it("selects categories, exact matches and enum cases at render time, in every locale", async () => {
     const dir = project({ en: EN, ar: AR, ja: JA })
     await compile({ cwd: dir })
-    const out = join(dir, "src/email-kit/compiled")
-    expect(JSON.parse(readFileSync(join(out, "manifest.json"), "utf8")).cldr).toBe(CLDR_VERSION)
+    const out = join(dir, "src/email-kit/_generated")
+    expect(readFileSync(join(out, "index.ts"), "utf8")).toContain(
+      `CLDR ${CLDR_VERSION} plural rules`,
+    )
     // The typed t(): a plural takes a number, a select a string, a plain argument anything.
     const types = readFileSync(join(out, "messages.d.ts"), "utf8")
     expect(types).toContain('readonly "subject": { readonly count: number | Placeholder<number> }')
@@ -206,7 +207,7 @@ describe("plural and select in a compiled project", () => {
     const dir = project({ en: EN })
     await compile({ cwd: dir })
     const { emails } = (await import(
-      pathToFileURL(join(dir, "src/email-kit/compiled/index.ts")).href
+      pathToFileURL(join(dir, "src/email-kit/_generated/index.ts")).href
     )) as {
       emails: { cart: { render(data: unknown): unknown } }
     }

@@ -11,7 +11,7 @@ import { msoFontFamily, PREHEADER_FILLER, renderDocument } from "../src/compiler
 import { loadTemplate } from "../src/compiler/load/index.ts"
 
 const template = fileURLToPath(
-  new URL("fixtures/project/src/email-kit/templates/order-confirmation.tsx", import.meta.url),
+  new URL("fixtures/project/src/email-kit/order-confirmation/template.tsx", import.meta.url),
 )
 const cacheDir = fileURLToPath(new URL("../node_modules/.cache/email-kit/", import.meta.url))
 const messages = {

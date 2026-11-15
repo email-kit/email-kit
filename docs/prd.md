@@ -22,7 +22,7 @@
 
 email-kit turns email templates written in **TSX** into **precompiled, language-neutral
 artifacts**: HTML and plain text with placeholders, subject and preheader, metadata and a JSON
-Schema. It also generates a **self-contained, fully typed TypeScript module** that backend code
+Schema. It also generates a **small, fully typed TypeScript module** that backend code
 imports and renders with one call. It works the way `drizzle-kit generate` does for SQL: you
 author in a friendly typed format, run `email-kit compile`, commit the output, and import it.
 
@@ -70,10 +70,10 @@ check before deploy.
 | G2 | **Type-safe end to end.** Wrong template ids, data fields, locales or message keys don't compile, either in templates or in backend code |
 | G3 | **Works in real inboxes.** Correct in tier-1 clients, in light, dark and forced-dark modes, and with images or `<style>` stripped |
 | G4 | **Accessible and compliant by default.** WCAG 2.2 AA; the legally required footer elements per purpose; no tracking by default |
-| G5 | **Tiny, portable runtime.** The generated module has zero dependencies and no `fs`, and runs on every JS server runtime, including the edge |
+| G5 | **Tiny, portable runtime.** The generated module's one dependency is `@email-kit/runtime`, which has none, no `fs`, and runs on every JS server runtime, including the edge (ADR 0007) |
 | G6 | **Language-neutral contract.** Adding Python, Go or Kotlin later means a new emitter and runtime, with no compiler changes |
 | G7 | **Wrong is loud.** Every rule from the research is a stable, configurable, documented check id |
-| G8 | **Drop-in for any backend repo.** An ordinary devDependency; `init` adds a config file and a folder; no nested projects |
+| G8 | **Drop-in for any backend repo.** Ordinary devDependencies plus the small runtime dependency; `init` adds a config file and a folder; no nested projects |
 
 ### Non-goals
 
@@ -171,7 +171,7 @@ check before deploy.
 | ID | Requirement | Pri | Phase | Source |
 |---|---|---|---|---|
 | PKG-01 | Publish `@email-kit/cli` (bin `email-kit`), `@email-kit/core`, `@email-kit/components` and the unscoped `create-email-kit` | MUST | 1 | D10 |
-| PKG-02 | Users install email-kit as a **devDependency**. The generated output has **no runtime dependency** on any email-kit package | MUST | 1 | D8, R1 |
+| PKG-02 | Users install the toolchain (`cli`, `core`, `components`) as **devDependencies**. The generated output depends on one package, **`@email-kit/runtime`**, installed as a dependency: zero dependencies of its own, size-budgeted per entry point (ADR 0007) | MUST | 1 | D8, R1 |
 | PKG-03 | ESM-only; `exports` map with `types` first; subpath exports; `sideEffects: false`; no top-level await; `engines.node >=22.12` | MUST | 1 | 06 §8.1 |
 | PKG-04 | Build with tsdown; gate CI on `publint` and `@arethetypeswrong/cli` (esm-only profile) | MUST | 1 | 06 §8.2 |
 | PKG-05 | Publish only through npm trusted publishing (OIDC) from GitHub Actions on protected tags, with provenance; no long-lived tokens; 2FA on all maintainer accounts | MUST | 1 | 06 §8.4 |
@@ -316,11 +316,11 @@ check before deploy.
 
 | ID | Requirement | Pri | Phase | Source |
 |---|---|---|---|---|
-| OUT-01 | Output layout `<code root>/email-kit/compiled/`:<br>• `index.ts` and `manifest.json`;<br>• `<id>/<locale>.html`, `<id>/<locale>.txt` and `<id>/schema.json`;<br>• subject and preheader per locale in the module and the manifest | MUST | 1 | D6, OUT |
-| OUT-02 | Every generated file starts with a do-not-edit header. The compiler deletes only files it owns | MUST | 1 | phase-1-scope |
-| OUT-03 | `manifest.json` holds `schemaVersion`, the email-kit version, the dialect, the escaping profile and a signature. Per template it holds the id, purpose, category, flags, locales, byte and character sizes, and hashes | MUST | 1 | R7, P1 FR-54 |
+| OUT-01 | Output layout `<code root>/email-kit/_generated/` (ADR 0007; sources are `<id>/template.tsx` + `<id>/messages.<locale>.json`):<br>• `index.ts` and `messages.d.ts`;<br>• with `contract: true` (opt-in): `manifest.json`, `<id>/<locale>.html`, `<id>/<locale>.txt` and `<id>/schema.json`;<br>• subject and preheader per locale in the module (and the manifest) | MUST | 1 | D6, OUT |
+| OUT-02 | Every generated file starts with a do-not-edit header. The compiler owns the output folder and removes what it didn't write, except names starting with `.`; it refuses a non-empty folder it didn't write (ADR 0007) | MUST | 1 | phase-1-scope |
+| OUT-03 | `manifest.json` (with `contract: true`) holds `schemaVersion`, the email-kit version, the dialect, the escaping profile and a signature. Per template it holds the id, purpose, category, flags, locales, byte and character sizes, and hashes | MUST | 1 | R7, P1 FR-54 |
 | OUT-04 | `schema.json` (JSON Schema 2020-12) per template, from `~standard.jsonSchema` or a converter | MUST | 1 | R4 |
-| OUT-05 | `index.ts` is self-contained, with no imports. It holds types emitted from the schemas, the `TemplateId` and `Locale` unions, the `emails` object (per template: `render()`, raw strings per locale, `meta`) and the inlined renderer | MUST | 1 | architecture-direction |
+| OUT-05 | `index.ts` imports only `@email-kit/runtime`, and only the entry points its templates use; the templates are parsed at compile time (ADR 0007). It holds types emitted from the schemas, the `TemplateId` and `Locale` unions, the `emails` object (per template: `render()`, `validate()`, `meta`) | MUST | 1 | architecture-direction |
 | OUT-06 | Per-template entry points, so a Worker that sends one email bundles one template | SHOULD | 1 | 06 §4 |
 | OUT-07 | `.mjs` + `.d.mts` emission: required for `tsc`-built hosts (the ADR 0004 default), optional elsewhere | MUST | 1 | P1 Q4, ADR 0004 |
 | OUT-08 | An optional, dependency-free runtime validator generated from the JSON Schema | SHOULD | 1 | architecture-direction |
@@ -333,7 +333,7 @@ check before deploy.
 
 | ID | Requirement | Pri | Phase | Source |
 |---|---|---|---|---|
-| RUN-01 | A TS mustache-core renderer (about 2 KB): zero dependencies, web-standard APIs only; runs in Node 22+, Bun, Deno, Workers, Lambda and Next.js server code | MUST | 1 | 06 §4 |
+| RUN-01 | A TS mustache-core renderer, published as `@email-kit/runtime` (core about 1.5 KB, everything about 3 KB, min+gzip): zero dependencies, web-standard APIs only; runs in Node 22+, Bun, Deno, Workers, Lambda and Next.js server code | MUST | 1 | 06 §4 |
 | RUN-02 | Passes 100% of the conformance suite | MUST | 1 | R8 |
 | RUN-03 | A warm render of a 60-line-item receipt takes under 5 ms; a cold import of one template takes under 50 ms | MUST | 1 | P1 NFR-02/03 |
 | RUN-04 | Runtime context: typed platform values that vary by environment (such as the site URL) are passed once (`createEmails({ siteUrl })` or an equivalent) and merged after data, so data can't override them | MUST | 1 | P1 FR-22, P2 siteUrl |
@@ -509,7 +509,7 @@ Not legal advice. Profiles are reviewed by counsel before they ship (03).
 
 | ID | Requirement | Pri | Phase | Source |
 |---|---|---|---|---|
-| NFR-01 | The generated module has zero dependencies and no `fs`, uses web-standard APIs, and works in Node 22+, Bun, Deno, Cloudflare Workers, AWS Lambda and Next.js server code | MUST | 1 | 06 §4 |
+| NFR-01 | The generated module depends only on `@email-kit/runtime`, which has no dependencies; neither uses `fs`. Both use web-standard APIs and work in Node 22+, Bun, Deno, Cloudflare Workers, AWS Lambda and Next.js server code | MUST | 1 | 06 §4 |
 | NFR-02 | The renderer is ≤ 3 KB min+gzip | SHOULD | 1 | 06 §4 |
 | NFR-03 | Render and import performance as in RUN-03 | MUST | 1 | P1 NFR-02/03 |
 | NFR-04 | Compile + check of 50 templates × 2 locales takes under 10 s on a laptop | MUST | 1 | P1 NFR-11 |
@@ -859,7 +859,7 @@ positive and a negative fixture and a docs page (TST-04, CHK-10).
 |---|---|---|---|---|
 | `output.drift` | Committed output equals a fresh compile | E | 1 | P1 FR-62 |
 | `output.manifest` | The manifest lists exactly the compiled templates and locales, with correct hashes | E | 1 | P1 |
-| `output.module-matches` | Strings in `index.ts` equal the `.html`/`.txt` files | E | 1 | P1 bundle check |
+| `output.runtime-dependency` | `@email-kit/runtime` is in the app's dependencies, not devDependencies (replaces `output.module-matches`, which `output.drift` covers; ADR 0007) | E | 1 | ADR 0007 |
 | `output.no-orphans` | No compiled template without a source | E | 1 | P1 |
 | `output.gitignored` | Warns if the output folder is gitignored | W | 1 | phase-1-scope |
 | `output.identifiers` | Derived identifiers are unique and not reserved in target languages | E | 1 | R6 |

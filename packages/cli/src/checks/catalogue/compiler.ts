@@ -10,9 +10,9 @@ export const COMPILER: readonly Check[] = [
   {
     id: "source.id-grammar",
     level: "error",
-    rule: "Template ids are lowercase words joined by hyphens, and unique.",
-    fix: 'Rename the template id, like "password-reset".',
-    compiler: { codes: ["invalid-id", "duplicate-id"] },
+    rule: "Template ids are lowercase words joined by hyphens, unique, and the name of the template's folder.",
+    fix: 'Rename the template id, like "password-reset", and its folder to match.',
+    compiler: { codes: ["invalid-id", "id-mismatch"] },
     run: nothing,
   },
   {

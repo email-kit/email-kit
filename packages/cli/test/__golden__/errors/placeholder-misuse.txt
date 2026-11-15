@@ -1,4 +1,4 @@
-✗ src/email-kit/templates/order-confirmation.tsx:41:40 [placeholder-misuse]
+✗ src/email-kit/order-confirmation/template.tsx:41:40 [placeholder-misuse]
   The placeholder {{qty}} was used as a value at compile time. Templates only place data; they can't compute with it, because the value only exists at send time. Compute the value in the backend and pass it as its own field.
 
     39 |           {(item) => (

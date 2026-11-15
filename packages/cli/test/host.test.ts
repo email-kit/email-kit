@@ -2,7 +2,15 @@
 // compiled emails through `#email-kit`, type-checks against index.d.mts, and runs on plain Node.
 
 import { execFileSync } from "node:child_process"
-import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs"
+import {
+  cpSync,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs"
 import { createRequire } from "node:module"
 import { dirname, join, sep } from "node:path"
 import { fileURLToPath } from "node:url"
@@ -24,7 +32,7 @@ afterAll(() => rmSync(TMP, { recursive: true, force: true }))
 async function mjsProject(type: "module" | "commonjs"): Promise<string> {
   mkdirSync(TMP, { recursive: true })
   const dir = mkdtempSync(join(TMP, `${type}-`))
-  cpSync(FIXTURE, dir, { recursive: true, filter: (path) => !path.includes(`${sep}compiled`) })
+  cpSync(FIXTURE, dir, { recursive: true, filter: (path) => !path.includes(`${sep}_generated`) })
   const config = join(dir, "email-kit.config.ts")
   writeFileSync(
     config,
@@ -37,7 +45,7 @@ async function mjsProject(type: "module" | "commonjs"): Promise<string> {
       name: "host",
       private: true,
       type,
-      imports: { "#email-kit": "./src/email-kit/compiled/index.mjs" },
+      imports: { "#email-kit": "./src/email-kit/_generated/index.mjs" },
     }),
   )
   writeFileSync(
@@ -93,14 +101,12 @@ describe.each(["module", "commonjs"] as const)("a tsc-built %s backend", (type) 
 describe('module: "mjs"', () => {
   it("writes index.mjs and index.d.mts instead of index.ts", async () => {
     const dir = await mjsProject("module")
-    const compiled = join(dir, "src", "email-kit", "compiled")
-    const manifest = JSON.parse(readFileSync(join(compiled, "manifest.json"), "utf8")) as {
-      files: string[]
-    }
-    expect(manifest.files.filter((file) => file.startsWith("index."))).toEqual([
-      "index.d.mts",
-      "index.mjs",
-    ])
+    const compiled = join(dir, "src", "email-kit", "_generated")
+    expect(
+      readdirSync(compiled)
+        .filter((file) => file.startsWith("index."))
+        .sort(),
+    ).toEqual(["index.d.mts", "index.mjs"])
     const js = readFileSync(join(compiled, "index.mjs"), "utf8")
     const dts = readFileSync(join(compiled, "index.d.mts"), "utf8")
     for (const file of [js, dts])
@@ -108,7 +114,7 @@ describe('module: "mjs"', () => {
     expect(js).not.toMatch(/\binterface\b|: string\b|as const/)
     expect(dts).toContain("export declare function createEmails(context: EmailContext): Emails;")
     expect(dts).toContain(
-      'readonly orderConfirmation: EmailTemplate<"order-confirmation", OrderConfirmationData>',
+      'readonly orderConfirmation: EmailTemplate<"order-confirmation", OrderConfirmationData, Locale>',
     )
   })
 })

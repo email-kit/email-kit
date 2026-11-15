@@ -13,6 +13,7 @@
   "dependencies": {
     "@email-kit/components": "workspace:*",
     "@email-kit/core": "workspace:*",
+    "@email-kit/runtime": "workspace:*",
     "zod": "catalog:"
   },
   "devDependencies": {

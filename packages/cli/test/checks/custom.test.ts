@@ -18,7 +18,7 @@ afterAll(() => rmSync(TMP, { recursive: true, force: true }))
 function project(extra: string): string {
   mkdirSync(TMP, { recursive: true })
   const dir = mkdtempSync(join(TMP, "project-"))
-  cpSync(FIXTURE, dir, { recursive: true, filter: (path) => !path.includes(`${sep}compiled`) })
+  cpSync(FIXTURE, dir, { recursive: true, filter: (path) => !path.includes(`${sep}_generated`) })
   writeFileSync(
     join(dir, "email-kit.config.ts"),
     `import { defineCheck, defineConfig } from "@email-kit/core"
@@ -77,7 +77,10 @@ async function check(dir: string): Promise<{ code: number; findings: Finding[]; 
 
 describe("team checks", () => {
   it("run from the config, with locations, levels and their own docs", async () => {
-    const { code, findings } = await check(project("customChecks: [helpLink, shopLink],"))
+    // With contract the .html files exist, so findings in an email carry a line and column.
+    const { code, findings } = await check(
+      project("contract: true,\n  customChecks: [helpLink, shopLink],"),
+    )
     const team = findings.filter((f) => f.id.startsWith("acme."))
     expect(team.map((f) => [f.id, f.level, f.subject.line !== undefined, f.docs])).toEqual([
       ["acme.help-link", "warn", false, "https://wiki.acme.test/email/help-link"],

@@ -18,11 +18,17 @@ describe("email-kit compile --watch", () => {
   it("recompiles on changes, reports errors and recovers", { timeout: 30_000 }, async () => {
     mkdirSync(TMP, { recursive: true })
     const dir = mkdtempSync(join(TMP, "project-"))
-    cpSync(FIXTURE, dir, { recursive: true, filter: (path) => !path.includes(`${sep}compiled`) })
+    cpSync(FIXTURE, dir, { recursive: true, filter: (path) => !path.includes(`${sep}_generated`) })
     const emailKit = join(dir, "src", "email-kit")
+    // With contract, the subject and the parts are files to read back.
+    const config = join(dir, "email-kit.config.ts")
+    writeFileSync(
+      config,
+      readFileSync(config, "utf8").replace("locales:", "contract: true,\n  locales:"),
+    )
     const outcomes: Outcome[] = []
     const subject = () =>
-      JSON.parse(readFileSync(join(emailKit, "compiled", "manifest.json"), "utf8")).templates[0]
+      JSON.parse(readFileSync(join(emailKit, "_generated", "manifest.json"), "utf8")).templates[0]
         .locales.en.subject
 
     let watcher: Watcher | undefined
@@ -34,7 +40,7 @@ describe("email-kit compile --watch", () => {
       await new Promise((resolve) => setTimeout(resolve, 300))
 
       // A message edit recompiles.
-      const messages = join(emailKit, "messages", "en", "order-confirmation.json")
+      const messages = join(emailKit, "order-confirmation", "messages.en.json")
       writeFileSync(
         messages,
         readFileSync(messages, "utf8").replace("Order {order} confirmed", "Your order {order}"),
@@ -44,7 +50,7 @@ describe("email-kit compile --watch", () => {
       })
 
       // A broken template reports the error and keeps watching.
-      const template = join(emailKit, "templates", "order-confirmation.tsx")
+      const template = join(emailKit, "order-confirmation", "template.tsx")
       const source = readFileSync(template, "utf8")
       writeFileSync(template, source.replace("<Card>", "<Card"))
       await vi.waitFor(() => expect(outcomes.at(-1)).toHaveProperty("error"), { timeout: 5000 })
@@ -59,7 +65,7 @@ describe("email-kit compile --watch", () => {
       await vi.waitFor(
         () =>
           expect(
-            readFileSync(join(emailKit, "compiled", "order-confirmation", "en.html"), "utf8"),
+            readFileSync(join(emailKit, "_generated", "order-confirmation", "en.html"), "utf8"),
           ).toContain("padding:32px"),
         { timeout: 5000 },
       )

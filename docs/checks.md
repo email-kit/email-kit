@@ -165,9 +165,9 @@ variant instead of the compiled templates (each render then has `fixture`), or `
 ### source.id-grammar
 **Default:** error
 
-**Rule:** Template ids are lowercase words joined by hyphens, and unique. Enforced when compiling: the compile fails with `invalid-id` or `duplicate-id`, which `email-kit check` reports as this check.
+**Rule:** Template ids are lowercase words joined by hyphens, unique, and the name of the template's folder. Enforced when compiling: the compile fails with `invalid-id` or `id-mismatch`, which `email-kit check` reports as this check.
 
-**Fix:** Rename the template id, like "password-reset".
+**Fix:** Rename the template id, like "password-reset", and its folder to match.
 
 ### source.fixture-valid
 **Default:** error
@@ -832,23 +832,23 @@ variant instead of the compiled templates (each render then has `fixture`), or `
 ### output.manifest
 **Default:** error
 
-**Rule:** The manifest lists exactly the compiled templates and locales, and its hashes match the files.
+**Rule:** With `contract: true`, the manifest lists exactly the compiled templates and locales, and its hashes match the files.
 
 **Fix:** Don't edit compiled files by hand: change the template or messages and run `email-kit compile`.
-
-### output.module-matches
-**Default:** error
-
-**Rule:** The templates inside the generated module equal the .html and .txt files beside it.
-
-**Fix:** Run `email-kit compile`: the module and the files must come from the same compile.
 
 ### output.no-orphans
 **Default:** error
 
-**Rule:** Every compiled template in the output folder has a source template.
+**Rule:** Every template folder in the output folder has a source template.
 
 **Fix:** Delete the folder, or restore its template: the module may still export a template that no longer exists.
+
+### output.runtime-dependency
+**Default:** error
+
+**Rule:** `@email-kit/runtime` is in the app's dependencies, not its devDependencies: the generated module imports it when the app runs.
+
+**Fix:** Install it as a dependency: `npm install @email-kit/runtime` (or your package manager's equivalent). Production installs leave devDependencies out.
 
 ### output.gitignored
 **Default:** warning

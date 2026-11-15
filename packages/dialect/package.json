@@ -2,7 +2,7 @@
   "name": "@email-kit/dialect",
   "version": "0.0.0",
   "private": true,
-  "description": "mustache-core: the placeholder dialect of compiled email-kit templates. Reference renderer and escaping table. Internal: its source is inlined into generated modules.",
+  "description": "mustache-core: the placeholder dialect of compiled email-kit templates. Parser, compiler to the runtime's form, and reference renderer. Internal: the CLI bundles it.",
   "license": "MIT",
   "type": "module",
   "sideEffects": false,
@@ -10,14 +10,6 @@
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
-    },
-    "./module": {
-      "types": "./dist/module.d.ts",
-      "default": "./dist/module.js"
-    },
-    "./source": {
-      "types": "./dist/source.d.ts",
-      "default": "./dist/source.js"
     },
     "./package.json": "./package.json"
   },
@@ -28,9 +20,12 @@
     "node": ">=22.12"
   },
   "scripts": {
-    "build": "tsdown && node scripts/embed-source.mjs",
+    "build": "tsdown",
     "typecheck": "tsc -p tsconfig.json",
     "test": "vitest run"
+  },
+  "dependencies": {
+    "@email-kit/runtime": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "catalog:",

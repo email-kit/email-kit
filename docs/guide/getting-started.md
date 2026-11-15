@@ -1,8 +1,8 @@
 # Getting started
 
-email-kit compiles TSX email templates into a typed module with no dependencies. Your server
-imports that module and calls `render()`; the templates and the email-kit packages are only needed
-when you compile.
+email-kit compiles TSX email templates into a typed module. Your server imports that module and
+calls `render()`. At runtime it needs one small package, `@email-kit/runtime`; the templates and
+the other email-kit packages are only needed when you compile.
 
 You need Node.js 22.12 or later for the CLI, and a project with a `package.json`.
 
@@ -38,7 +38,7 @@ The host decides how your app imports the emails:
 | Host | Import | How |
 |---|---|---|
 | A bundler or Bun, with a `tsconfig.json` | `@/email-kit` | Your `@/*` alias if it already reaches the folder; otherwise `init` adds the path `@/email-kit` to `tsconfig.json` |
-| A `tsc` build run with `node` | `#email-kit` | `"imports"` in `package.json`, pointing at `compiled/index.mjs`; the config gets `module: "mjs"` |
+| A `tsc` build run with `node` | `#email-kit` | `"imports"` in `package.json`, pointing at `_generated/index.mjs`; the config gets `module: "mjs"` |
 | Node type stripping | `#email-kit` | `"imports"` in `package.json`, pointing at the folder's `index.ts` |
 | Anything else | `./email-kit` | A relative import |
 
@@ -63,29 +63,37 @@ In a project with a `src/` folder:
 ```
 email-kit.config.ts                 the config: locales, sender values, import path
 src/email-kit/
-  index.ts                          re-exports ./compiled: what your app imports
-  templates/welcome.tsx             a template
-  messages/en/welcome.json          its copy
-  compiled/                         written by `email-kit compile`; don't edit
+  index.ts                          re-exports ./_generated: what your app imports
+  welcome/                          a template: one folder each, named by its id
+    template.tsx                    the template
+    messages.en.json                its copy, one file per locale
+  _generated/                       written by `email-kit compile`; don't edit
 ```
+
+A folder holding `template.tsx` is a template. Folders whose names start with `_`, such as
+`_shared/` for components the templates import, never are.
 
 The folder is the first free one of `email-kit`, `email-templates` and `emails` in the code root.
 Without a `src/` folder it sits at the project root.
 
 With your agreement, `init` also:
 
-- adds `@email-kit/cli`, `@email-kit/core` and `@email-kit/components` as devDependencies, with
+- adds `@email-kit/runtime` as a dependency, and `@email-kit/cli`, `@email-kit/core` and
+  `@email-kit/components` as devDependencies, with
   a schema library: the one the project already uses (Valibot also gets
   `@valibot/to-json-schema`; ArkType needs nothing more), or `zod` if it uses none. The welcome
   template, and every template `email-kit new` writes, uses that library;
 - adds the scripts `email-kit:compile` and `email-kit:check` (or under the prefix `emails:` or
   `ek:` if those are taken);
 - adds `"jsx": "react-jsx"` to `tsconfig.json` when it has no JSX setting;
-- marks the compiled folder as generated in `.gitattributes`, and ignores it in
+- marks the `_generated` folder as generated in `.gitattributes`, and ignores it in
   `.prettierignore` and `.eslintignore` if you have them.
 
-The packages are devDependencies because nothing at runtime imports them: the compiled module is
-self-contained.
+Only `@email-kit/runtime` is a dependency, because the generated module imports it when your app
+runs: it renders the compiled templates, has no dependencies of its own, and adds about 1.5 KB to
+3 KB to a bundle, minified and gzipped. The rest is only needed to compile, so a production install
+without devDependencies leaves it out. `email-kit check` fails if the runtime is missing or a
+devDependency (`output.runtime-dependency`).
 
 ## Compile
 
@@ -93,17 +101,17 @@ self-contained.
 npx email-kit compile
 ```
 
-It writes the `compiled/` folder:
+It writes the `_generated/` folder:
 
 ```
-compiled/
+_generated/
   index.ts                the module your app imports (index.mjs + index.d.mts with module: "mjs")
   messages.d.ts           the types that make t() typed in templates
-  manifest.json           what was compiled, with hashes
-  welcome/
-    en.html, en.txt       the HTML and plain-text parts, with {{placeholders}}
-    schema.json           the data schema, as JSON Schema 2020-12
 ```
+
+That's all your app needs. The compiler owns the folder: each compile removes anything it didn't
+write. For a backend that doesn't run the module, `contract: true` also writes each email's parts
+as files; see [Other backends](sending.md#other-backends).
 
 | Flag | Does |
 |---|---|
@@ -116,11 +124,11 @@ compiled/
 [error reference](../errors.md) explains each one.
 
 Keep `messages.d.ts` in your TypeScript project (it is, if your `tsconfig.json` includes the
-`compiled/` folder): it gives `t()` its keys and parameter types.
+`_generated/` folder): it gives `t()` its keys and parameter types.
 
 ### Commit the output, or compile in the build
 
-By default `email-kit check` expects the compiled folder to be committed, so deploys need no
+By default `email-kit check` expects the `_generated` folder to be committed, so deploys need no
 compile step: `output.drift` fails when it is out of date, and `output.gitignored` warns when it
 is ignored. If you'd rather compile in your build (`"build": "email-kit compile && next build"`),
 gitignore the folder and turn that check off with your reason (see
@@ -174,8 +182,8 @@ and exits 1 when a `tokens.*` check fails at error level.
 npx email-kit new password-reset
 ```
 
-`new` creates `templates/password-reset.tsx` with a schema, a fixture and two components, and a
-message file for every locale in the config. Ids are lowercase words joined by hyphens; an id
+`new` creates the folder `password-reset/`, with a `template.tsx` holding a schema, a fixture and
+two components, and a `messages.<locale>.json` for every locale in the config. Ids are lowercase words joined by hyphens; an id
 that's in use is refused, never overwritten. The template becomes `emails.passwordReset` after
 the next compile.
 

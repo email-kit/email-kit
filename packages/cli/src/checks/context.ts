@@ -1,6 +1,11 @@
 import { spawnSync } from "node:child_process"
+import { existsSync, readFileSync } from "node:fs"
+import { dirname, join } from "node:path"
 
-import { createTemplate } from "@email-kit/dialect/module"
+import { compile } from "@email-kit/dialect"
+import { createTemplate, FORMAT } from "@email-kit/runtime"
+import { resolveLocale } from "@email-kit/runtime/locale"
+import { prepare } from "@email-kit/runtime/plural"
 
 import { type BuiltProject, outputFiles } from "../compiler/build.ts"
 import { modelOf } from "../compiler/emit/types.ts"
@@ -27,10 +32,17 @@ interface Parts {
  */
 export async function contextOf(project: BuiltProject): Promise<CheckContext> {
   const { config } = project
+  const sourceOf = new Map(project.templates.map((t) => [t.id, t.file]))
   const checked = (template: string, locale: string, parts: Parts): CheckedEmail => ({
     template,
     locale,
-    file: relativePath(config.dir, `${config.out}/${template}/${locale}.html`),
+    file: relativePath(
+      config.dir,
+      config.contract
+        ? `${config.out}/${template}/${locale}.html`
+        : (sourceOf.get(template) as string),
+    ),
+    htmlFile: config.contract,
     subject: parts.subject,
     preheader: parts.preheader,
     html: parts.html,
@@ -58,16 +70,24 @@ export async function contextOf(project: BuiltProject): Promise<CheckContext> {
   )
   const rendered: CheckedEmail[] = []
   for (const template of project.templates) {
-    const parts = Object.fromEntries(template.emails.map((email) => [email.locale, partsOf(email)]))
+    const parts = Object.fromEntries(
+      template.emails.map((email) => [email.locale, compiledPartsOf(email)]),
+    )
+    // As the generated module renders it, without validation: generated variants break it.
     const runtime = createTemplate(
-      template.id,
-      template.purpose,
-      modelOf(template.model),
-      config.locales,
-      parts,
-      values,
-      false,
-      plurals,
+      {
+        id: template.id,
+        purpose: template.purpose,
+        model: modelOf(template.model),
+        locales: config.locales,
+        parts,
+      },
+      {
+        format: FORMAT,
+        context: values,
+        plural: { prepare, rules: plurals },
+        resolve: (requested, available) => resolveLocale(requested, available),
+      },
     )
     const fixtures = await fixturesWithVariants(template.schema, template.model, template.fixtures)
     for (const fixture of fixtures) {
@@ -100,6 +120,7 @@ export async function contextOf(project: BuiltProject): Promise<CheckContext> {
       expected: outputFiles(project),
       gitignored:
         spawnSync("git", ["check-ignore", "-q", config.out], { cwd: config.dir }).status === 0,
+      runtime: runtimeDependency(config.dir),
     },
     templates: project.templates.map((t) => ({
       id: t.id,
@@ -116,9 +137,34 @@ export async function contextOf(project: BuiltProject): Promise<CheckContext> {
   }
 }
 
-/** Just the four parts of an email. */
-function partsOf({ subject, preheader, html, text }: Parts): Parts {
-  return { subject, preheader, html, text }
+/** The four parts of an email, compiled for the runtime as the generated module carries them. */
+function compiledPartsOf({ subject, preheader, html, text }: Parts) {
+  return {
+    subject: compile(subject),
+    preheader: compile(preheader),
+    html: compile(html),
+    text: compile(text),
+  }
+}
+
+/** Where the nearest package.json at or above `dir` lists `@email-kit/runtime`. */
+function runtimeDependency(dir: string): CheckContext["output"]["runtime"] {
+  for (let folder = dir; ; folder = dirname(folder)) {
+    const file = join(folder, "package.json")
+    if (existsSync(file)) {
+      let pkg: Record<string, Record<string, unknown> | undefined>
+      try {
+        pkg = JSON.parse(readFileSync(file, "utf8"))
+      } catch {
+        return undefined
+      }
+      const section = (["dependencies", "devDependencies"] as const).find(
+        (name) => pkg[name]?.["@email-kit/runtime"] !== undefined,
+      )
+      return { file: relativePath(dir, file) || "package.json", section: section ?? "missing" }
+    }
+    if (dirname(folder) === folder) return undefined
+  }
 }
 
 /** A stand-in for a sender value the backend passes at send time. */

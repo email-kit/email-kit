@@ -18,9 +18,9 @@ afterAll(() => rmSync(TMP, { recursive: true, force: true }))
 function project(edit: { config?: (s: string) => string; template?: (s: string) => string } = {}) {
   mkdirSync(TMP, { recursive: true })
   const dir = mkdtempSync(join(TMP, "project-"))
-  cpSync(FIXTURE, dir, { recursive: true, filter: (path) => !path.includes(`${sep}compiled`) })
+  cpSync(FIXTURE, dir, { recursive: true, filter: (path) => !path.includes(`${sep}_generated`) })
   const config = join(dir, "email-kit.config.ts")
-  const template = join(dir, "src/email-kit/templates/order-confirmation.tsx")
+  const template = join(dir, "src/email-kit/order-confirmation/template.tsx")
   writeFileSync(config, (edit.config ?? ((s) => s))(readFileSync(config, "utf8")))
   writeFileSync(template, (edit.template ?? ((s) => s))(readFileSync(template, "utf8")))
   return dir
@@ -87,10 +87,13 @@ describe("email-kit check builds the pseudo-locales", () => {
 describe("locales.pseudo ships them", () => {
   it("compiles en-XA and ar-XB from the default locale, right to left for ar-XB", async () => {
     const dir = project({
-      config: (s) => s.replace('list: ["en", "de"]', 'list: ["en", "de"], pseudo: true'),
+      config: (s) =>
+        s
+          .replace('list: ["en", "de"]', 'list: ["en", "de"], pseudo: true')
+          .replace("locales:", "contract: true,\n  locales:"),
     })
     await compile({ cwd: dir })
-    const out = join(dir, "src/email-kit/compiled")
+    const out = join(dir, "src/email-kit/_generated")
     const xa = readFileSync(join(out, "order-confirmation/en-XA.html"), "utf8")
     expect(xa).toContain('<html lang="en-XA" dir="ltr"')
     expect(xa).toContain("[Ţĥáñķš, {{customerName}}! ")

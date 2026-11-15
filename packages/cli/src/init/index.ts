@@ -4,7 +4,10 @@ import { dirname, join, posix, relative } from "node:path"
 
 import { compileWithConfig, summarize } from "../compiler/build.ts"
 import { loadConfig } from "../compiler/config/index.ts"
+import { GENERATED_FOLDER } from "../compiler/config/paths.ts"
+import { isGeneratedFolder } from "../compiler/output/write.ts"
 import { formatError } from "../compiler/problems/index.ts"
+import { TEMPLATE_FILE } from "../compiler/project/layout.ts"
 import { isDirectory, toPosix } from "../paths.ts"
 import { type Change, plannedChanges } from "./changes.ts"
 import { detectProject, findProject, type PackageManager, type Project } from "./detect.ts"
@@ -116,10 +119,10 @@ export async function init(options: InitOptions, io: InitIo): Promise<number> {
     },
     { path: posix.join(folder, "index.ts"), content: indexFile(strategy) },
     {
-      path: posix.join(folder, "templates/welcome.tsx"),
+      path: posix.join(folder, "welcome", TEMPLATE_FILE),
       content: welcomeTemplate(project.schemaLibrary ?? "zod"),
     },
-    { path: posix.join(folder, "messages/en/welcome.json"), content: WELCOME_MESSAGES },
+    { path: posix.join(folder, "welcome/messages.en.json"), content: WELCOME_MESSAGES },
   ]
   const { changes, scriptPrefix } = plannedChanges(project, folder, strategy)
 
@@ -266,18 +269,9 @@ function columns(rows: readonly [string, string][]): string[] {
   return rows.map(([command, note]) => `  ${command.padEnd(width)}   ${note}`)
 }
 
-/** Whether a folder is email-kit's: its compiled/manifest.json carries email-kit's signature. */
+/** Whether a folder is email-kit's: its output folder was written by email-kit. */
 function isOurs(folder: string): boolean {
-  try {
-    const manifest = JSON.parse(
-      readFileSync(join(folder, "compiled/manifest.json"), "utf8"),
-    ) as Record<string, unknown>
-    return (
-      typeof manifest.emailKit === "string" && String(manifest.dialect).startsWith("mustache-core")
-    )
-  } catch {
-    return false
-  }
+  return isGeneratedFolder(join(folder, GENERATED_FOLDER))
 }
 
 /** The product name for the config, from the package name: `@acme/web-app` → `Web App`. */

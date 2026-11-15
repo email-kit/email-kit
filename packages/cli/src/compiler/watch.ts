@@ -20,7 +20,7 @@ export interface Watcher {
 
 /** What a watch looks at, as the last compile left it. */
 interface Watched {
-  /** The templates and messages folders, watched with everything inside them. */
+  /** The email-kit folder, watched with everything inside it. */
   readonly folders: readonly string[]
   /** The other files a compile read: the config, theme files, and modules templates import. */
   readonly files: ReadonlySet<string>
@@ -32,8 +32,8 @@ interface Watched {
  * `email-kit compile --watch`: recompiles when a template, a component it imports, a message file
  * or the config changes. Each run is a full compile.
  *
- * The templates and messages folders are watched recursively, and every other source file through
- * its folder. Folders are watched rather than files, because editors often save by renaming over a
+ * The email-kit folder is watched recursively, and every other source file through its folder.
+ * Folders are watched rather than files, because editors often save by renaming over a
  * file, which ends a watch on it. The config is loaded first, so its folders are watched even when
  * a template fails. Until a compile succeeds, the project folder is watched for the config.
  *
@@ -61,7 +61,7 @@ export async function watchProject(options: WatchOptions): Promise<Watcher> {
     running = true
     try {
       const config = await loadConfig(options)
-      const folders = [config.templates, config.messages]
+      const folders = [config.root]
       watched = { folders, files: new Set([...watched.files, config.file]), out: config.out }
       const result = await compileWithConfig(config)
       const sources = result.templates.flatMap((template) => template.sources)
@@ -128,9 +128,9 @@ export async function watchProject(options: WatchOptions): Promise<Watcher> {
 }
 
 /**
- * The folders to watch, each with whether to watch it recursively: the templates and messages
- * folders that exist, recursively, then the folder of each other file, on its own. With nothing to
- * watch yet, the project folder is watched for a config to appear.
+ * The folders to watch, each with whether to watch it recursively: the email-kit folder, if it
+ * exists, recursively, then the folder of each other file, on its own. With nothing to watch yet,
+ * the project folder is watched for a config to appear.
  */
 function foldersToWatch(watched: Watched, cwd: string): Map<string, boolean> {
   const wanted = new Map<string, boolean>()
@@ -145,8 +145,8 @@ function foldersToWatch(watched: Watched, cwd: string): Map<string, boolean> {
 }
 
 /**
- * Whether a change should start a compile: anything in the templates or messages folder, or a file
- * the last compile read. The output folder and `node_modules`, where bundles are cached, are
+ * Whether a change should start a compile: anything in the email-kit folder, or a file the last
+ * compile read. The output folder and `node_modules`, where bundles are cached, are
  * written by the compile itself, so they never count.
  */
 function isRelevant(watched: Watched, path: string): boolean {

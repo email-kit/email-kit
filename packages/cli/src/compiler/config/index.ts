@@ -19,14 +19,15 @@ export interface ResolvedConfig {
   readonly file: string
   /** The folder holding the config file. Every configured path is relative to it. */
   readonly dir: string
-  /** The email-kit folder. Defaults to `src/email-kit`, or `email-kit` without a `src` folder. */
+  /**
+   * The email-kit folder, holding a folder per template. Defaults to `src/email-kit`, or
+   * `email-kit` without a `src` folder.
+   */
   readonly root: string
-  /** The template files' folder. Defaults to `<root>/templates`. */
-  readonly templates: string
-  /** The message catalogues' folder. Defaults to `<root>/messages`. */
-  readonly messages: string
-  /** The output folder the compiler owns. Defaults to `<root>/compiled`. */
+  /** The output folder the compiler owns. Defaults to `<root>/_generated`. */
   readonly out: string
+  /** Whether to also write the parts, schemas and manifest as plain files. */
+  readonly contract: boolean
   /** Every locale to compile, the default first. */
   readonly locales: readonly string[]
   /** `locales.fallback`: each requested tag, and the compiled locale it goes to. */
@@ -61,9 +62,17 @@ export const CONFIG_FILES: readonly string[] = [
 
 /** The top-level config options. */
 const KEYS: readonly string[] = [
-  ...["root", "templates", "messages", "out", "module", "perTemplateEntries", "validate"],
+  ...["root", "out", "contract", "module", "perTemplateEntries", "validate"],
   ...["sender", "theme", "locales", "checks", "customChecks", "importPath"],
 ]
+
+/** Options that no longer exist, refused with how to move to the folder-per-template layout. */
+const REMOVED_KEYS: readonly string[] = ["templates", "messages"]
+
+/** Why `templates` and `messages` are refused: each template's folder holds both now. */
+const REMOVED_PATH =
+  "removed: each template is a folder in root, <root>/<id>/template.tsx, with its messages " +
+  "beside it as messages.<locale>.json"
 
 /**
  * Finds the config file, or uses `config`, then loads and validates it. It's loaded with the same
@@ -108,11 +117,16 @@ export function resolveConfig(
   }
 
   const problems: Problems = []
-  checkKeys(value, KEYS, "", problems)
+  for (const key of REMOVED_KEYS) if (key in value) problems.push(`${key}: ${REMOVED_PATH}`)
+  const current = Object.fromEntries(
+    Object.entries(value).filter(([key]) => !REMOVED_KEYS.includes(key)),
+  )
+  checkKeys(current, KEYS, "", problems)
   const dir = dirname(file)
   const paths = readPaths(value, dir, problems)
   const module = readModule(value.module, problems)
   const importPath = readImportPath(value.importPath, problems)
+  const contract = readBoolean(value, "contract", false, problems)
   const perTemplateEntries = readBoolean(value, "perTemplateEntries", false, problems)
   const validate = readBoolean(value, "validate", true, problems)
   const sender = readSender(value.sender, problems)
@@ -131,6 +145,7 @@ export function resolveConfig(
     file,
     dir,
     ...paths,
+    contract,
     locales,
     localeFallback,
     module,

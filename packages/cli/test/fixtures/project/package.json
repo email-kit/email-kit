@@ -1,0 +1,7 @@
+{
+  "name": "shop-example",
+  "private": true,
+  "dependencies": {
+    "@email-kit/runtime": "workspace:*"
+  }
+}

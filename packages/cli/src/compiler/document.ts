@@ -62,6 +62,16 @@ const FILLER_COUNT = 100
 /** About 480 bytes a line, well under email's 998-byte line limit. */
 const FILLER_PER_LINE = 25
 
+/**
+ * The fillers after the preheader, in lines. It's the same in every email, so the generated module
+ * writes it once.
+ */
+export const PREHEADER_PADDING: string = Array.from(
+  { length: Math.ceil(FILLER_COUNT / FILLER_PER_LINE) },
+  (_, line) =>
+    PREHEADER_FILLER.repeat(Math.min(FILLER_PER_LINE, FILLER_COUNT - line * FILLER_PER_LINE)),
+).join("\n")
+
 /** Stops classic Outlook scaling the email on high-DPI Windows displays. */
 const DPI =
   "<!--[if mso]><noscript><xml><o:OfficeDocumentSettings><o:PixelsPerInch>96</o:PixelsPerInch>" +
@@ -231,12 +241,8 @@ function container(
 
 /** The preheader: hidden text that inbox lists show after the subject, followed by the filler. */
 function preheader(node: IrNode): string {
-  const lines: string[] = []
-  for (let i = 0; i < FILLER_COUNT; i += FILLER_PER_LINE) {
-    lines.push(PREHEADER_FILLER.repeat(Math.min(FILLER_PER_LINE, FILLER_COUNT - i)))
-  }
   return (
     '<div style="display:none;max-height:0;overflow:hidden;mso-hide:all" aria-hidden="true">' +
-    `${renderHtml(node)}\n${lines.join("\n")}</div>`
+    `${renderHtml(node)}\n${PREHEADER_PADDING}</div>`
   )
 }

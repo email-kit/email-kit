@@ -26,7 +26,7 @@
   },
   "files": [
     "generated.check.ts",
-    "fixtures/project/src/email-kit/compiled/index.ts",
-    "fixtures/project/src/email-kit/compiled/messages.d.ts"
+    "fixtures/project/src/email-kit/_generated/index.ts",
+    "fixtures/project/src/email-kit/_generated/messages.d.ts"
   ]
 }

@@ -1,6 +1,7 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs"
 import { join } from "node:path"
 
+import { GENERATED_FOLDER } from "../compiler/config/paths.ts"
 import { VERSION } from "../version.ts"
 import { dependenciesOf, type Project } from "./detect.ts"
 import { type ImportStrategy, SUBPATH } from "./imports.ts"
@@ -10,7 +11,7 @@ import { schemaDependencies } from "./scaffold.ts"
 /** A change `init` proposes to a file the project already has, applied only if the user agrees. */
 export interface Change {
   /** What kind of change it is, so `init` knows which were applied. */
-  readonly id: "dependencies" | "scripts" | "imports" | "jsx" | "paths" | "ignore"
+  readonly id: "dependencies" | "runtime" | "scripts" | "imports" | "jsx" | "paths" | "ignore"
   /** The file it changes, relative to the project. */
   readonly file: string
   /** What it does, for the plan and the question. */
@@ -28,14 +29,50 @@ export interface PlannedChanges {
 /** The prefixes `init` tries for its scripts, in order. */
 const SCRIPT_PREFIXES = ["email-kit", "emails", "ek"]
 
+/** The package the generated module imports at runtime. */
+const RUNTIME = "@email-kit/runtime"
+
+/**
+ * Adds `@email-kit/runtime` to `dependencies`, or moves it there from `devDependencies`, keeping
+ * its version. Nothing when it's already a dependency.
+ */
+function runtimeChange(
+  pkg: Record<string, unknown>,
+  editPackage: ReturnType<typeof packageEditor>,
+): Change | undefined {
+  const section = (name: string) => pkg[name] as Record<string, string> | undefined
+  if (section("dependencies")?.[RUNTIME]) return undefined
+  const dev = section("devDependencies")?.[RUNTIME]
+  return {
+    id: "runtime",
+    file: "package.json",
+    summary: dev
+      ? `move ${RUNTIME} to dependencies: the app imports it when it runs`
+      : `add the dependency ${RUNTIME}, which the generated module imports when the app runs`,
+    apply: editPackage((json) => {
+      const dependencies = { ...(json.dependencies as Record<string, string> | undefined) }
+      dependencies[RUNTIME] = dev ?? `^${VERSION}`
+      json.dependencies = Object.fromEntries(
+        Object.entries(dependencies).sort(([a], [b]) => a.localeCompare(b, "en")),
+      )
+      if (dev) {
+        const { [RUNTIME]: _moved, ...rest } = json.devDependencies as Record<string, string>
+        json.devDependencies = rest
+      }
+    }),
+  }
+}
+
 /**
  * The changes `init` makes to existing files:
  * - the devDependencies the project lacks, with the schema library it already uses (Zod when it
  *   has none);
+ * - `@email-kit/runtime` in `dependencies`: the generated module imports it when the app runs, so
+ *   a production install without devDependencies must have it;
  * - `compile` and `check` scripts, under the first prefix that's free or already email-kit's;
  * - the `#email-kit` subpath import, for an app that imports through one;
  * - tsconfig's `jsx`, and the `@/email-kit` path for an alias;
- * - lines marking the compiled folder as generated, in `.gitattributes` and the ignore files the
+ * - lines marking the output folder as generated, in `.gitattributes` and the ignore files the
  *   project has.
  *
  * Each package.json edit keeps the file's indentation and final newline. Each tsconfig edit adds
@@ -72,6 +109,9 @@ export function plannedChanges(
       }),
     })
   }
+
+  const runtime = runtimeChange(pkg, editPackage)
+  if (runtime) changes.push(runtime)
 
   const scripts = (pkg.scripts as Record<string, string> | undefined) ?? {}
   const wanted = (prefix: string): [string, string][] => [
@@ -129,16 +169,16 @@ export function plannedChanges(
     }
   }
 
-  const compiled = `${folder}/compiled`
+  const generated = `${folder}/${GENERATED_FOLDER}`
   const lines: [file: string, line: string, summary: string, create: boolean][] = [
     [
       ".gitattributes",
-      `${compiled}/** linguist-generated=true`,
-      `mark ${compiled}/ as generated`,
+      `${generated}/** linguist-generated=true`,
+      `mark ${generated}/ as generated`,
       true,
     ],
-    [".prettierignore", `${compiled}/`, `ignore ${compiled}/`, false],
-    [".eslintignore", `${compiled}/`, `ignore ${compiled}/`, false],
+    [".prettierignore", `${generated}/`, `ignore ${generated}/`, false],
+    [".eslintignore", `${generated}/`, `ignore ${generated}/`, false],
   ]
   for (const [file, line, summary, create] of lines) {
     const change = appendLine(project.dir, file, line, summary, create)

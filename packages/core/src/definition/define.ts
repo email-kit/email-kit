@@ -58,8 +58,8 @@ export type EmailDefinitionInput<S extends StandardSchemaV1, Id extends string =
   "id" | "schema" | "subject" | "preheader" | "component"
 > & {
   /**
-   * A unique name in lowercase words joined by hyphens, such as `"order-confirmation"`. Your app
-   * sends it as `emails.orderConfirmation`.
+   * A unique name in lowercase words joined by hyphens, such as `"order-confirmation"`. It must be
+   * the name of the template's folder. Your app sends it as `emails.orderConfirmation`.
    */
   readonly id: Id
   /** The shape of the email's data, from Zod, Valibot, ArkType or any Standard Schema library. */
@@ -90,7 +90,8 @@ const DEFINITION = Symbol.for("email-kit.definition")
 const PURPOSES: readonly Purpose[] = ["transactional", "marketing", "consent-request"]
 
 /**
- * Defines an email template. Export it as the default export of a file in the templates folder.
+ * Defines an email template. Export it as the default export of `<id>/template.tsx` in the
+ * email-kit folder; its messages sit beside it as `messages.<locale>.json`.
  *
  * `schema` (Zod, Valibot, ArkType or any Standard Schema library) describes the data the email
  * needs. It types `data` in the template and the `fixtures`, and the generated `render()`
@@ -100,7 +101,8 @@ const PURPOSES: readonly Purpose[] = ["transactional", "marketing", "consent-req
  * placeholders, not real values.
  *
  * @param definition.id - A unique name in lowercase words joined by hyphens, such as
- *   `"order-confirmation"`. Your app sends it as `emails.orderConfirmation`.
+ *   `"order-confirmation"`: the name of the template's folder. Your app sends it as
+ *   `emails.orderConfirmation`.
  * @param definition.purpose - Why the email is sent: `"transactional"`, `"marketing"` or
  *   `"consent-request"`.
  * @param definition.schema - The shape of the email's data.

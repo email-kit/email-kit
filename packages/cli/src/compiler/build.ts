@@ -58,6 +58,7 @@ export function outputFiles(project: BuiltProject): OutputFile[] {
     localeFallback: config.localeFallback,
     configFile: basename(config.file),
     module: config.module,
+    contract: config.contract,
     perTemplateEntries: config.perTemplateEntries,
     validate: config.validate,
     sender: config.sender,
@@ -68,7 +69,8 @@ export function outputFiles(project: BuiltProject): OutputFile[] {
 /** Compiles a project from a config that is already loaded, and writes it to the output folder. */
 export async function compileWithConfig(config: ResolvedConfig): Promise<CompileResult> {
   const project = await buildProject(config)
-  return { ...project, files: writeOutput(config.out, outputFiles(project)) }
+  const label = relative(config.dir, config.out) || "."
+  return { ...project, files: writeOutput(config.out, outputFiles(project), label) }
 }
 
 /** The one-line summary `compile` prints. */

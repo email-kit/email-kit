@@ -1,0 +1,84 @@
+{
+  "name": "@email-kit/runtime",
+  "version": "0.1.0-preview.0",
+  "description": "email-kit runtime: renders the emails `email-kit compile` generates. The only email-kit package an app needs at runtime; zero dependencies.",
+  "keywords": [
+    "email",
+    "email-templates",
+    "typescript",
+    "mustache",
+    "runtime"
+  ],
+  "homepage": "https://github.com/email-kit/email-kit#readme",
+  "bugs": "https://github.com/email-kit/email-kit/issues",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/email-kit/email-kit.git",
+    "directory": "packages/runtime"
+  },
+  "license": "MIT",
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./validate": {
+      "types": "./dist/validate.d.ts",
+      "default": "./dist/validate.js"
+    },
+    "./plural": {
+      "types": "./dist/plural.d.ts",
+      "default": "./dist/plural.js"
+    },
+    "./locale": {
+      "types": "./dist/locale.d.ts",
+      "default": "./dist/locale.js"
+    },
+    "./context": {
+      "types": "./dist/context.d.ts",
+      "default": "./dist/context.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "types": "./dist/index.d.ts",
+  "typesVersions": {
+    "*": {
+      "validate": [
+        "./dist/validate.d.ts"
+      ],
+      "plural": [
+        "./dist/plural.d.ts"
+      ],
+      "locale": [
+        "./dist/locale.d.ts"
+      ],
+      "context": [
+        "./dist/context.d.ts"
+      ]
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=22.12"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsdown",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "check:package": "publint --strict && attw --pack . --profile esm-only"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "rolldown": "catalog:",
+    "tsdown": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

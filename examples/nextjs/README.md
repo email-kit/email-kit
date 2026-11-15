@@ -5,11 +5,11 @@ In this repo the packages come from the workspace; in your app they come from np
 release, `link:` paths to a clone of this repo).
 
 ```
-email-kit.config.ts                    locales and sender values
-src/email-kit/templates/welcome.tsx    the template: schema, fixtures, components, messages
-src/email-kit/messages/en/welcome.json the copy, with an ICU plural
-src/email-kit/compiled/                written by `email-kit compile` (git-ignored)
-src/app/api/email/welcome/route.ts     imports `@/email-kit/compiled` and renders
+email-kit.config.ts                      locales and sender values
+src/email-kit/welcome/template.tsx       the template: schema, fixtures, components, messages
+src/email-kit/welcome/messages.en.json   the copy, with an ICU plural
+src/email-kit/_generated/                written by `email-kit compile` (git-ignored)
+src/app/api/email/welcome/route.ts       imports `@/email-kit/_generated` and renders
 ```
 
 ## Run it
@@ -38,15 +38,16 @@ folder next to your code, uses your `@/*` alias, asks before each change to an e
 compiles once. `email-kit new <id>` adds templates. By hand:
 
 1. Add `@email-kit/cli`, `@email-kit/core`, `@email-kit/components` and `zod` as dev
-   dependencies: templates run only at compile time, and the compiled module imports nothing.
-2. Copy `email-kit.config.ts` and a template. **Start every template with
+   dependencies: templates run only at compile time. Add `@email-kit/runtime` as a dependency:
+   the compiled module imports it to render.
+2. Copy `email-kit.config.ts` and a template folder. **Start every template with
    `/** @jsxImportSource @email-kit/core */`**: Next.js configures JSX for React, and type-checks
    every `.tsx` file.
 3. Compile before Next.js builds: `"build": "email-kit compile && next build"`. While developing,
    run `email-kit compile --watch` next to `next dev`.
 4. `t()` in templates is typed from your messages once you've compiled: a misspelt key or a
-   missing parameter is an editor error. The types are in `src/email-kit/compiled/messages.d.ts`,
+   missing parameter is an editor error. The types are in `src/email-kit/_generated/messages.d.ts`,
    which your tsconfig picks up if it includes the folder (Next.js's default does).
-5. Import `@/email-kit/compiled` in server code (route handlers, server actions) and call
-   `emails.<template>.render(data, { locale })`. The module has no dependencies.
+5. Import `@/email-kit/_generated` in server code (route handlers, server actions) and call
+   `emails.<template>.render(data, { locale })`.
 6. `email-kit check` runs the checks; add it to CI.

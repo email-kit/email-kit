@@ -21,3 +21,4 @@ Drafted in P0-12 from the phase-0 spikes, for the maintainer to accept, change o
 | [0003](0003-runtime-plurals.md) | Runtime plurals: generated CLDR category functions select branches in the data-preparation step | 2026-10-30 |
 | [0004](0004-import-alias-strategy.md) | Import alias per host: `@/email-kit`; `#email-kit` to the source (type stripping) or to generated `.mjs` (`tsc` default); an `email-kit`-condition mapping for build-output-only deployments; relative otherwise | 2026-10-30 |
 | [0005](0005-css-inlining.md) | No HTML inliner: inline styles written at the IR level; juice + `data-embed` only if stylesheets are ever authored | 2026-10-30 |
+| [0007](0007-project-layout-and-runtime-package.md) | A folder per template (`<id>/template.tsx` + `messages.<locale>.json`); a minimal `_generated/`; the runtime as `@email-kit/runtime`, the one small production dependency | 2026-11-15 |

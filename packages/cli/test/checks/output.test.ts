@@ -18,13 +18,21 @@ const FIXTURE = fileURLToPath(new URL("../fixtures/project/", import.meta.url))
 const TMP = fileURLToPath(new URL("../.tmp/output-test/", import.meta.url))
 afterAll(() => rmSync(TMP, { recursive: true, force: true }))
 
-const OUT = "src/email-kit/compiled"
+const OUT = "src/email-kit/_generated"
 const OUTPUT_CHECKS = CATALOGUE.filter((c) => c.id.startsWith("output."))
 
-async function compiledProject(): Promise<string> {
+/** The fixture, compiled; with `contract`, the parts, schemas and manifest are files too. */
+async function compiledProject(contract = false): Promise<string> {
   mkdirSync(TMP, { recursive: true })
   const dir = mkdtempSync(join(TMP, "project-"))
-  cpSync(FIXTURE, dir, { recursive: true, filter: (path) => !path.includes(`${sep}compiled`) })
+  cpSync(FIXTURE, dir, { recursive: true, filter: (path) => !path.includes(`${sep}_generated`) })
+  if (contract) {
+    const config = join(dir, "email-kit.config.ts")
+    writeFileSync(
+      config,
+      readFileSync(config, "utf8").replace("locales:", "contract: true,\n  locales:"),
+    )
+  }
   await compile({ cwd: dir })
   return dir
 }
@@ -38,21 +46,22 @@ async function outputFindings(dir: string, gitignored = false): Promise<string[]
 }
 
 describe("output.*", () => {
-  it("passes on a fresh compile", async () => {
+  it("passes on a fresh compile, with and without contract", async () => {
     expect(await outputFindings(await compiledProject())).toEqual([])
+    expect(await outputFindings(await compiledProject(true))).toEqual([])
   })
 
-  it("output.module-matches: reads the escapes of an .mjs module (\\xA0)", async () => {
+  it("passes on an .mjs module with escapes JSON lacks (\\xA0)", async () => {
     mkdirSync(TMP, { recursive: true })
     const dir = mkdtempSync(join(TMP, "project-"))
-    cpSync(FIXTURE, dir, { recursive: true, filter: (path) => !path.includes(`${sep}compiled`) })
+    cpSync(FIXTURE, dir, { recursive: true, filter: (path) => !path.includes(`${sep}_generated`) })
     const config = join(dir, "email-kit.config.ts")
     writeFileSync(
       config,
       readFileSync(config, "utf8").replace("defineConfig({", 'defineConfig({\n  module: "mjs",'),
     )
     // A non-breaking space, which oxc prints as \xA0 (JSON has no \x escapes).
-    const messages = join(dir, "src/email-kit/messages/en/order-confirmation.json")
+    const messages = join(dir, "src/email-kit/order-confirmation/messages.en.json")
     writeFileSync(
       messages,
       readFileSync(messages, "utf8").replace('"Thanks, {name}!"', '"Thanks,\\u00a0{name}!"'),
@@ -63,8 +72,8 @@ describe("output.*", () => {
   })
 
   it("output.drift: a template changed since the compile", async () => {
-    const dir = await compiledProject()
-    const messages = join(dir, "src/email-kit/messages/en/order-confirmation.json")
+    const dir = await compiledProject(true)
+    const messages = join(dir, "src/email-kit/order-confirmation/messages.en.json")
     writeFileSync(
       messages,
       readFileSync(messages, "utf8").replace("View your order", "See your order"),
@@ -79,17 +88,37 @@ describe("output.*", () => {
     ])
   })
 
-  it("output.manifest and output.module-matches: a compiled file edited by hand", async () => {
+  it("output.drift: a file a fresh compile doesn't write", async () => {
     const dir = await compiledProject()
+    writeFileSync(join(dir, OUT, "manifest.json"), "{}")
+    writeFileSync(join(dir, OUT, ".gitkeep"), "")
+    expect(await outputFindings(dir)).toEqual([
+      "output.drift: manifest.json isn't written by a fresh compile",
+    ])
+  })
+
+  it("output.manifest and output.drift: a compiled file edited by hand", async () => {
+    const dir = await compiledProject(true)
     const html = join(dir, OUT, "order-confirmation/de.html")
     writeFileSync(html, readFileSync(html, "utf8").replace("Danke", "Vielen Dank"))
     const found = await outputFindings(dir)
     expect(found).toContain(
       "output.manifest: order-confirmation/de.html was changed after it was compiled",
     )
-    expect(found).toContain(
-      "output.module-matches: The module's copy of order-confirmation/de.html differs from the file",
-    )
+    expect(found).toContain("output.drift: order-confirmation/de.html differs from a fresh compile")
+  })
+
+  it("output.runtime-dependency: @email-kit/runtime in devDependencies, or missing", async () => {
+    const dir = await compiledProject()
+    const pkg = join(dir, "package.json")
+    writeFileSync(pkg, JSON.stringify({ devDependencies: { "@email-kit/runtime": "^0.1.0" } }))
+    expect(await outputFindings(dir)).toEqual([
+      "output.runtime-dependency: package.json lists @email-kit/runtime in devDependencies: a production install leaves it out",
+    ])
+    writeFileSync(pkg, JSON.stringify({ dependencies: { zod: "^4" } }))
+    expect(await outputFindings(dir)).toEqual([
+      "output.runtime-dependency: package.json doesn't list @email-kit/runtime, which the generated module imports",
+    ])
   })
 
   it("output.no-orphans: compiled output with no template", async () => {
@@ -104,7 +133,7 @@ describe("output.*", () => {
   it("output.drift: never compiled; output.gitignored instead when git ignores it", async () => {
     mkdirSync(TMP, { recursive: true })
     const dir = mkdtempSync(join(TMP, "project-"))
-    cpSync(FIXTURE, dir, { recursive: true, filter: (path) => !path.includes(`${sep}compiled`) })
+    cpSync(FIXTURE, dir, { recursive: true, filter: (path) => !path.includes(`${sep}_generated`) })
     expect(await outputFindings(dir)).toEqual([`output.drift: ${OUT} hasn't been compiled`])
     expect(await outputFindings(dir, true)).toEqual([`output.gitignored: git ignores ${OUT}`])
   })
@@ -114,8 +143,8 @@ describe("checks the compiler enforces", () => {
   it("are reported by email-kit check as findings, with the location", async () => {
     mkdirSync(TMP, { recursive: true })
     const dir = mkdtempSync(join(TMP, "project-"))
-    cpSync(FIXTURE, dir, { recursive: true, filter: (path) => !path.includes(`${sep}compiled`) })
-    const messages = join(dir, "src/email-kit/messages/de/order-confirmation.json")
+    cpSync(FIXTURE, dir, { recursive: true, filter: (path) => !path.includes(`${sep}_generated`) })
+    const messages = join(dir, "src/email-kit/order-confirmation/messages.de.json")
     const json = JSON.parse(readFileSync(messages, "utf8"))
     delete json.view
     writeFileSync(messages, JSON.stringify(json))
@@ -130,7 +159,7 @@ describe("checks the compiler enforces", () => {
     expect(finding).toMatchObject({
       id: "i18n.missing-keys",
       level: "error",
-      subject: { file: "src/email-kit/templates/order-confirmation.tsx", line: expect.any(Number) },
+      subject: { file: "src/email-kit/order-confirmation/template.tsx", line: expect.any(Number) },
       message: expect.stringContaining('Locale "de" has no message "view"'),
     })
   })

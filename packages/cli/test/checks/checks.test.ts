@@ -337,15 +337,31 @@ describe("each check, with one rule broken", () => {
     expect(ids(runChecks(mutated(edit)))).toEqual([id, ...also].sort())
   })
 
-  it("points at the line and column, in the compiled file", () => {
-    const edited = mutated(inBody('<img src="http://x.test/a.png" alt="" width="1" height="1">'))
-    const [finding] = runChecks(edited)
-    const lines = edited.emails[0]?.html.split("\n") ?? []
-    const line = lines.findIndex((l) => l.startsWith('<img src="http://')) + 1
+  it("points at the template, or with contract at the line and column in the .html file", async () => {
+    const img = inBody('<img src="http://x.test/a.png" alt="" width="1" height="1">')
+    const edited = mutated(img)
+    expect(runChecks(edited)[0]?.subject).toEqual({
+      template: "order-confirmation",
+      locale: "en",
+      file: "src/email-kit/order-confirmation/template.tsx",
+    })
+
+    const withFiles = await contextOf({ ...project, config: { ...project.config, contract: true } })
+    const email = withFiles.emails.find((e) => e.locale === "en")
+    expect(email).toMatchObject({
+      file: "src/email-kit/_generated/order-confirmation/en.html",
+      htmlFile: true,
+    })
+    const html = img(email?.html ?? "")
+    const [finding] = runChecks({
+      ...edited,
+      emails: [{ ...(email as CheckedEmail), html, parsed: parseEmail(html) }],
+    })
+    const line = html.split("\n").findIndex((l) => l.startsWith('<img src="http://')) + 1
     expect(finding?.subject).toEqual({
       template: "order-confirmation",
       locale: "en",
-      file: "src/email-kit/compiled/order-confirmation/en.html",
+      file: "src/email-kit/_generated/order-confirmation/en.html",
       line,
       column: 1,
     })
@@ -392,7 +408,7 @@ describe("source checks (UI-01)", () => {
   it("scans the fixture's template and its user component", () => {
     expect(context.sources.map((s) => s.file).sort()).toEqual([
       "src/email-kit/components/Card.tsx",
-      "src/email-kit/templates/order-confirmation.tsx",
+      "src/email-kit/order-confirmation/template.tsx",
     ])
     expect(context.sources.find((s) => s.file.endsWith("Card.tsx"))?.templates).toEqual([
       "order-confirmation",
@@ -484,7 +500,7 @@ describe("source checks (UI-01)", () => {
           {
             id: "welcome",
             purpose: "transactional",
-            file: "src/email-kit/templates/welcome.tsx",
+            file: "src/email-kit/welcome/template.tsx",
             fixtures: [],
             model: { type: "object", nullable: false, properties: [] },
           },
@@ -496,7 +512,7 @@ describe("source checks (UI-01)", () => {
     expect(findings.map((f) => [f.id, f.subject])).toEqual([
       [
         "source.fixture-exists",
-        { template: "welcome", file: "src/email-kit/templates/welcome.tsx" },
+        { template: "welcome", file: "src/email-kit/welcome/template.tsx" },
       ],
     ])
   })
@@ -630,9 +646,9 @@ describe("email-kit check", () => {
   })
 
   it("writes nothing", async () => {
-    const before = readFileSync(`${FIXTURE}src/email-kit/compiled/manifest.json`, "utf8")
+    const before = readFileSync(`${FIXTURE}src/email-kit/_generated/index.ts`, "utf8")
     await run(["check"], capture().io)
-    expect(readFileSync(`${FIXTURE}src/email-kit/compiled/manifest.json`, "utf8")).toBe(before)
+    expect(readFileSync(`${FIXTURE}src/email-kit/_generated/index.ts`, "utf8")).toBe(before)
   })
 })
 

@@ -9,7 +9,7 @@ import { join } from "node:path"
 import { fileURLToPath } from "node:url"
 
 const REPO = fileURLToPath(new URL("..", import.meta.url))
-const PACKAGES = ["core", "components", "cli", "create-email-kit"]
+const PACKAGES = ["runtime", "core", "components", "cli", "create-email-kit"]
 const NEXT_VERSION = "16.4.2"
 const next = process.argv.includes("--next")
 const keep = process.argv.includes("--keep")
@@ -99,6 +99,11 @@ try {
   expect(
     manifest.devDependencies["@email-kit/cli"] === `^${version}`,
     `init added @email-kit/cli ^${version}`,
+  )
+  expect(
+    manifest.dependencies["@email-kit/runtime"] === `^${version}` &&
+      !manifest.devDependencies["@email-kit/runtime"],
+    `init added @email-kit/runtime ^${version} as a dependency, the only runtime one`,
   )
   if (next) {
     const route = join(app, "src/app/api/email/welcome")

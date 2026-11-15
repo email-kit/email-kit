@@ -1,5 +1,5 @@
-✗ src/email-kit/templates/order-confirmation.tsx:51:10 [missing-message]
-  Locale "de" has no message "view": add it to src/email-kit/messages/de/order-confirmation.json
+✗ src/email-kit/order-confirmation/template.tsx:51:10 [missing-message]
+  Locale "de" has no message "view": add it to src/email-kit/order-confirmation/messages.de.json
 
     49 |       </Unless>
     50 |       <Button href={data.orderUrl} title={t("viewTitle", { order: data.orderNumber })}>

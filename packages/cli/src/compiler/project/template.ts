@@ -12,6 +12,7 @@ import { loadTemplate } from "../load/index.ts"
 import { type Field, readSchema } from "../schema/index.ts"
 
 import type { CompiledTemplate, PseudoBuild } from "./index.ts"
+import { idOfTemplateFile } from "./layout.ts"
 import { type Catalogue, readCatalogues } from "./messages.ts"
 
 /**
@@ -28,10 +29,18 @@ export async function compileTemplate(
   pseudo: boolean,
 ): Promise<CompiledTemplate> {
   const { definition, files } = await loadTemplate(file, { cacheDir: config.cacheDir })
+  const folderId = idOfTemplateFile(file)
+  if (definition.id !== folderId) {
+    throw new EmailKitError(
+      "id-mismatch",
+      `The id "${definition.id}" doesn't match its folder "${folderId}": rename the folder to ` +
+        `"${definition.id}", or set id: "${folderId}"`,
+    )
+  }
   const { model, jsonSchema } = await portableSchema(definition.schema, file)
   const fixtures = definition.fixtures ?? {}
   await validateFixtures(definition.schema, fixtures, definition.id)
-  const catalogues = readCatalogues(config, definition.id)
+  const catalogues = readCatalogues(config, file)
   const defaults = catalogues[0]?.messages ?? {}
   const compileLocale = (locale: string, messages: Readonly<Record<string, string>>) =>
     compileEmail(definition, {

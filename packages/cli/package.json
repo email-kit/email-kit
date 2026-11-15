@@ -55,6 +55,7 @@
   "devDependencies": {
     "@email-kit/components": "workspace:*",
     "@email-kit/dialect": "workspace:*",
+    "@email-kit/runtime": "workspace:*",
     "@types/culori": "^4.0.1",
     "@types/node": "catalog:",
     "@valibot/to-json-schema": "catalog:",
