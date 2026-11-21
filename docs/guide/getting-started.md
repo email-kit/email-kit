@@ -13,11 +13,10 @@ such as `apps/api`.
 In your project's folder, run:
 
 ```sh
-npm create email-kit@preview
+npm create email-kit
 ```
 
-While email-kit is in preview its packages are published under the npm tag `preview`, so ask for
-it by name. `npx @email-kit/cli@preview init` does the same.
+`npx @email-kit/cli init` does the same.
 
 It looks at your project (package manager, TypeScript setup, framework, an existing shadcn theme),
 shows what it will create and change, and asks before changing any file you already have. Then it
@@ -25,7 +24,7 @@ installs the packages, compiles once and prints how to render the welcome email.
 into a folder that isn't its own.
 
 To accept every default without being asked, as in CI, pass `--yes`:
-`npm create email-kit@preview -- --yes`. The [CLI reference](../reference/cli.md#init) lists every
+`npm create email-kit -- --yes`. The [CLI reference](../reference/cli.md#init) lists every
 flag and what `init` detects.
 
 ## 2. Look at what it created

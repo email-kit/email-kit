@@ -21,13 +21,13 @@ Errors carry an id in brackets, such as `[placeholder-misuse]`, explained in the
 ## init
 
 ```sh
-npm create email-kit@preview          # runs `email-kit init` without installing the CLI first
-npx @email-kit/cli@preview init
+npm create email-kit          # runs `email-kit init` without installing the CLI first
+npx @email-kit/cli init
 npx email-kit init                    # with the CLI installed
 ```
 
 Run it in the project that sends email; in a monorepo, the app's folder, such as `apps/api`.
-`npm create email-kit` passes its flags on after `--`: `npm create email-kit@preview -- --yes`.
+`npm create email-kit` passes its flags on after `--`: `npm create email-kit -- --yes`.
 
 `init` shows what it will create and change, asks before each change to an existing file, then
 installs, compiles once and prints how to render the welcome email. It never writes into a folder

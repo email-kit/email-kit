@@ -3,13 +3,13 @@
 The `email-kit` command: set up a project, compile TSX email templates to HTML and plain text,
 and check them against email-client, accessibility and copy rules.
 
-> **Preview (0.1).** Usable for transactional email, and changing. Not yet: marketing email
+> **1.0.** Stable for transactional email. Not yet: marketing email
 > (unsubscribe links, multi-column layouts), testing in real email clients (classic Outlook
-> especially), and the preview studio. See [what's in the
-> preview](https://github.com/email-kit/email-kit#status).
+> especially), and the preview studio. See [what 1.0
+> covers](https://github.com/email-kit/email-kit#status).
 
 ```sh
-npx @email-kit/cli@preview init   # or: npm create email-kit@preview
+npx @email-kit/cli init   # or: npm create email-kit
 npx email-kit compile             # templates → a typed module your server imports
 npx email-kit check               # the checks, for CI (exit 1 on errors)
 ```
