@@ -1,6 +1,6 @@
 {
   "name": "create-email-kit",
-  "version": "0.1.0-preview.0",
+  "version": "1.0.0",
   "description": "Set up email-kit in your backend project: npm create email-kit (runs email-kit init)",
   "keywords": [
     "email",

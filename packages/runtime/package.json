@@ -1,6 +1,6 @@
 {
   "name": "@email-kit/runtime",
-  "version": "0.1.0-preview.0",
+  "version": "1.0.0",
   "description": "email-kit runtime: renders the emails `email-kit compile` generates. The only email-kit package an app needs at runtime; zero dependencies.",
   "keywords": [
     "email",

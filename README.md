@@ -14,12 +14,13 @@ WCAG 2.2 AA and carry what the law requires, with a check engine that proves it 
 
 ## Status
 
-**Preview (0.1).** Usable for transactional email in TypeScript backends, and changing.
+**1.0.** Stable for transactional email in TypeScript backends. Breaking changes come only in a
+major release.
 
 Works today:
 
 - `email-kit init` sets up a project and `new` adds templates. Tested end to end with Next.js, a
-  `tsc` build and Node type stripping; Bun and other bundlers are detected but not yet tested. See [`examples/nextjs`](examples/nextjs) and [`examples/playground`](examples/playground).
+  `tsc` build and Node type stripping; Bun and other bundlers are detected but not yet tested.
 - TSX templates with typed data (Zod, Valibot or ArkType schemas) and typed `t()` messages; ICU
   plurals and selects; locale fallback over CLDR; pseudo-locales.
 - Themes from shadcn CSS or DTCG tokens (resolvers too), with contrast checks and authored dark mode.

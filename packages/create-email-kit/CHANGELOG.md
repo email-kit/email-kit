@@ -1,5 +1,30 @@
 # create-email-kit
 
+## 1.0.0
+
+### Major Changes
+
+- First stable release. The packages leave the `preview` tag and are published as `latest`, so
+  `npm create email-kit` and `npm i -D @email-kit/cli` install them without asking for a tag. From
+  here, changes follow semver: a breaking change to the config, the template API or the generated
+  module is a major release.
+  
+  What 1.0 covers: TSX email templates with typed data and messages, compiled to a small module that
+  renders with `@email-kit/runtime`; `email-kit init`, `new`, `compile`, `check` and `tokens`; themes
+  from shadcn CSS or DTCG tokens with dark mode; email-safe components, including a transactional
+  `Footer`; ICU plurals, locale fallback and pseudo-locales. Still to come: marketing email
+  (unsubscribe, multi-column layouts), testing in real email clients, and the preview studio.
+
+### Patch Changes
+
+- Updated dependencies [068d44a]
+- Updated dependencies [3206f9b]
+- Updated dependencies [ab7f248]
+- Updated dependencies [f2127d6]
+- Updated dependencies [068d44a]
+- Updated dependencies
+  - @email-kit/cli@1.0.0
+
 ## 0.1.0-preview.0
 
 ### Minor Changes

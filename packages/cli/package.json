@@ -1,6 +1,6 @@
 {
   "name": "@email-kit/cli",
-  "version": "0.1.0-preview.0",
+  "version": "1.0.0",
   "description": "email-kit CLI: init, compile, check and preview type-safe email templates.",
   "keywords": [
     "email",

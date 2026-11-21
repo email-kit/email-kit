@@ -46,57 +46,50 @@ live in the `catalog:` section of `pnpm-workspace.yaml`.
 
 ## Releasing
 
-Releases are published from CI only, through npm trusted publishing (no tokens): each package
-must have this repository, `.github/workflows/release.yml` and the `npm-publish` environment
-configured as a trusted publisher on npmjs.com.
-
 The five public packages (`@email-kit/core`, `@email-kit/components`, `@email-kit/cli`,
 `@email-kit/runtime`, `create-email-kit`) are versioned together with Changesets (`fixed` in
-`.changeset/config.json`).
+`.changeset/config.json`) and published to the npm dist-tag `latest`. They follow semver from
+1.0.0: a breaking change to the config, the template API or the generated module is a **major**
+release.
 `@email-kit/dialect` is private: it's bundled into the CLI and the generated modules.
 
-### Current state: preview mode
-
-The repository is in Changesets prerelease mode with the tag `preview` (`.changeset/pre.json`), and
-the packages are versioned `0.1.0-preview.0`. Publishing in this mode puts them on the npm dist-tag
-`preview`, not `latest`: people get them only by asking (`npm create email-kit@preview`,
-`npm i -D @email-kit/cli@preview`).
+Releases are published from CI through npm trusted publishing (no tokens): each package must have
+this repository, `.github/workflows/release.yml` and the `npm-publish` environment configured as a
+trusted publisher on npmjs.com. A package has to exist on npm before it can have a trusted
+publisher, so the first release, 1.0.0, is published by hand (below).
 
 ### One-time setup (the maintainer)
 
 1. Create the npm organisation `email-kit` (the `@email-kit` scope), and turn on 2FA for publishing.
 2. Make sure `repository`, `homepage` and `bugs` in each `package.json`, and the docs links the CLI
    prints (`DOCS_URL`, `CHECKS_DOCS_URL`), point at the public repository.
-3. `npm login` on the machine that publishes, or an automation token in CI.
+3. After the first release, add the trusted publisher to each package on npmjs.com.
 
-### Publishing a preview
+### A release
 
 ```sh
+pnpm changeset            # with each change: describe it, choose the bump
+pnpm changeset version    # bumps the five packages, updates each CHANGELOG.md
+```
+
+Commit the version bump and merge it to `main`, then run the Release workflow (Actions → Release →
+Run workflow; it has no `push` trigger for now). It publishes the versions that aren't on npm yet
+and creates the git tags.
+
+### Publishing by hand
+
+For the first release, or while CI is unavailable, from a clean `main`:
+
+```sh
+npm login
 pnpm install
 pnpm turbo run build typecheck test check:package --force   # everything green
-pnpm release                                                # build, then changeset publish
-git push --follow-tags
+pnpm smoke
+pnpm release              # build, then changeset publish (asks for the 2FA code)
+git push origin --tags    # changeset publish creates lightweight tags; --follow-tags skips them
 ```
 
-`changeset publish` publishes only versions that aren't on npm yet, with the `preview` tag, and
-creates the git tags.
-
-### The next preview
-
-```sh
-pnpm changeset            # describe the change; choose the bump
-pnpm changeset version    # → 0.1.0-preview.1, CHANGELOG.md updated
-```
-
-### Leaving preview mode
-
-When a version should become `latest`:
-
-```sh
-pnpm changeset pre exit
-pnpm changeset version    # → 0.1.0
-pnpm release
-```
+`changeset publish` publishes only versions that aren't on npm yet, and creates the git tags.
 
 ### Before any release: the smoke test
 

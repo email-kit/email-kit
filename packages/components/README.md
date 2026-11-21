@@ -5,10 +5,10 @@ your design tokens (shadcn CSS or DTCG): `Text`, `Heading`, `Link`, `Button`, `I
 `Spacer`, `Section`, `List`, `KeyValue`, `Callout`, `OtpCode`, `DataTable`, `LineItems` and
 `Footer`. The compiler centres every email in a fluid container of the theme's width.
 
-> **Preview (0.1).** Usable for transactional email, and changing. Not yet: marketing email
+> **1.0.** Stable for transactional email. Not yet: marketing email
 > (unsubscribe links, multi-column layouts), testing in real email clients (classic Outlook
-> especially), and the preview studio. See [what's in the
-> preview](https://github.com/email-kit/email-kit#status).
+> especially), and the preview studio. See [what 1.0
+> covers](https://github.com/email-kit/email-kit#status).
 
 They follow what email clients are known to support (tables for layout, cell padding instead of
 margins, Outlook's line-height rule, dark-mode classes, right-to-left markup), and the checks

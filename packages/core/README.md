@@ -4,10 +4,10 @@ What templates are written with in [email-kit](https://github.com/email-kit/emai
 `defineEmail`, the JSX runtime, `If`/`Each`/`Unless`, field markers (`url`, `secret`,
 `formatted`), `defineConfig` and `defineCheck`.
 
-> **Preview (0.1).** Usable for transactional email, and changing. Not yet: marketing email
+> **1.0.** Stable for transactional email. Not yet: marketing email
 > (unsubscribe links, multi-column layouts), testing in real email clients (classic Outlook
-> especially), and the preview studio. See [what's in the
-> preview](https://github.com/email-kit/email-kit#status).
+> especially), and the preview studio. See [what 1.0
+> covers](https://github.com/email-kit/email-kit#status).
 
 ```tsx
 /** @jsxImportSource @email-kit/core */

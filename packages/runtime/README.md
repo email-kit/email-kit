@@ -4,8 +4,8 @@ Renders the emails [email-kit](https://github.com/email-kit/email-kit) compiles.
 email-kit package your app needs when it runs, so it's a **dependency**; the CLI, `core` and
 `components` are devDependencies.
 
-> **Preview (0.1).** Usable for transactional email, and changing. See [what's in the
-> preview](https://github.com/email-kit/email-kit#status).
+> **1.0.** Stable for transactional email. See [what 1.0
+> covers](https://github.com/email-kit/email-kit#status).
 
 ```sh
 npm install @email-kit/runtime
