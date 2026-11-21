@@ -1,6 +1,6 @@
 {
   "name": "@email-kit/core",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "email-kit core: defineEmail, the JSX runtime and types for type-safe email templates.",
   "keywords": [
     "email",
@@ -9,7 +9,7 @@
     "typescript",
     "compiler"
   ],
-  "homepage": "https://github.com/email-kit/email-kit#readme",
+  "homepage": "https://email-kit.dev",
   "bugs": "https://github.com/email-kit/email-kit/issues",
   "repository": {
     "type": "git",

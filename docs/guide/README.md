@@ -38,7 +38,7 @@ the HTML part and the plain-text part, which every provider's API takes.
 
 Read the first two pages in order; the rest covers one topic each.
 
-1. [Getting started](getting-started.md): set up a project with `npm create email-kit` compile,
+1. [Getting started](getting-started.md): set up a project with `npm create email-kit`, compile,
    render and send the welcome email.
 2. [Your first email](first-email.md): build an order-shipped email from scratch, with data,
    components, copy, conditions, plurals, a second language and checks.

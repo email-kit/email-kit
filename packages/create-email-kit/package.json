@@ -1,6 +1,6 @@
 {
   "name": "create-email-kit",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Set up email-kit in your backend project: npm create email-kit (runs email-kit init)",
   "keywords": [
     "email",
@@ -9,7 +9,7 @@
     "create",
     "scaffold"
   ],
-  "homepage": "https://github.com/email-kit/email-kit#readme",
+  "homepage": "https://email-kit.dev",
   "bugs": "https://github.com/email-kit/email-kit/issues",
   "repository": {
     "type": "git",

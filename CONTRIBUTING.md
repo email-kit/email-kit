@@ -40,6 +40,8 @@ live in the `catalog:` section of `pnpm-workspace.yaml`.
 
 - Add a changeset for any change that affects a published package: `pnpm changeset`.
 - All five public packages share one version (a Changesets `fixed` group).
+- The five packages have the same README, so npm shows the same page on each: change all five
+  together.
 - A change to compiled HTML output is at least a **minor** release with a changelog line. A
   change to which checks fail is minor and names the check id.
 - A significant design decision gets an ADR in `docs/adr/` (see its README).

@@ -1,5 +1,13 @@
 # @email-kit/runtime
 
+## 1.0.1
+
+### Patch Changes
+
+- d986a7a: Every package's npm page now shows the same README: how to start with `npm create email-kit`, a
+  template, what each package is for and how they fit together, with links to the docs at
+  https://email-kit.dev, which is now each package's homepage.
+
 ## 1.0.0
 
 ### Major Changes

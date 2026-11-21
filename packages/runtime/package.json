@@ -1,6 +1,6 @@
 {
   "name": "@email-kit/runtime",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "email-kit runtime: renders the emails `email-kit compile` generates. The only email-kit package an app needs at runtime; zero dependencies.",
   "keywords": [
     "email",
@@ -9,7 +9,7 @@
     "mustache",
     "runtime"
   ],
-  "homepage": "https://github.com/email-kit/email-kit#readme",
+  "homepage": "https://email-kit.dev",
   "bugs": "https://github.com/email-kit/email-kit/issues",
   "repository": {
     "type": "git",
