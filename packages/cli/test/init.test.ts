@@ -90,6 +90,10 @@ describe("Next.js with src/", () => {
     expect(read(dir, "src/email-kit/index.ts")).toContain('export * from "./_generated"')
     // tsconfig already has jsx and an @/* alias that covers src/email-kit: unchanged.
     expect(read(dir, "tsconfig.json")).toBe(files["tsconfig.json"])
+    // Its JSX is React's, so the template names email-kit's itself.
+    expect(read(dir, "src/email-kit/welcome/template.tsx")).toMatch(
+      /^\/\*\* @jsxImportSource @email-kit\/core \*\/\nimport /,
+    )
     expect(json(dir, "package.json")).toMatchObject({
       scripts: {
         build: "next build",
@@ -169,7 +173,12 @@ describe("a tsc project run with node", () => {
     expect(json(dir, "package.json").imports).toEqual({
       "#email-kit": "./src/email-kit/_generated/index.mjs",
     })
-    expect(json(dir, "tsconfig.json").compilerOptions.jsx).toBe("react-jsx")
+    // No JSX of its own: email-kit's becomes the default, and the template needs no pragma.
+    expect(json(dir, "tsconfig.json").compilerOptions).toMatchObject({
+      jsx: "react-jsx",
+      jsxImportSource: "@email-kit/core",
+    })
+    expect(read(dir, "src/email-kit/welcome/template.tsx")).not.toContain("@jsxImportSource")
     expect(out).toContain('  import { emails } from "#email-kit"')
     writeFileSync(
       join(dir, "dist.mjs"),
@@ -259,11 +268,46 @@ describe("asking first", () => {
       "package.json: add the devDependencies @email-kit/cli, @email-kit/core, @email-kit/components, zod?",
       "package.json: add the dependency @email-kit/runtime, which the generated module imports when the app runs?",
       "package.json: add the scripts email-kit:compile, email-kit:check and email-kit:watch?",
-      'tsconfig.json: add "jsx": "react-jsx" (templates name their JSX runtime themselves)?',
+      'tsconfig.json: add "jsx": "react-jsx" and "jsxImportSource": "@email-kit/core", so templates need no JSX pragma?',
       ".gitattributes: mark src/email-kit/_generated/ as generated?",
     ])
     expect(json(dir, "package.json")).toEqual({ name: "x" })
-    expect(json(dir, "tsconfig.json").compilerOptions.jsx).toBe("react-jsx")
+    expect(json(dir, "tsconfig.json").compilerOptions).toEqual({
+      jsx: "react-jsx",
+      jsxImportSource: "@email-kit/core",
+    })
+    expect(read(dir, "src/email-kit/welcome/template.tsx")).not.toContain("@jsxImportSource")
+  })
+
+  it("keeps the JSX pragma when the tsconfig change is declined", async () => {
+    const dir = project({
+      "package.json": { name: "x" },
+      "tsconfig.json": '{ "compilerOptions": {} }\n',
+      "src/index.ts": "",
+    })
+    const prompter: Prompter = {
+      confirm: async (message) => !message.startsWith("tsconfig.json"),
+      text: async (_m, initial) => initial,
+    }
+    await init(dir, ["--no-install"], prompter)
+    expect(read(dir, "tsconfig.json")).toBe('{ "compilerOptions": {} }\n')
+    expect(read(dir, "src/email-kit/welcome/template.tsx")).toMatch(/^\/\*\* @jsxImportSource /)
+  })
+
+  it("adds only jsx to a solution-style tsconfig, and keeps the pragma", async () => {
+    const tsconfig = '{ "files": [], "references": [{ "path": "./tsconfig.app.json" }] }\n'
+    const dir = project({
+      "package.json": { name: "x", devDependencies: { vite: "8.0.0" } },
+      "tsconfig.json": tsconfig,
+      "tsconfig.app.json": '{ "compilerOptions": { "jsx": "react-jsx" }, "include": ["src"] }\n',
+      "src/main.tsx": "",
+    })
+    const { out } = await init(dir)
+    expect(out).toContain(
+      'tsconfig.json: add "jsx": "react-jsx" (templates name their JSX runtime themselves)',
+    )
+    expect(json(dir, "tsconfig.json").compilerOptions).not.toHaveProperty("jsxImportSource")
+    expect(read(dir, "src/email-kit/welcome/template.tsx")).toMatch(/^\/\*\* @jsxImportSource /)
   })
 
   it("moves @email-kit/runtime from devDependencies to dependencies, keeping its version", async () => {
@@ -450,6 +494,22 @@ describe("email-kit new", () => {
       expect.stringContaining('The template "welcome" exists (src/email-kit/welcome)'),
     ])
     expect(tree(dir)).toEqual(before)
+  })
+
+  it("writes the JSX pragma only when the tsconfig doesn't set email-kit's JSX", async () => {
+    const dir = await setUp()
+    await cli(dir, ["new", "order-shipped"])
+    expect(read(dir, "src/email-kit/order-shipped/template.tsx")).toMatch(
+      /^\/\*\* @jsxImportSource @email-kit\/core \*\/\n/,
+    )
+    writeFileSync(
+      join(dir, "tsconfig.json"),
+      '{ "compilerOptions": { "jsx": "react-jsx", "jsxImportSource": "@email-kit/core", "paths": { "@/*": ["./src/*"] } } }\n',
+    )
+    await cli(dir, ["new", "password-reset"])
+    const template = read(dir, "src/email-kit/password-reset/template.tsx")
+    expect(template).toMatch(/^import /)
+    expect(await cli(dir, ["compile", "--quiet"])).toMatchObject({ code: 0 })
   })
 
   it("ignores other folders and files in the email-kit folder", async () => {

@@ -12,6 +12,7 @@ import {
   templateFolder,
 } from "../compiler/project/layout.ts"
 import { isPseudo } from "../i18n/pseudo.ts"
+import { JSX_PRAGMA, needsPragma } from "../jsx.ts"
 import { findProject, type SchemaLibrary, schemaLibraryOf } from "./detect.ts"
 import { schemaSource } from "./scaffold.ts"
 
@@ -45,7 +46,7 @@ export async function newTemplate(
   const messageFiles = locales.map((locale) => messagesFile(folder, locale))
 
   mkdirSync(folder, { recursive: true })
-  writeFileSync(templateFile, template(id, library))
+  writeFileSync(templateFile, template(id, library, needsPragma(folder)))
   for (const file of messageFiles) writeFileSync(file, MESSAGES)
   const property = identifiersFor(id).property
   const from = config.importPath ?? `./${basename(config.root)}`
@@ -94,11 +95,14 @@ function schemaLibrary(config: Parameters<typeof readLayout>[0]): SchemaLibrary 
   }
 }
 
-/** The new template: a heading, some copy and the footer, with a `name` field in its schema. */
-function template(id: string, library: SchemaLibrary): string {
+/**
+ * The new template: a heading, some copy and the footer, with a `name` field in its schema. With
+ * `pragma` it starts with the JSX pragma, for a tsconfig that doesn't make email-kit's JSX the
+ * default.
+ */
+function template(id: string, library: SchemaLibrary, pragma: boolean): string {
   const { import: schemaImport, schema } = schemaSource(library, [{ name: "name", kind: "text" }])
-  return `/** @jsxImportSource @email-kit/core */
-import { Footer, Heading, Text } from "@email-kit/components"
+  return `${pragma ? `${JSX_PRAGMA}\n` : ""}import { Footer, Heading, Text } from "@email-kit/components"
 import { defineEmail } from "@email-kit/core"
 ${schemaImport}
 

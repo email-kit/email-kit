@@ -1,4 +1,5 @@
 import { GENERATED_FOLDER } from "../compiler/config/paths.ts"
+import { JSX_PRAGMA } from "../jsx.ts"
 import type { SchemaLibrary } from "./detect.ts"
 import type { ImportStrategy } from "./imports.ts"
 
@@ -168,12 +169,11 @@ const WELCOME_SCHEMA: Readonly<Record<SchemaLibrary, string>> = {
 /**
  * The welcome template `init` creates, with its schema written for the project's library. Besides
  * plain copy it uses a select, two plurals, `If`, `Unless` and `Each`, and its fixtures between
- * them take every branch, so the preview and `check` show each one. It starts with the JSX
- * pragma, so it type-checks whatever the project's tsconfig says about JSX.
+ * them take every branch, so the preview and `check` show each one. With `pragma` it starts with
+ * the JSX pragma, so it type-checks whatever the project's tsconfig says about JSX.
  */
-export function welcomeTemplate(library: SchemaLibrary): string {
-  return `/** @jsxImportSource @email-kit/core */
-import { Button, Footer, Heading, List, ListItem, Text } from "@email-kit/components"
+export function welcomeTemplate(library: SchemaLibrary, pragma: boolean): string {
+  return `${pragma ? `${JSX_PRAGMA}\n` : ""}import { Button, Footer, Heading, List, ListItem, Text } from "@email-kit/components"
 import { defineEmail, Each, If, Unless, url } from "@email-kit/core"
 ${SCHEMA_SOURCE[library].import}
 

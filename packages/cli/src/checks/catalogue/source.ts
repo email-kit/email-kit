@@ -1,3 +1,6 @@
+import { dirname } from "node:path"
+
+import { IMPORT_SOURCE, JSX_PRAGMA, needsPragma, pragmaOf } from "../../jsx.ts"
 import { isNode, type Node, type SourceFile, staticString, walk } from "../source.ts"
 import type { Check } from "../types.ts"
 import { NAMED_COLOURS, type Report } from "./util.ts"
@@ -218,6 +221,32 @@ export const SOURCE: readonly Check[] = [
                 : undefined
           if (literal !== undefined && !/^[01](px)?$/.test(literal.trim())) {
             problem(`\`${key}\` is a literal size`, node.start)
+          }
+        }
+      }),
+  },
+  {
+    id: "source.jsx-pragma",
+    level: "warn",
+    rule: `Templates and user components with JSX start with \`${JSX_PRAGMA}\`, unless their tsconfig sets \`"jsxImportSource": "${IMPORT_SOURCE}"\`.`,
+    fix: `Add \`${JSX_PRAGMA}\` as the file's first line. The compile is right either way; without it, TypeScript and your editor check the file against another framework's JSX types.`,
+    run: (context, report) =>
+      eachSource(context.sources, report, (source, problem) => {
+        if (!/\.[jt]sx$/.test(source.path)) return
+        const pragma = pragmaOf(source.text)
+        if (pragma?.source === IMPORT_SOURCE) return
+        if (pragma) {
+          problem(`the JSX pragma names ${pragma.source}, not ${IMPORT_SOURCE}`, pragma.at)
+          return
+        }
+        if (!needsPragma(dirname(source.path))) return
+        for (const { node } of walk(source.program())) {
+          if (node.type === "JSXElement" || node.type === "JSXFragment") {
+            problem(
+              `JSX without the pragma, and the tsconfig doesn't set ${IMPORT_SOURCE}`,
+              node.start,
+            )
+            return
           }
         }
       }),

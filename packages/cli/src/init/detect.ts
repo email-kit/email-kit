@@ -45,9 +45,12 @@ export interface TsConfig {
   readonly compilerOptions?: {
     readonly rootDir?: string
     readonly jsx?: string
+    readonly jsxImportSource?: string
     readonly paths?: Readonly<Record<string, readonly string[]>>
   }
   readonly include?: readonly string[]
+  /** Set in a solution-style tsconfig, whose files belong to the configs it references. */
+  readonly references?: readonly unknown[]
 }
 
 /** Tools whose runtime resolves tsconfig paths, so an `@/…` alias works in the app. */

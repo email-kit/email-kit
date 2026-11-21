@@ -85,7 +85,10 @@ With your agreement, `init` also:
 - adds the scripts `email-kit:compile`, `email-kit:check` and `email-kit:watch`
   (`email-kit compile --watch`), or the same under the prefix `emails:` or `ek:` if those are
   taken;
-- adds `"jsx": "react-jsx"` to `tsconfig.json` when it has no JSX setting;
+- adds `"jsx": "react-jsx"` to `tsconfig.json` when it has no JSX setting. Such a project has no
+  JSX of its own, so `init` also adds `"jsxImportSource": "@email-kit/core"`, and templates don't
+  need the `@jsxImportSource` line. A solution-style tsconfig (one with `references`) gets only
+  `jsx`;
 - marks the `_generated` folder as generated in `.gitattributes`, and ignores it in
   `.prettierignore` and `.eslintignore` if you have them.
 
@@ -102,7 +105,8 @@ npx email-kit new password-reset
 Creates the folder `password-reset/` in the email-kit folder, with a `template.tsx` holding a
 schema, a fixture and a few components, and a `messages.<locale>.json` for every locale in the
 config. Ids are lowercase words joined by hyphens. An id that's in use is refused, never
-overwritten. The template becomes `emails.passwordReset` after the next compile.
+overwritten. The template becomes `emails.passwordReset` after the next compile. It starts with
+the `@jsxImportSource` line unless your tsconfig sets `"jsxImportSource": "@email-kit/core"`.
 
 | Flag | Does |
 |---|---|

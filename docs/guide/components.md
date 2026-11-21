@@ -377,7 +377,8 @@ passes the same checks if it carries those classes.
 ## Your own components
 
 A component is a function that takes props and returns JSX. Start the file with
-`/** @jsxImportSource @email-kit/core */`, keep it in a folder whose name starts with `_`, such as `_shared/`, and import it
+`/** @jsxImportSource @email-kit/core */` (unless your tsconfig sets
+[`jsxImportSource`](templates.md) to email-kit), keep it in a folder whose name starts with `_`, such as `_shared/`, and import it
 with a relative path. Build on the components above where you can: `check` expects text to have a px
 line height and an explicit direction, which `Text` and `Heading` give you.
 

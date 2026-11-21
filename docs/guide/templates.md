@@ -40,9 +40,14 @@ export default defineEmail({
 })
 ```
 
-The first line, `/** @jsxImportSource @email-kit/core */`, tells TypeScript and the compiler which
-JSX runtime the file uses, so templates type-check in a project whose JSX is set up for React. If
-your `tsconfig.json` already sets `"jsxImportSource": "@email-kit/core"`, you can leave it out.
+The first line, `/** @jsxImportSource @email-kit/core */`, tells TypeScript and your editor which
+JSX types the file uses, so templates type-check in a project whose JSX is set up for React or
+Hono. The compiler always uses email-kit's JSX, with or without it.
+
+You can leave it out when your `tsconfig.json` sets `"jsxImportSource": "@email-kit/core"`.
+`init` sets it for you when the project has no JSX of its own, and `email-kit new` writes the line
+only when the tsconfig doesn't set it. `check` warns about a template or component that needs the
+line and lacks it ([`source.jsx-pragma`](../reference/checks.md#sourcejsx-pragma)).
 
 ## How templates run
 
@@ -257,5 +262,6 @@ Data passed to `render()` can't override a sender value.
 ## Your own components
 
 A component is a function that returns JSX. Put it in a folder whose name starts with `_`, such as
-`_shared/`, and import it with a relative path (`../_shared/Card`); start the file with the same `@jsxImportSource` comment. See
+`_shared/`, and import it with a relative path (`../_shared/Card`). Start the file with the same `@jsxImportSource` comment
+when your templates need it. See
 [Components](components.md#your-own-components).

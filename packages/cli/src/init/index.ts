@@ -8,6 +8,7 @@ import { GENERATED_FOLDER } from "../compiler/config/paths.ts"
 import { isGeneratedFolder } from "../compiler/output/write.ts"
 import { formatError } from "../compiler/problems/index.ts"
 import { TEMPLATE_FILE } from "../compiler/project/layout.ts"
+import { needsPragma } from "../jsx.ts"
 import { isDirectory, toPosix } from "../paths.ts"
 import { type Change, plannedChanges } from "./changes.ts"
 import { detectProject, findProject, type PackageManager, type Project } from "./detect.ts"
@@ -46,10 +47,13 @@ interface InitIo {
   readonly color?: boolean
 }
 
-/** A file `init` creates, relative to the project. */
+/**
+ * A file `init` creates, relative to the project. A function as `content` is called after the
+ * changes are applied: the welcome template's JSX pragma depends on the tsconfig change.
+ */
 interface NewFile {
   readonly path: string
-  readonly content: string
+  readonly content: string | (() => string)
 }
 
 /** The names `init` tries for its folder in the code root, in order. */
@@ -120,7 +124,8 @@ export async function init(options: InitOptions, io: InitIo): Promise<number> {
     { path: posix.join(folder, "index.ts"), content: indexFile(strategy) },
     {
       path: posix.join(folder, "welcome", TEMPLATE_FILE),
-      content: welcomeTemplate(project.schemaLibrary ?? "zod"),
+      content: () =>
+        welcomeTemplate(project.schemaLibrary ?? "zod", needsPragma(join(dir, folder, "welcome"))),
     },
     { path: posix.join(folder, "welcome/messages.en.json"), content: WELCOME_MESSAGES },
   ]
@@ -131,16 +136,19 @@ export async function init(options: InitOptions, io: InitIo): Promise<number> {
     io.out("Nothing was changed.")
     return 0
   }
-  for (const file of files) {
-    mkdirSync(dirname(join(dir, file.path)), { recursive: true })
-    writeFileSync(join(dir, file.path), file.content)
-  }
   const applied: Change[] = []
   for (const change of changes) {
     if (await ask(`${change.file}: ${change.summary}?`)) {
       change.apply()
       applied.push(change)
     }
+  }
+  for (const file of files) {
+    mkdirSync(dirname(join(dir, file.path)), { recursive: true })
+    writeFileSync(
+      join(dir, file.path),
+      typeof file.content === "string" ? file.content : file.content(),
+    )
   }
   const has = (id: Change["id"]) => applied.some((change) => change.id === id)
 

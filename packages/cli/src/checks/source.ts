@@ -17,6 +17,8 @@ export interface Node {
 export interface SourceFile {
   /** Relative to the project folder. */
   readonly file: string
+  /** The absolute path. */
+  readonly path: string
   readonly text: string
   /** The templates that bundle it. */
   readonly templates: readonly string[]
@@ -35,6 +37,7 @@ export function sourceFile(path: string, dir: string, templates: readonly string
   let program: Node | undefined
   return {
     file: relativePath(dir, path),
+    path,
     text,
     templates,
     program() {

@@ -204,6 +204,13 @@ variant instead of the compiled templates (each render then has `fixture`), or `
 
 **Fix:** Sizes come from the type scale: use Text or Heading with a size, or the font() helper.
 
+### source.jsx-pragma
+**Default:** warning
+
+**Rule:** Templates and user components with JSX start with `/** @jsxImportSource @email-kit/core */`, unless their tsconfig sets `"jsxImportSource": "@email-kit/core"`.
+
+**Fix:** Add `/** @jsxImportSource @email-kit/core */` as the file's first line. The compile is right either way; without it, TypeScript and your editor check the file against another framework's JSX types.
+
 ### source.fixture-exists
 **Default:** error
 

@@ -2,6 +2,7 @@ import { existsSync, readFileSync, writeFileSync } from "node:fs"
 import { join } from "node:path"
 
 import { GENERATED_FOLDER } from "../compiler/config/paths.ts"
+import { IMPORT_SOURCE } from "../jsx.ts"
 import { VERSION } from "../version.ts"
 import { dependenciesOf, type Project } from "./detect.ts"
 import { type ImportStrategy, SUBPATH } from "./imports.ts"
@@ -71,7 +72,8 @@ function runtimeChange(
  *   a production install without devDependencies must have it;
  * - `compile`, `check` and `watch` scripts, under the first prefix that's free or already email-kit's;
  * - the `#email-kit` subpath import, for an app that imports through one;
- * - tsconfig's `jsx`, and the `@/email-kit` path for an alias;
+ * - tsconfig's `jsx` (with `jsxImportSource` when the project has no JSX of its own), and the
+ *   `@/email-kit` path for an alias;
  * - lines marking the output folder as generated, in `.gitattributes` and the ignore files the
  *   project has.
  *
@@ -152,12 +154,25 @@ export function plannedChanges(
     const editTsconfig = (path: string[], value: unknown) => () => {
       writeFileSync(tsconfig.file, insertProperty(readFileSync(tsconfig.file, "utf8"), path, value))
     }
-    if (tsconfig.json.compilerOptions?.jsx === undefined) {
+    const options = tsconfig.json.compilerOptions
+    if (options?.jsx === undefined) {
+      // Without `jsx` the project has no JSX of its own, so email-kit's can be the default and
+      // templates can leave out the pragma. A solution-style tsconfig doesn't type-check the
+      // templates (the configs it references do), so it gets only `jsx`, as before.
+      const solution = tsconfig.json.references !== undefined
+      const setSource = !solution && options?.jsxImportSource === undefined
+      const addJsx = editTsconfig(["compilerOptions", "jsx"], "react-jsx")
+      const addSource = editTsconfig(["compilerOptions", "jsxImportSource"], IMPORT_SOURCE)
       changes.push({
         id: "jsx",
         file: "tsconfig.json",
-        summary: 'add "jsx": "react-jsx" (templates name their JSX runtime themselves)',
-        apply: editTsconfig(["compilerOptions", "jsx"], "react-jsx"),
+        summary: setSource
+          ? `add "jsx": "react-jsx" and "jsxImportSource": "${IMPORT_SOURCE}", so templates need no JSX pragma`
+          : 'add "jsx": "react-jsx" (templates name their JSX runtime themselves)',
+        apply: () => {
+          addJsx()
+          if (setSource) addSource()
+        },
       })
     }
     if (strategy.kind === "alias" && strategy.addPath) {

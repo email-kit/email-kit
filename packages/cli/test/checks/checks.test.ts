@@ -394,6 +394,11 @@ describe("source checks (UI-01)", () => {
   /** A context whose only source is this TSX, and no emails. */
   const sources = (tsx: string) => {
     mkdirSync(TMP, { recursive: true })
+    // email-kit's JSX by default, so only the check under test reports.
+    writeFileSync(
+      join(TMP, "tsconfig.json"),
+      '{ "compilerOptions": { "jsxImportSource": "@email-kit/core" } }\n',
+    )
     const path = join(TMP, `t${n++}.tsx`)
     writeFileSync(path, tsx)
     return {
@@ -515,6 +520,65 @@ describe("source checks (UI-01)", () => {
         { template: "welcome", file: "src/email-kit/welcome/template.tsx" },
       ],
     ])
+  })
+})
+
+describe("source.jsx-pragma", () => {
+  let n = 0
+  /** Runs the check on one file in a project of its own, with these other files. */
+  const found = (name: string, text: string, files: Record<string, string> = {}) => {
+    const dir = join(TMP, `pragma-${n++}`)
+    const all = { "package.json": "{}\n", ...files, [name]: text }
+    for (const [path, content] of Object.entries(all)) {
+      mkdirSync(join(dir, path, ".."), { recursive: true })
+      writeFileSync(join(dir, path), content)
+    }
+    const source = sourceFile(join(dir, name), dir, ["welcome"])
+    const pragma = CATALOGUE.filter((c) => c.id === "source.jsx-pragma")
+    const only = { ...context, emails: [], themeFindings: [], sources: [source] }
+    return runChecks(only, {}, pragma).map((f) => [f.message, f.level, f.subject.line])
+  }
+  const PRAGMA = "/** @jsxImportSource @email-kit/core */\n"
+  const REACT = '{ "compilerOptions": { "jsx": "react-jsx" } }\n'
+  const OURS =
+    '{ "compilerOptions": { "jsx": "react-jsx", "jsxImportSource": "@email-kit/core" } }\n'
+  const JSX = "export const x = 1\nexport const y = <p>hi</p>\n"
+
+  it("warns about JSX without the pragma when the tsconfig is another framework's", () => {
+    expect(found("t.tsx", JSX, { "tsconfig.json": REACT })).toEqual([
+      ["JSX without the pragma, and the tsconfig doesn't set @email-kit/core", "warn", 2],
+    ])
+  })
+
+  it("warns without a tsconfig, and with a solution-style one", () => {
+    expect(found("t.tsx", JSX)).toHaveLength(1)
+    const solution = '{ "files": [], "references": [{ "path": "./tsconfig.app.json" }] }\n'
+    expect(found("src/t.tsx", JSX, { "tsconfig.json": solution })).toHaveLength(1)
+  })
+
+  it("warns about a pragma that names another runtime", () => {
+    const text = `/** @jsxImportSource react */\n${JSX}`
+    expect(found("t.tsx", text, { "tsconfig.json": OURS })).toEqual([
+      ["the JSX pragma names react, not @email-kit/core", "warn", 1],
+    ])
+  })
+
+  it("passes with the pragma, or a tsconfig that sets email-kit's JSX, directly or by extends", () => {
+    expect(found("t.tsx", `${PRAGMA}${JSX}`, { "tsconfig.json": REACT })).toEqual([])
+    expect(found("t.tsx", `// The welcome email.\n${PRAGMA}${JSX}`)).toEqual([])
+    expect(found("src/t.tsx", JSX, { "tsconfig.json": OURS })).toEqual([])
+    const files = {
+      "tsconfig.base.json": OURS,
+      "tsconfig.json": '{ "extends": "./tsconfig.base.json", /* comment */ "include": ["src"], }\n',
+    }
+    expect(found("src/t.tsx", JSX, files)).toEqual([])
+  })
+
+  it("ignores files without JSX, and a pragma after the first statement", () => {
+    expect(found("t.tsx", "export const x = 1\n", { "tsconfig.json": REACT })).toEqual([])
+    expect(found("t.ts", "export const x = 1\n", { "tsconfig.json": REACT })).toEqual([])
+    const late = `export const x = 1\n${PRAGMA}export const y = <p>hi</p>\n`
+    expect(found("t.tsx", late, { "tsconfig.json": REACT })).toHaveLength(1)
   })
 })
 
