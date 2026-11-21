@@ -9,7 +9,7 @@
     "typescript",
     "compiler"
   ],
-  "homepage": "https://github.com/email-kit/email-kit#readme",
+  "homepage": "https://email-kit.dev",
   "bugs": "https://github.com/email-kit/email-kit/issues",
   "repository": {
     "type": "git",
