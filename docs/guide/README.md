@@ -19,12 +19,6 @@ const { subject, html, text } = emails.orderShipped.render({ name: "Ada", itemCo
 
 ## How it works
 
-```
- template.tsx            email-kit compile            your server               your provider
- messages.<locale>.json ─────────────────────► _generated/index.ts ──► render(data) ──► Resend, SES,
- email-kit.config.ts       (when you build)      (typed, committed)       (at send time)    SMTP, …
-```
-
 1. **You write templates.** Each template is a folder with `template.tsx` and a
    `messages.<locale>.json` per language. Components such as `Button` and `Footer` handle the
    markup email clients need, with colours and type from your theme.
@@ -40,20 +34,11 @@ const { subject, html, text } = emails.orderShipped.render({ name: "Ada", itemCo
 email-kit doesn't send email. It works with any provider, because `render()` returns the subject,
 the HTML part and the plain-text part, which every provider's API takes.
 
-## Status
-
-email-kit is in **preview (0.1)**: usable for transactional email in TypeScript backends, and
-changing. Not in the preview yet:
-
-- marketing email (unsubscribe links, multi-column layouts);
-- testing in real email clients, classic Outlook especially;
-- the preview studio (`email-kit dev`).
-
 ## The guide
 
 Read the first two pages in order; the rest covers one topic each.
 
-1. [Getting started](getting-started.md): set up a project with `npm create email-kit`, compile,
+1. [Getting started](getting-started.md): set up a project with `npm create email-kit` compile,
    render and send the welcome email.
 2. [Your first email](first-email.md): build an order-shipped email from scratch, with data,
    components, copy, conditions, plurals, a second language and checks.
