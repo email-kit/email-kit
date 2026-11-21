@@ -1,6 +1,6 @@
 {
   "name": "@email-kit/cli",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "email-kit CLI: set up, compile and check type-safe TSX email templates.",
   "keywords": [
     "email",
