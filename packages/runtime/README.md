@@ -12,12 +12,12 @@ copy.
 In the project that sends email (in a monorepo, the app's folder), run:
 
 ```sh
-npm create email-kit
+npm create email-kit@latest
 ```
 
 It detects your package manager, TypeScript setup and framework, installs the packages below, adds
 a config and a welcome template, and compiles once. It asks before changing any file you already
-have; `npm create email-kit -- --yes` accepts every default, as in CI. `npx @email-kit/cli init`
+have; `npm create email-kit@latest -- --yes` accepts every default, as in CI. `npx @email-kit/cli@latest init`
 does the same.
 
 Then render the welcome email from your server, with the import `init` prints for your project:

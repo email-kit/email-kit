@@ -300,7 +300,7 @@ const { subject, html, text, meta } = emails.orderShipped.render(data, { locale:
 | Add a language | Add it to `locales.list` in the config, add `messages.<locale>.json` with every key to each template folder, then compile. Tags are canonical BCP 47: `pt-BR`, not `pt_br` ([Messages](https://email-kit.dev/guide/messages)) |
 | Change colours or type | The config's `theme`, such as `theme: { source: "app/globals.css" }` for a shadcn theme. `npx email-kit tokens` prints the roles and their contrast ([Theme](https://email-kit.dev/guide/theme)) |
 | Run checks in CI | `npx email-kit check --reporter github` after a full install ([Checks and CI](https://email-kit.dev/guide/checks-and-ci)) |
-| Set up email-kit | `npm create email-kit` in the app that sends email ([Getting started](https://email-kit.dev/guide/getting-started)) |
+| Set up email-kit | `npm create email-kit@latest` in the app that sends email ([Getting started](https://email-kit.dev/guide/getting-started)) |
 | Update this skill | `npx email-kit agents` writes the skill for the installed version |
 
 ## References

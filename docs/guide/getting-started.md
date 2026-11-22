@@ -13,10 +13,10 @@ such as `apps/api`.
 In your project's folder, run:
 
 ```sh
-npm create email-kit
+npm create email-kit@latest
 ```
 
-`npx @email-kit/cli init` does the same.
+`npx @email-kit/cli@latest init` does the same.
 
 It looks at your project (package manager, TypeScript setup, framework, an existing shadcn theme),
 shows what it will create and change, and asks before changing any file you already have. Then it
@@ -27,7 +27,7 @@ It also asks which AI coding agents you use, such as Claude Code, Codex or Curso
 skill that teaches them email-kit. See [AI coding agents](ai-agents.md).
 
 To accept every default without being asked, as in CI, pass `--yes`:
-`npm create email-kit -- --yes`. The [CLI reference](../reference/cli.md#init) lists every
+`npm create email-kit@latest -- --yes`. The [CLI reference](../reference/cli.md#init) lists every
 flag and what `init` detects.
 
 ## 2. Look at what it created
