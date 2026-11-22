@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 /**
  * `npm create email-kit`: runs `email-kit init` from @email-kit/cli in the folder it's run in,
- * with the same flags (`--yes`, `--dir`, `--config`, `--force`, `--no-install`), and exits as it
- * does.
+ * with the same flags (`--yes`, `--dir`, `--config`, `--force`, `--no-install`, `--agents`,
+ * `--no-agents`), and exits as it does.
  *
  * The CLI's only public entry point is its command, so this runs it in a child process, with the
  * terminal passed through for `init`'s questions. A CLI that can't be started is reported, and

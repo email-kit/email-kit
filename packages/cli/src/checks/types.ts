@@ -113,6 +113,18 @@ export interface CheckContext {
         }
       | undefined
   }
+  /**
+   * The copies of the email-kit skill for AI coding agents in the project and its repository,
+   * other than folders email-kit didn't write.
+   */
+  readonly agentSkills?: readonly {
+    /** The skill's folder, relative to the project folder. */
+    readonly file: string
+    /** The version that wrote it, when it says. */
+    readonly version: string | undefined
+    /** Whether its content matches the skill this CLI ships. */
+    readonly current: boolean
+  }[]
   /** The project's own source files the templates bundle: templates and user components. */
   readonly sources: readonly SourceFile[]
   readonly theme: Theme

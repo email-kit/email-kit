@@ -23,6 +23,9 @@ shows what it will create and change, and asks before changing any file you alre
 installs the packages, compiles once and prints how to render the welcome email. It never writes
 into a folder that isn't its own.
 
+It also asks which AI coding agents you use, such as Claude Code, Codex or Cursor, and writes a
+skill that teaches them email-kit. See [AI coding agents](ai-agents.md).
+
 To accept every default without being asked, as in CI, pass `--yes`:
 `npm create email-kit -- --yes`. The [CLI reference](../reference/cli.md#init) lists every
 flag and what `init` detects.

@@ -1,5 +1,10 @@
+import { readFileSync } from "node:fs"
+import { join } from "node:path"
+
 import { cac } from "cac"
 
+import { setUpAgents } from "./agents/index.ts"
+import { type AgentId, parseAgents } from "./agents/targets.ts"
 import { CATALOGUE } from "./checks/catalogue/index.ts"
 import { contextOf } from "./checks/context.ts"
 import { fromCustom } from "./checks/custom.ts"
@@ -9,7 +14,8 @@ import { buildProject, compile, describeResult, summarize } from "./compiler/bui
 import { loadConfig } from "./compiler/config/index.ts"
 import { formatError } from "./compiler/problems/index.ts"
 import { watchProject } from "./compiler/watch.ts"
-import { init, type Prompter } from "./init/index.ts"
+import { findProject, packageManagerOf } from "./init/detect.ts"
+import { init, type Prompter, RUNNER } from "./init/index.ts"
 import { newTemplate } from "./init/new.ts"
 import { terminalPrompter } from "./init/prompts.ts"
 import { checkPermutations } from "./theme/check.ts"
@@ -31,7 +37,7 @@ export interface Io {
 
 /**
  * Runs the `email-kit` command with the given arguments, without `node` and the script path:
- * `compile` (or `generate`), `init`, `new`, `check` or `tokens`. Returns the exit code.
+ * `compile` (or `generate`), `init`, `new`, `check`, `tokens` or `agents`. Returns the exit code.
  */
 export async function run(args: readonly string[], io: Io): Promise<number> {
   const cli = cac("email-kit")
@@ -57,8 +63,27 @@ export async function run(args: readonly string[], io: Io): Promise<number> {
     .option("--config <path>", "Name the config file something other than email-kit.config.ts")
     .option("--force", "Overwrite an existing config")
     .option("--no-install", "Don't run the package manager after adding the dependencies")
+    .option(
+      "--agents [list]",
+      "Set up these AI coding agents instead of asking: claude, codex, cursor, copilot, gemini, antigravity, windsurf, agents-md, all or none",
+    )
+    .option("--no-agents", "Don't set up AI coding agents")
     .action((options: InitFlags) => {
       pending = initCommand(options, io)
+    })
+  cli
+    .command(
+      "agents",
+      "Add or update the email-kit skill for AI coding agents (Claude Code, Codex, Cursor and others)",
+    )
+    .option(
+      "--agents <list>",
+      "These agents instead of asking: claude, codex, cursor, copilot, gemini, antigravity, windsurf, agents-md, all or none",
+    )
+    .option("--yes", "Take the agents the repository shows and accept every change without asking")
+    .option("--config <path>", "Use this config file instead of ./email-kit.config.ts")
+    .action((options: AgentsFlags) => {
+      pending = agentsCommand(options, io)
     })
   cli
     .command("new <id>", "Add a template, with its messages in every locale and a fixture")
@@ -124,6 +149,24 @@ interface InitFlags {
   readonly config?: string
   readonly force?: boolean
   readonly install?: boolean
+  /** A list from `--agents`, `false` from `--no-agents`, or `true` when neither is given. */
+  readonly agents?: string | boolean
+}
+
+interface AgentsFlags {
+  readonly yes?: boolean
+  readonly config?: string
+  readonly agents?: string | boolean
+}
+
+/**
+ * The agents `--agents` and `--no-agents` name: `undefined` to detect or ask, `[]` for none, or an
+ * error message for a name that isn't an agent.
+ */
+function agentsFlag(value: string | boolean | undefined): readonly AgentId[] | string | undefined {
+  if (value === undefined || value === true) return undefined
+  if (value === false) return []
+  return parseAgents(String(value))
 }
 
 interface CheckFlags {
@@ -182,11 +225,52 @@ async function tokensCommand(options: { config?: string }, io: Io): Promise<numb
   }
 }
 
+/**
+ * `email-kit agents`: writes the email-kit skill for the AI coding agents the project uses, and a
+ * section pointing to it in their instructions files, for the project the config describes.
+ */
+async function agentsCommand(options: AgentsFlags, io: Io): Promise<number> {
+  const agents = agentsFlag(options.agents)
+  if (typeof agents === "string") {
+    io.err(`✗ ${agents}`)
+    return 1
+  }
+  try {
+    const config = await loadConfig({ cwd: io.cwd, config: options.config })
+    const dir = findProject(config.dir)
+    const packageJson = JSON.parse(readFileSync(join(dir, "package.json"), "utf8"))
+    return await setUpAgents(
+      {
+        dir: config.dir,
+        folder: config.root,
+        out: config.out,
+        importPath: config.importPath,
+        runner: RUNNER[packageManagerOf(dir, packageJson)],
+      },
+      {
+        command: "agents",
+        ...(options.yes !== undefined && { yes: options.yes }),
+        ...(agents !== undefined && { agents }),
+      },
+      { out: io.out, err: io.err, prompter: io.prompter ?? terminalPrompter },
+    )
+  } catch (error) {
+    io.err(formatError(error, io))
+    return 1
+  }
+}
+
 /** `email-kit init`: asks in the terminal unless `io` brings its own prompter. */
-async function initCommand(options: InitFlags, io: Io): Promise<number> {
+async function initCommand(flags: InitFlags, io: Io): Promise<number> {
+  const { agents: agentsValue, ...options } = flags
+  const agents = agentsFlag(agentsValue)
+  if (typeof agents === "string") {
+    io.err(`✗ ${agents}`)
+    return 1
+  }
   try {
     return await init(
-      { cwd: io.cwd, ...options },
+      { cwd: io.cwd, ...options, ...(agents !== undefined && { agents }) },
       {
         out: io.out,
         err: io.err,

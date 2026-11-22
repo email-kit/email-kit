@@ -16,8 +16,8 @@ A test checks that every id the code can raise is listed here.
 **Fix:** run it inside the project that sends email, such as `apps/api` in a monorepo.
 
 ### init-needs-answers
-**Why:** `init` asks before it changes files, and there's no terminal to ask in (CI, a script).
-**Fix:** run `email-kit init --yes` to accept the defaults; `--dir`, `--config` and `--no-install` set the rest.
+**Why:** `init` or `email-kit agents` asks before it changes files, and there's no terminal to ask in (CI, a script).
+**Fix:** run it with `--yes` to accept the defaults. For `init`, `--dir`, `--config`, `--no-install` and `--agents` set the rest; for `agents`, `--agents` names the agents.
 
 ### init-cancelled
 **Why:** a question was cancelled (Ctrl+C). Files created before it stay; nothing after it was changed.

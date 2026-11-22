@@ -1,5 +1,6 @@
 import type { Check } from "../types.ts"
 import { A11Y } from "./a11y.ts"
+import { AGENTS } from "./agents.ts"
 import { COMPILER } from "./compiler.ts"
 import { CSS } from "./css.ts"
 import { DARK } from "./dark.ts"
@@ -34,4 +35,5 @@ export const CATALOGUE: readonly Check[] = [
   ...SUBJECT,
   ...RENDER,
   ...OUTPUT,
+  ...AGENTS,
 ]

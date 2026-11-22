@@ -125,7 +125,10 @@ export function detectProject(dir: string, override?: string): Project {
 }
 
 /** The package manager: the one package.json's `packageManager` names, else by the lockfile. */
-function packageManagerOf(dir: string, packageJson: Record<string, unknown>): PackageManager {
+export function packageManagerOf(
+  dir: string,
+  packageJson: Record<string, unknown>,
+): PackageManager {
   const named = /^(pnpm|npm|yarn|bun)@/.exec(String(packageJson.packageManager ?? ""))?.[1]
   if (named) return named as PackageManager
   if (existsSync(join(dir, "pnpm-lock.yaml"))) return "pnpm"
