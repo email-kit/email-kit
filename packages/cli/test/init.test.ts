@@ -38,7 +38,9 @@ function project(files: Record<string, string | object>): string {
 async function init(dir: string, args: string[] = ["--yes", "--no-install"], prompter?: Prompter) {
   const out: string[] = []
   const err: string[] = []
-  const code = await run(["init", ...args], {
+  // Always --no-agents: these projects are inside this repository, whose CLAUDE.md `init --yes`
+  // would take as a sign of Claude Code, and write the skill into it. agents.test.ts covers agents.
+  const code = await run(["init", ...args, "--no-agents"], {
     cwd: dir,
     out: (t) => out.push(t),
     err: (t) => err.push(t),
@@ -129,7 +131,7 @@ describe("Next.js with src/", () => {
     const second = await init(dir)
     expect([second.code, second.out]).toEqual([
       0,
-      "email-kit is already set up here (email-kit.config.ts). Add a template with `email-kit new <id>`.",
+      "email-kit is already set up here (email-kit.config.ts). Add a template with `email-kit new <id>`, and set up AI coding agents with `email-kit agents`.",
     ])
     expect(read(dir, "email-kit.config.ts")).toBe(config)
   })
@@ -261,6 +263,7 @@ describe("asking first", () => {
         return !message.startsWith("package.json")
       },
       text: async (_m, initial) => initial,
+      multiselect: async () => [],
     }
     await init(dir, ["--no-install"], prompter)
     expect(asked).toEqual([
@@ -288,6 +291,7 @@ describe("asking first", () => {
     const prompter: Prompter = {
       confirm: async (message) => !message.startsWith("tsconfig.json"),
       text: async (_m, initial) => initial,
+      multiselect: async () => [],
     }
     await init(dir, ["--no-install"], prompter)
     expect(read(dir, "tsconfig.json")).toBe('{ "compilerOptions": {} }\n')

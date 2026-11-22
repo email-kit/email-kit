@@ -6,7 +6,8 @@ import { compile } from "@email-kit/dialect"
 import { createTemplate, FORMAT } from "@email-kit/runtime"
 import { resolveLocale } from "@email-kit/runtime/locale"
 import { prepare } from "@email-kit/runtime/plural"
-
+import { skillState } from "../agents/skill.ts"
+import { repositoryRoot } from "../agents/targets.ts"
 import { type BuiltProject, outputFiles } from "../compiler/build.ts"
 import { modelOf } from "../compiler/emit/types.ts"
 import { fixturesWithVariants } from "../compiler/fixtures.ts"
@@ -129,6 +130,7 @@ export async function contextOf(project: BuiltProject): Promise<CheckContext> {
       file: relativePath(config.dir, t.file),
       fixtures: Object.keys(t.fixtures),
     })),
+    agentSkills: agentSkills(config.dir),
     sources: sourceFiles(project),
     theme: project.theme,
     themeFindings: project.themeFindings,
@@ -180,4 +182,30 @@ function sourceFiles(project: BuiltProject): SourceFile[] {
     for (const file of template.sources) users.set(file, [...(users.get(file) ?? []), template.id])
   }
   return [...users].map(([file, ids]) => sourceFile(file, project.config.dir, ids))
+}
+
+/**
+ * The copies of email-kit's skill in the project's folder and its repository's root, for
+ * `agents.skill-outdated`. A CLI that can't find its own skill reports none.
+ */
+function agentSkills(dir: string): NonNullable<CheckContext["agentSkills"]> {
+  const folders = [...new Set([dir, repositoryRoot(dir)])]
+  const skills: NonNullable<CheckContext["agentSkills"]>[number][] = []
+  try {
+    for (const folder of folders) {
+      for (const location of [".agents/skills", ".claude/skills"]) {
+        const path = join(folder, location, "email-kit")
+        const state = skillState(path)
+        if (state.kind !== "ours") continue
+        skills.push({
+          file: relativePath(dir, path),
+          version: state.version,
+          current: state.current,
+        })
+      }
+    }
+  } catch {
+    return []
+  }
+  return skills
 }

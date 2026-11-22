@@ -51,6 +51,8 @@ Read the first two pages in order; the rest covers one topic each.
 7. [Checks and CI](checks-and-ci.md): running `check`, changing levels, team checks, CI.
 8. [Rendering and sending](sending.md): the generated module, validation, locales, and sending.
 9. [Formatting dates, money and numbers](formatting.md): formatting values in your backend.
+10. [AI coding agents](ai-agents.md): the skill that teaches Claude Code, Codex, Cursor and other
+    agents to write email-kit emails.
 
 Reference:
 

@@ -23,3 +23,4 @@ Drafted from the phase-0 spikes, for the maintainer to accept, change or reject.
 | [0005](0005-css-inlining.md) | No HTML inliner: inline styles written at the IR level; juice + `data-embed` only if stylesheets are ever authored | 2026-10-30 |
 | [0007](0007-project-layout-and-runtime-package.md) | A folder per template (`<id>/template.tsx` + `messages.<locale>.json`); a minimal `_generated/`; the runtime as `@email-kit/runtime`, the one small production dependency | 2026-11-15 |
 | [0008](0008-backend-formats-values.md) | The backend formats dates, money and numbers; templates print strings marked with `formatted()` | 2026-11-15 |
+| [0009](0009-agent-skill.md) | One Agent Skill for AI coding agents, generated from the docs, shipped in the CLI and written into `.agents/skills/` and `.claude/skills/`, with a pointer in `AGENTS.md`, `CLAUDE.md` or `GEMINI.md` | 2026-11-22 |

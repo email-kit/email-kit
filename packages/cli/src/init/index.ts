@@ -2,6 +2,10 @@ import { spawnSync } from "node:child_process"
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs"
 import { dirname, join, posix, relative } from "node:path"
 
+import { EmailKitError } from "@email-kit/core/internal"
+
+import { setUpAgents } from "../agents/index.ts"
+import type { AgentId } from "../agents/targets.ts"
 import { compileWithConfig, summarize } from "../compiler/build.ts"
 import { loadConfig } from "../compiler/config/index.ts"
 import { GENERATED_FOLDER } from "../compiler/config/paths.ts"
@@ -19,6 +23,19 @@ import { configFile, indexFile, WELCOME_MESSAGES, welcomeTemplate } from "./scaf
 export interface Prompter {
   confirm(message: string, initial: boolean): Promise<boolean>
   text(message: string, initial: string): Promise<string>
+  /** Asks for any number of the options, with `initial` selected. */
+  multiselect<Value extends string>(
+    message: string,
+    options: readonly Choice<Value>[],
+    initial: readonly Value[],
+  ): Promise<Value[]>
+}
+
+/** One option of a `multiselect` question. */
+export interface Choice<Value extends string> {
+  readonly value: Value
+  readonly label: string
+  readonly hint?: string
 }
 
 export interface InitOptions {
@@ -36,6 +53,11 @@ export interface InitOptions {
   readonly force?: boolean
   /** Whether to install the dependencies. Default: true. */
   readonly install?: boolean
+  /**
+   * The AI coding agents to set up, from `--agents` (`[]` for `--no-agents`), instead of the
+   * detected ones or a question.
+   */
+  readonly agents?: readonly AgentId[]
 }
 
 /** Where `init` writes its output and asks its questions. */
@@ -60,7 +82,7 @@ interface NewFile {
 const FOLDERS = ["email-kit", "email-templates", "emails"]
 
 /** How each package manager runs a package's binary. */
-const RUNNER: Readonly<Record<PackageManager, string>> = {
+export const RUNNER: Readonly<Record<PackageManager, string>> = {
   npm: "npx",
   pnpm: "pnpm exec",
   yarn: "yarn",
@@ -69,7 +91,7 @@ const RUNNER: Readonly<Record<PackageManager, string>> = {
 
 /** What `init` says when the project already has email-kit. */
 const alreadySetUp = (where: string) =>
-  `email-kit is already set up here (${where}). Add a template with \`email-kit new <id>\`.`
+  `email-kit is already set up here (${where}). Add a template with \`email-kit new <id>\`, and set up AI coding agents with \`email-kit agents\`.`
 
 /**
  * `email-kit init`: adds email-kit to the project it runs in. It shows every file it creates and
@@ -160,6 +182,26 @@ export async function init(options: InitOptions, io: InitIo): Promise<number> {
       "! The first compile didn't run: install the dependencies, then run `email-kit compile`.",
     )
     io.err(formatError(error, io))
+  }
+  try {
+    await setUpAgents(
+      {
+        dir,
+        folder: join(dir, folder),
+        out: join(dir, folder, GENERATED_FOLDER),
+        importPath,
+        runner: RUNNER[project.packageManager],
+      },
+      {
+        command: "init",
+        ...(options.yes !== undefined && { yes: options.yes }),
+        ...(options.agents !== undefined && { agents: options.agents }),
+      },
+      io,
+    )
+  } catch (error) {
+    if (error instanceof EmailKitError && error.code === "init-cancelled") throw error
+    io.err(`! The AI coding agents weren't set up: ${(error as Error).message}`)
   }
   io.out(nextSteps(project.packageManager, importPath, has("scripts") ? scriptPrefix : undefined))
   return 0
@@ -270,6 +312,7 @@ function nextSteps(
       [command("watch"), "recompile on every change, while you work"],
       [command("check"), "the checks, for CI"],
       [`${RUNNER[pm]} email-kit new <id>`, "another template"],
+      [`${RUNNER[pm]} email-kit agents`, "set up or update the skill for AI coding agents"],
     ]),
     "",
     "Docs: https://github.com/email-kit/email-kit#readme",

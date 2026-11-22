@@ -23,6 +23,7 @@ const FAMILIES: readonly [string, string][] = [
   ["copy", "Copy"],
   ["size", "Size"],
   ["output", "Output"],
+  ["agents", "AI coding agents"],
 ]
 
 /**

@@ -31,6 +31,8 @@ Works today:
   KB to 3 KB gzipped), with a runtime data validator; `.ts`, or `.mjs` with types.
 - `email-kit check`: 111 of the 175 planned checks, over the output, renders of every fixture,
   the sources and the theme; human, JSON and GitHub reporters; team checks.
+- An Agent Skill for Claude Code, Codex, Cursor, GitHub Copilot and other AI coding agents,
+  with these docs for the installed version; `init` and `email-kit agents` write it into projects.
 
 Not yet:
 
@@ -43,7 +45,7 @@ Not yet:
 
 | Package | What it is |
 |---|---|
-| [`@email-kit/cli`](packages/cli) | The `email-kit` command: `init`, `new`, `compile`, `check`, `tokens` |
+| [`@email-kit/cli`](packages/cli) | The `email-kit` command: `init`, `new`, `compile`, `check`, `tokens`, `agents` |
 | [`@email-kit/core`](packages/core) | `defineEmail`, the JSX runtime and types |
 | [`@email-kit/components`](packages/components) | shadcn-style, email-safe components |
 | [`create-email-kit`](packages/create-email-kit) | `npm create email-kit` |
@@ -51,8 +53,10 @@ Not yet:
 ## Docs
 
 - [Getting started](docs/guide/getting-started.md), then [your first email](docs/guide/first-email.md)
-- [User guide](docs/guide/README.md): templates, components, messages and locales, theme, checks
-  and sending
+- [User guide](docs/guide/README.md): templates, components, messages and locales, theme, checks,
+  sending, and [AI coding agents](docs/guide/ai-agents.md)
+- [The email-kit skill](skills/email-kit/SKILL.md) for AI coding agents, which `email-kit agents`
+  writes into projects
 - Reference: [CLI](docs/reference/cli.md), [configuration](docs/reference/configuration.md),
   [checks](docs/reference/checks.md), [error codes](docs/reference/errors.md) and
   [mustache-core](docs/reference/mustache-core.md), the placeholder language (draft), with its

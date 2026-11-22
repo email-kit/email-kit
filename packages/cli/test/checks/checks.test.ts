@@ -323,12 +323,13 @@ describe("each check, with one rule broken", () => {
   })
 
   it("covers every check of the compiled output", () => {
-    // Source, render-only, pseudo-locale, output-folder and compiler checks have their own tests.
+    // Source, render-only, pseudo-locale, output-folder, agent-skill and compiler checks have
+    // their own tests.
     const covered = [...cases, ...parts]
       .map(([id]) => id)
       .concat("subject.no-secret", "legal.postal-address")
     const output = CATALOGUE.filter(
-      (c) => !/^(source|i18n|output)\./.test(c.id) && c.on !== "render" && !c.compiler,
+      (c) => !/^(source|i18n|output|agents)\./.test(c.id) && c.on !== "render" && !c.compiler,
     )
     expect(covered.sort()).toEqual(output.map((c) => c.id).sort())
   })

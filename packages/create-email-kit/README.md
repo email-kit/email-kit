@@ -45,6 +45,13 @@ npx email-kit new <id>        # another template, with messages in every locale
 The [getting started guide](https://email-kit.dev/guide/getting-started/) goes through it step by
 step, and [your first email](https://email-kit.dev/guide/first-email/) builds one from scratch.
 
+### With an AI coding agent
+
+`init` also asks which AI coding agents you use (Claude Code, Codex, Cursor, GitHub Copilot, Gemini
+CLI, Antigravity, Windsurf and others) and writes a skill that teaches them email-kit, for the
+version you have. Run `npx email-kit agents` to add one later or update it after an upgrade. See
+[AI coding agents](https://email-kit.dev/guide/ai-agents/).
+
 ## A template
 
 Each template is a folder with `template.tsx` and a `messages.<locale>.json` per language:
@@ -81,7 +88,7 @@ They work together and are released together: install the same version of each.
 | Package | What it is | Install as |
 |---|---|---|
 | [`create-email-kit`](https://www.npmjs.com/package/create-email-kit) | `npm create email-kit`: runs `email-kit init` in the folder you're in | not installed |
-| [`@email-kit/cli`](https://www.npmjs.com/package/@email-kit/cli) | The `email-kit` command: `init`, `new`, `compile`, `check` and `tokens` | devDependency |
+| [`@email-kit/cli`](https://www.npmjs.com/package/@email-kit/cli) | The `email-kit` command: `init`, `new`, `compile`, `check`, `tokens` and `agents` | devDependency |
 | [`@email-kit/core`](https://www.npmjs.com/package/@email-kit/core) | What templates are written with: `defineEmail`, the JSX runtime, `If`/`Each`/`Unless`, field markers (`url`, `secret`, `formatted`), `defineConfig` and `defineCheck` | devDependency |
 | [`@email-kit/components`](https://www.npmjs.com/package/@email-kit/components) | Email-safe components themed from your shadcn CSS or design tokens: `Text`, `Heading`, `Link`, `Button`, `Image`, `Divider`, `Spacer`, `Section`, `List`, `KeyValue`, `Callout`, `OtpCode`, `DataTable`, `LineItems` and `Footer` | devDependency |
 | [`@email-kit/runtime`](https://www.npmjs.com/package/@email-kit/runtime) | Renders the compiled emails. The only one your app needs when it runs | **dependency** |
@@ -114,7 +121,7 @@ Outlook especially), and the preview studio.
 ## More
 
 - [Guide](https://email-kit.dev/guide/): templates, components, messages and locales, theme and dark
-  mode, checks and CI, rendering and sending.
+  mode, checks and CI, rendering and sending, and AI coding agents.
 - Reference: [CLI](https://email-kit.dev/reference/cli/),
   [configuration](https://email-kit.dev/reference/configuration/),
   [checks](https://email-kit.dev/reference/checks/), [errors](https://email-kit.dev/reference/errors/).

@@ -863,3 +863,12 @@ variant instead of the compiled templates (each render then has `fixture`), or `
 **Rule:** The output folder is committed, not gitignored.
 
 **Fix:** Commit the output so deploys don't need a compile step, or compile in your build and set this check off with that reason.
+
+## AI coding agents
+
+### agents.skill-outdated
+**Default:** warning
+
+**Rule:** Each copy of the email-kit skill for AI coding agents (`.agents/skills/email-kit/`, `.claude/skills/email-kit/`) matches the one the installed CLI ships.
+
+**Fix:** Run `email-kit agents` to update it: agents follow the skill, and an older one describes an older email-kit.
