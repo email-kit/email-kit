@@ -1,5 +1,11 @@
 # @email-kit/components
 
+## 1.1.0
+
+### Patch Changes
+
+- @email-kit/core@1.1.0
+
 ## 1.0.1
 
 ### Patch Changes

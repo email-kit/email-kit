@@ -1,6 +1,6 @@
 {
   "name": "@email-kit/components",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "description": "email-kit components: email-safe, themed components (Button, OtpCode, DataTable, LineItems, Footer…) for email-kit templates.",
   "keywords": [
     "email",
